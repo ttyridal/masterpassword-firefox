@@ -1,0 +1,78 @@
+<!doctype html>
+<head>
+<meta charset="UTF-8"> 
+<style type="text/css">
+    html,body,h1,h2,input,select { margin:0;padding:0;border:none; }
+    html {
+		height: 300px;
+		width: 350px;
+        font-family: Helvetica, Ubuntu, Arial, sans-serif;
+        background:         radial-gradient(black 15%, transparent 16%) 0 0,
+                            radial-gradient(black 15%, transparent 16%) 8px 8px,
+                            radial-gradient(rgba(255,255,255,.05) 15%, transparent 20%) 0 1px,
+                            radial-gradient(rgba(255,255,255,.05) 15%, transparent 20%) 8px 9px;
+        background-color:   #161616;
+        background-size:    16px 16px;
+        color:white;
+        text-align:center;
+        cursor:default;
+        user-select: none;
+    }
+    body { font-size:10pt; padding-top:4px;}
+    html,body,div { overflow: hidden;}
+    input,select { margin-bottom:0.8em;}
+	#usermessage {
+        text-align:left;
+        position:absolute;bottom:0;
+        color:#a0a0a0;
+	}
+</style>
+<body>
+<div id="mainPopup">
+    <img src="./icon64.png" width="48" height="48" style="position:absolute;top:-2px;left:10px">
+    <span style="position:relative;">
+    <h1 style="display:inline-block;margin-bottom:0.8em;">MasterPassword</h1>
+    <span style="position:absolute;top:1.8em;right:0;font-size:0.5em;color:silver">chrome&nbsp;ext</span>
+    </span>
+
+
+<div id="sessionsetup" style="display:none">
+    <form>
+        <label for="username">Your (full) name<br><input id="username" placeholder="Your Name"/></label><br>
+        <label for="masterkey">Master password<br><input id="masterkey" type="password" placeholder="password" autocomplete="off"/></label><br>
+        <input type="submit" value="OK" style="margin-top:1em"/>
+    </form>
+</div>
+
+<div id="main">
+    <input id="sitename" type="text" style="background-color:rgba(60,60,60,0.6);width:100%;text-align:center;font-size:2em;margin-bottom:0;color:white" placeholder="site"><br>
+<a id="siteconfig_show" href="">[advanced]</a>
+<div id="siteconfig" style="display:none;background-color:rgba(60,60,60,0.6);padding:0.8em 0 0 0;">
+    <form>
+        <label for="passwdtype">Password type<br><select id="passwdtype">
+            <option value="maximum">Maximum
+            <option value="long" selected>Long
+            <option value="medium">Medium
+            <option value="basic">Basic
+            <option value="short">Short
+            <option value="pin">Pin
+            <option value="name">Name
+            <option value="phrase">Phrase
+        </select></label><br>
+        <label for="passwdgeneration">password generation<br><input id="passwdgeneration" type="number" min="1" step="1" value="1" style="width:2.5em"/></label><br>
+    </form>
+</div>
+
+<div style="clear:both;margin-top:.5em;">
+    <span style="position:relative;display:inline-block">Password</span>
+    <div id="thepassword" style="font-size:2em;margin-top:.5em;">(calculating)</div></div>
+</div>
+
+<div id="usermessage"></div>
+</div>
+<script src="./js/jquery-2.1.3.min.js"></script>
+<script src="./js/mpw/traceur-runtime.js"></script>
+<script src="./js/mpw/scrypt.js"></script>
+<script src="./js/mpw/mpw.js"></script>
+<script src="./js/mpw/scrypt-asm.js"></script>
+<script src="./main_popup.js"></script>

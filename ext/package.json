@@ -1,0 +1,10 @@
+{
+  "name": "masterpassword-firefox",
+  "title": "masterpassword-firefox",
+  "id": "jid1-pn4AFskf9WBAdA",
+  "description": "Firefox extension implementation of masterpassword",
+  "author": "Torbjorn Tyridal (ttyridal)",
+  "license": "GPLv3",
+  "version": "0.0.1",
+  "homepage": "https://github.com/ttyridal/masterpassword-firefox"
+}

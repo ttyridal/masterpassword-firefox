@@ -1,0 +1,13 @@
+--- old/scrypt-asm.js	2014-11-03 21:51:34.000000000 +0100
++++ scrypt-asm.js	2015-01-11 16:43:06.000000000 +0100
+@@ -9,9 +9,9 @@
+   return function() {
+   }
+ }
+ var q, s;
+-s || (s = eval("(function() { try { return Module || {} } catch(e) { return {} } })()"));
++s || (s = (function() { try { return Module || {} } catch(e) { return {} } })());
+ var ba = {}, t;
+ for(t in s) {
+   s.hasOwnProperty(t) && (ba[t] = s[t])
+ }
