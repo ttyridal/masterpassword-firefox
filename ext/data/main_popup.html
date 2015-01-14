@@ -2,7 +2,7 @@
 <head>
 <meta charset="UTF-8"> 
 <style type="text/css">
-    html,body,h1,h2,input,select { margin:0;padding:0;border:none; }
+    html,body,h1,h2,input,select,button { margin:0;padding:0;border:none; }
     html {
 		height: 300px;
 		width: 350px;
@@ -18,6 +18,7 @@
         cursor:default;
         user-select: none;
     }
+    button { color: gray;}
     body { font-size:10pt; padding-top:4px;}
     html,body,div { overflow: hidden;}
     input,select { margin-bottom:0.8em;}
@@ -44,8 +45,11 @@
     </form>
 </div>
 
-<div id="main">
-    <input id="sitename" class="domain" type="text" style="background-color:rgba(60,60,60,0.6);width:100%;text-align:center;font-size:2em;margin-bottom:0;color:white" placeholder="site"/><br>
+<div id="main" style="position:relative">
+    <select id="storedids" size="4" style="display:none;position:absolute;font-size:1.5em;width:99%;z-index:99"></select>
+    <input id="sitename" class="domain" type="text" style="background-color:rgba(60,60,60,0.6);width:100%;text-align:center;font-size:2em;margin-bottom:0;color:white" placeholder="site"/>
+    <button id="storedids_dropdown" style="display:none;position:absolute;height:2em;right:1em;top:1px;z-index:100;background-color:rgba(0,0,0,0)">&#9660;</button>
+    <br>
 <a id="siteconfig_show" href="">[advanced]</a>
 <div id="siteconfig" style="display:none;background-color:rgba(60,60,60,0.6);padding:0.8em 0 0 0;">
     <form>

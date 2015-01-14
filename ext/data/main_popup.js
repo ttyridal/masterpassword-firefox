@@ -57,15 +57,19 @@ function recalculate() {
 }
 
 function update_with_settings_for(domain) {
+    var first=true;
     if (session_store['sites']===undefined) return;
     if (session_store.sites[domain]===undefined) return;
 
-    // TODO: figure out a way to visualize multiple settings on domain
-    // for now, just loop through and ignore that there might be more than one
     $.each(session_store.sites[domain], function(key,val) {
-        $('#sitename').val(key);
-        $('#passwdgeneration').val(val.generation);
-        $('#passwdtype').val(val.type);
+        $('#storedids').append('<option>'+key);
+        if (first) {
+            $('#sitename').val(key);
+            $('#passwdgeneration').val(val.generation);
+            $('#passwdtype').val(val.type);
+            first=false;
+        } else
+            $('#storedids_dropdown').show();
     });
 }
 
@@ -128,6 +132,25 @@ $('#siteconfig_show').on('click', function(){
     return false;
 });
 
+$('#storedids_dropdown').on('click', function(e){
+    var sids=$('#storedids');
+    if (sids.is(":visible"))
+        sids.hide();
+    else {
+        sids.show();
+        sids.focus();
+    }
+});
+$('#storedids').on('change', function(){
+    var site = $(this).val(),
+        domain = $('#domain').val();
+    $('#sitename').val(site);
+    $('#passwdgeneration').val(session_store.sites[domain][site].generation);
+    $('#passwdtype').val(session_store.sites[domain][site].type);
+    $(this).toggle();
+    recalculate();
+});
+
 function save_site_changes_and_recalc(){
     var domain = $('#domain').val();
     if (session_store['sites']===undefined)
@@ -140,6 +163,8 @@ function save_site_changes_and_recalc(){
         type:$('#passwdtype').val()
     };
     addon.port.emit('store_update', session_store);
+    if (session_store.sites[domain].keys().length>1)
+        $('#storedids_dropdown').show();
     recalculate();
 }
 
