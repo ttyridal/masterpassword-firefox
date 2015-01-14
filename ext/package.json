@@ -6,5 +6,7 @@
   "author": "Torbjorn Tyridal (ttyridal)",
   "license": "GPLv3",
   "version": "0.99.1",
+  "icon": "data/icon32.png",
+  "icon64": "data/icon64.png",
   "homepage": "https://github.com/ttyridal/masterpassword-firefox"
 }
