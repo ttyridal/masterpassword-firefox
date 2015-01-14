@@ -24,8 +24,7 @@ function get_active_tab_url() {
 }
 
 function copy_to_clipboard(mimetype, data) {
-    console.log('trying to copytext "'+data+'"');
-    window.clipboardData.setData("text/plain", data);
+    addon.port.emit('to_clipboard', data);
 }
 
 var mpw=null;
@@ -52,12 +51,12 @@ function recalculate() {
 
         $('#thepassword').html(pass);
 
-        addon.port.emit('to_clipboard', pass);
+        copy_to_clipboard("text/plain",pass);
         $('#usermessage').html("Password for "+$('#sitename').val()+" copied to clipboard");
     });
 }
 
-addon.port.on("popup", function (session_store_) {
+function popup(session_store_) {
     var recalc=false;
     session_store = session_store_;
     if (session_store.username==null || session_store.masterkey==null) {
@@ -82,7 +81,8 @@ addon.port.on("popup", function (session_store_) {
         if(recalc)
             recalculate();
     });
-});
+}
+addon.port.on("popup", popup);
 
 $('#sessionsetup > form').on('submit', function(){
     if ($('#username').val().length < 2) {
@@ -115,8 +115,6 @@ $('#siteconfig_show').on('click', function(){
 });
 $('#siteconfig').on('change','select,input',recalculate);
 $('#sitename').on('change',recalculate);
-
-console.log('main_popup loaded');
 
 }());
 
