@@ -73,7 +73,7 @@ function popup(session_store_) {
     get_active_tab_url().then(function(url){
         var domain = parse_uri(url)['domain'].split("."),
             significant_parts=2;
-        if (domain[domain.length-1].toLowerCase()=="uk")
+        if (domain.length>2 && domain[domain.length-2].toLowerCase()=="co")
             significant_parts=3;
         while(domain.length>1 && domain.length>significant_parts)domain.shift();
         domain=domain.join(".");
