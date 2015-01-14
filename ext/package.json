@@ -5,6 +5,6 @@
   "description": "Firefox extension implementation of masterpassword",
   "author": "Torbjorn Tyridal (ttyridal)",
   "license": "GPLv3",
-  "version": "0.0.1",
+  "version": "0.99.1",
   "homepage": "https://github.com/ttyridal/masterpassword-firefox"
 }
