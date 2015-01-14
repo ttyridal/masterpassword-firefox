@@ -83,7 +83,7 @@ function popup(session_store_) {
             $('#username').focus();
         else {
             $('#username').val(session_store.username);
-            $('#masterkey').focus();
+            window.setTimeout(function(){$('#masterkey').focus();},0.1);
         }
     } else
         recalc=true;
