@@ -5,9 +5,10 @@ var self = require("sdk/self");
 const {Cc,Ci} = require("chrome");
 var ss = require("sdk/simple-storage");
 
-var session_store = {'username':null,'masterkey':null};
+var session_store = {'username':null,'masterkey':null,'sites':{}};
 console.log('storage contains:'+ss.storage.username);
 if (ss.storage.username) session_store.username = ss.storage.username;
+if (ss.storage.sites) session_store.sites = ss.storage.sites;
 
 var button = buttons.ToggleButton({
     id: "com_github_ttyridal_masterpassword",
@@ -38,8 +39,11 @@ function createPanel() {
     });
 
     panel.port.on('store_update', function(d){
-        session_store = d;
+        var k;
+        for (k in d)
+            session_store[k] = d[k];
         ss.storage.username = d.username;
+        ss.storage.sites = d.sites;
     });
     panel.port.on('to_clipboard', function(d){
         const gClipboardHelper = Cc["@mozilla.org/widget/clipboardhelper;1"]

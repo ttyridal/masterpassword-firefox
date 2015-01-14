@@ -56,6 +56,19 @@ function recalculate() {
     });
 }
 
+function update_with_settings_for(domain) {
+    if (session_store['sites']===undefined) return;
+    if (session_store.sites[domain]===undefined) return;
+
+    // TODO: figure out a way to visualize multiple settings on domain
+    // for now, just loop through and ignore that there might be more than one
+    $.each(session_store.sites[domain], function(key,val) {
+        $('#sitename').val(key);
+        $('#passwdgeneration').val(val.generation);
+        $('#passwdtype').val(val.type);
+    });
+}
+
 function popup(session_store_) {
     var recalc=false;
     session_store = session_store_;
@@ -77,7 +90,8 @@ function popup(session_store_) {
             significant_parts=3;
         while(domain.length>1 && domain.length>significant_parts)domain.shift();
         domain=domain.join(".");
-        $('#sitename').attr('value',domain);
+        $('.domain').attr('value',domain);
+        update_with_settings_for(domain);
         if(recalc)
             recalculate();
     });
@@ -113,8 +127,24 @@ $('#siteconfig_show').on('click', function(){
     $(this).hide();
     return false;
 });
-$('#siteconfig').on('change','select,input',recalculate);
-$('#sitename').on('change',recalculate);
+
+function save_site_changes_and_recalc(){
+    var domain = $('#domain').val();
+    if (session_store['sites']===undefined)
+        session_store.sites={};
+    if (session_store.sites[domain]===undefined)
+        session_store.sites[domain]={};
+
+    session_store.sites[domain][$('#sitename').val()] = {
+        generation:$('#passwdgeneration').val(),
+        type:$('#passwdtype').val()
+    };
+    addon.port.emit('store_update', session_store);
+    recalculate();
+}
+
+$('#siteconfig').on('change','select,input',save_site_changes_and_recalc);
+$('#sitename').on('change',save_site_changes_and_recalc);
 
 }());
 
