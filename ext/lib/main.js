@@ -39,6 +39,10 @@ function createPanel() {
     });
 
     panel.port.on('store_update', function(d){
+        if (require("sdk/private-browsing").isPrivate(require("sdk/windows").activeWindow)) {
+            console.log("won't store anything for private windows");
+            return;
+        }
         var k;
         for (k in d)
             session_store[k] = d[k];

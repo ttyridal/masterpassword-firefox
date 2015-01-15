@@ -8,5 +8,6 @@
   "version": "0.99.2",
   "icon": "data/icon32.png",
   "icon64": "data/icon64.png",
+  "permissions": {"private-browsing": true},
   "homepage": "https://github.com/ttyridal/masterpassword-firefox"
 }
