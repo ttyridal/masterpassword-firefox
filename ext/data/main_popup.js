@@ -163,7 +163,7 @@ function save_site_changes_and_recalc(){
         type:$('#passwdtype').val()
     };
     addon.port.emit('store_update', session_store);
-    if (session_store.sites[domain].keys().length>1)
+    if (Object.keys(session_store.sites[domain]).length>1)
         $('#storedids_dropdown').show();
     recalculate();
 }
