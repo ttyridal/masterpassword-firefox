@@ -1,8 +1,6 @@
 # masterpassword-firefox
 Master Password implemented as a Firefox extension
 
-Only the most basic features implemented as of now.
-
 based on tmthrgd's [mpw library](https://github.com/tmthrgd/mpw-js)
 
 ## About Master Password
