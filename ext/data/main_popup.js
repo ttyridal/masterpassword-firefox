@@ -80,7 +80,7 @@ function popup(session_store_) {
         $('#main').hide();
         $('#sessionsetup').show();
         if (session_store.username==null)
-            $('#username').focus();
+            window.setTimeout(function(){$('#username').focus();},0.1);
         else {
             $('#username').val(session_store.username);
             window.setTimeout(function(){$('#masterkey').focus();},0.1);
