@@ -5,7 +5,7 @@
   "description": "Firefox extension implementation of masterpassword",
   "author": "Torbjorn Tyridal (ttyridal)",
   "license": "GPLv3",
-  "version": "0.99.4",
+  "version": "0.99.5",
   "icon": "data/icon32.png",
   "icon64": "data/icon64.png",
   "permissions": {"private-browsing": true},
