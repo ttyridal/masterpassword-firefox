@@ -6,7 +6,6 @@ const {Cc,Ci} = require("chrome");
 var ss = require("sdk/simple-storage");
 
 var session_store = {'username':null,'masterkey':null,'sites':{}};
-console.log('storage contains:'+ss.storage.username);
 if (ss.storage.username) session_store.username = ss.storage.username;
 if (ss.storage.sites) session_store.sites = ss.storage.sites;
 
@@ -22,7 +21,7 @@ var button = buttons.ToggleButton({
         if (state.checked) {
             var panel = createPanel();
             panel.show({position: button});
-            panel.port.emit("popup", session_store);
+            panel.port.on('loaded' ,function(){ panel.port.emit("popup", session_store); });
         }
     }
 });

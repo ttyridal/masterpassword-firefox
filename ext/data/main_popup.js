@@ -85,8 +85,11 @@ function popup(session_store_) {
             $('#username').val(session_store.username);
             window.setTimeout(function(){$('#masterkey').focus();},0.1);
         }
-    } else
+    } else {
         recalc=true;
+        $('#main').show();
+    }
+
     get_active_tab_url().then(function(url){
         var domain = parse_uri(url)['domain'].split("."),
             significant_parts=2;
@@ -172,4 +175,4 @@ $('#siteconfig').on('change','select,input',save_site_changes_and_recalc);
 $('#sitename').on('change',save_site_changes_and_recalc);
 
 }());
-
+addon.port.emit('loaded');
