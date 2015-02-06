@@ -1,8 +1,6 @@
 # masterpassword-firefox
 Master Password implemented as a Firefox extension
 
-[addons.mozilla.org entry](https://addons.mozilla.org/en-US/firefox/addon/masterpassword-firefox/)
-
 
 This is a firefox addon implementing the masterpassword algorithm invented by Maarten Billemont. You can visit his website at [masterpasswordapp.com](http://masterpasswordapp.com). This plugin uses tmthrgd's [mpw library](https://github.com/tmthrgd/mpw-js), a javascript implementation of Maarten's algorithm.
 
