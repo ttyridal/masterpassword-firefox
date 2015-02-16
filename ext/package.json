@@ -9,5 +9,8 @@
   "icon": "data/icon32.png",
   "icon64": "data/icon64.png",
   "permissions": {"private-browsing": true},
-  "homepage": "https://github.com/ttyridal/masterpassword-firefox"
+  "homepage": "https://github.com/ttyridal/masterpassword-firefox",
+  "preferences": [
+     { "name":"hotkeycombo","title":"shortcut","description":"hotkey combination","type":"string","value":"accel-alt-p" }
+  ]
 }

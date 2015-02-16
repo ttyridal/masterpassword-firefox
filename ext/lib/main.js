@@ -3,7 +3,7 @@ var panels = require("sdk/panel");
 var tabs = require("sdk/tabs");
 var { viewFor } = require("sdk/view/core");
 var tab_utils = require("sdk/tabs/utils");
-
+var { Hotkey } = require("sdk/hotkeys");
 
 var self = require("sdk/self");
 const {Cc,Ci} = require("chrome");
@@ -25,9 +25,18 @@ var button = buttons.ToggleButton({
         if (state.checked) {
             var panel = createPanel();
             panel.show({position: button});
-            panel.port.on('loaded' ,function(){ panel.port.emit("popup", session_store); });
+            panel.port.on('loaded' ,function(){ panel.port.emit("popup", session_store,false); });
         }
     }
+});
+
+var hotPassword = Hotkey({
+  combo: require("sdk/simple-prefs").prefs.hotkeycombo,
+  onPress: function() {
+    var panel = createPanel();
+    panel.show({position: button});
+    panel.port.on('loaded' ,function(){ panel.port.emit("popup", session_store, true); });
+  }
 });
 
 function createPanel() {
@@ -40,6 +49,7 @@ function createPanel() {
             panel.destroy();
         }
     });
+    panel.port.on('close', function() { panel.hide(); });
 
     panel.port.on('store_update', function(d){
         if (require("sdk/private-browsing").isPrivate(require("sdk/windows").activeWindow)) {

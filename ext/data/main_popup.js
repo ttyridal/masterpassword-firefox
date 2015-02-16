@@ -33,7 +33,7 @@ function update_page_password_input(data) {
 var mpw=null;
 var session_store={};
 
-function recalculate() {
+function recalculate(hide_after_copy) {
     $('#thepassword').html('(calculating)');
     $('#usermessage').html("Please wait...");
     if ($('#sitename').val()==null || $('#sitename').val()=="") {
@@ -57,6 +57,9 @@ function recalculate() {
 
         copy_to_clipboard("text/plain",pass);
         update_page_password_input(pass);
+        if (hide_after_copy) {
+            addon.port.emit('close');
+        }
         $('#usermessage').html("Password for "+$('#sitename').val()+" copied to clipboard");
     });
 }
@@ -78,7 +81,7 @@ function update_with_settings_for(domain) {
     });
 }
 
-function popup(session_store_) {
+function popup(session_store_,opened_by_hotkey) {
     var recalc=false;
     session_store = session_store_;
     if (session_store.username==null || session_store.masterkey==null) {
@@ -107,8 +110,9 @@ function popup(session_store_) {
         domain=domain.join(".");
         $('.domain').attr('value',domain);
         update_with_settings_for(domain);
-        if(recalc)
-            recalculate();
+        if(recalc) {
+            recalculate(opened_by_hotkey);
+        }
     });
 }
 addon.port.on("popup", popup);
