@@ -26,6 +26,9 @@ function get_active_tab_url() {
 function copy_to_clipboard(mimetype, data) {
     addon.port.emit('to_clipboard', data);
 }
+function update_page_password_input(data) {
+    addon.port.emit('update_page_password_input', data);
+}
 
 var mpw=null;
 var session_store={};
@@ -53,6 +56,7 @@ function recalculate() {
         $('#thepassword').html(pass);
 
         copy_to_clipboard("text/plain",pass);
+        update_page_password_input(pass);
         $('#usermessage').html("Password for "+$('#sitename').val()+" copied to clipboard");
     });
 }

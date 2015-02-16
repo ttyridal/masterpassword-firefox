@@ -1,6 +1,10 @@
 var buttons = require('sdk/ui/button/toggle');
 var panels = require("sdk/panel");
 var tabs = require("sdk/tabs");
+var { viewFor } = require("sdk/view/core");
+var tab_utils = require("sdk/tabs/utils");
+
+
 var self = require("sdk/self");
 const {Cc,Ci} = require("chrome");
 var ss = require("sdk/simple-storage");
@@ -55,6 +59,22 @@ function createPanel() {
     });
     panel.port.on('get_tab_url', function(d){
         panel.port.emit('get_tab_url_resp', tabs.activeTab.url);
+    });
+    panel.port.on('update_page_password_input', function(d){
+        var lltab = viewFor(tabs.activeTab);
+        var browser = tab_utils.getBrowserForTab(lltab);
+        if (!browser ||
+            !browser.contentDocument ||
+            !browser.contentDocument.activeElement ||
+            browser.contentDocument.activeElement.tagName != "INPUT") {
+            return;
+        }
+        if (browser.contentDocument.activeElement.type=="password")
+            browser.contentDocument.activeElement.value=d;
+        else {
+            console.log('focused element is not password field');
+        }
+
     });
     return panel;
 }
