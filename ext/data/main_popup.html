@@ -55,14 +55,14 @@
     <form>
         <input id="domain" class="domain" type="hidden"/><br>
         <label for="passwdtype">Password type<br><select id="passwdtype">
-            <option value="maximum">Maximum
-            <option value="long" selected>Long
-            <option value="medium">Medium
-            <option value="basic">Basic
-            <option value="short">Short
-            <option value="pin">Pin
-            <option value="name">Name
-            <option value="phrase">Phrase
+            <option value="x">Maximum
+            <option value="l" selected>Long
+            <option value="m">Medium
+            <option value="b">Basic
+            <option value="s">Short
+            <option value="i">Pin
+            <option value="n">Name
+            <option value="p">Phrase
         </select></label><br>
         <label for="passwdgeneration">password generation<br><input id="passwdgeneration" type="number" min="1" step="1" value="1" style="width:2.5em"/></label><br>
     </form>
@@ -76,8 +76,5 @@
 <div id="usermessage"></div>
 </div>
 <script src="./js/jquery-2.1.3.min.js"></script>
-<script src="./js/mpw/traceur-runtime.js"></script>
-<script src="./js/mpw/scrypt.js"></script>
-<script src="./js/mpw/mpw.js"></script>
-<script src="./js/mpw/scrypt-asm.js"></script>
+<script src="./js/scrypt-asm.js"></script>
 <script src="./main_popup.js"></script>
