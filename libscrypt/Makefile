@@ -9,6 +9,8 @@
 #	INFO     root: (Emscripten: Running sanity checks)
 #WARNING  root: java does not seem to exist, required for closure compiler, which is optional (define JAVA in ~/.emscripten if you want it)
 
+#libscrypt retrieved from https://github.com/technion/libscrypt
+#at commit 4df2c4c703367
 
 
 .PHONY: main
