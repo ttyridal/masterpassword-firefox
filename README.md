@@ -1,4 +1,4 @@
-# masterpassword-firefox
+# masterpassword for firefox
 Master Password implemented as a Firefox extension
 
 

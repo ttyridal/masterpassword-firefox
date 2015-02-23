@@ -1,8 +1,8 @@
 {
   "name": "masterpassword-firefox",
-  "title": "masterpassword-firefox",
+  "title": "masterpassword for Firefox",
   "id": "jid1-pn4AFskf9WBAdA",
-  "description": "Firefox extension implementation of masterpassword",
+  "description": "Masterpassword (see masterpasswordapp.com) as an extension for Firefox",
   "author": "Torbjorn Tyridal (ttyridal)",
   "license": "GPLv3",
   "version": "0.99.5",
