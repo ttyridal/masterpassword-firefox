@@ -77,7 +77,7 @@ window.addEventListener('masterpassword-configload', function(e){
     stored_sites = e.detail;
     $.each(e.detail, function(domain,v){
         $.each(v, function(site, settings){
-            $('#stored_sites').append('<tr><td>'+site+'<td>('+domain+')<td>'+settings.generation+'<td>'+settings.type+'<td>3'+'<td><img class="delete" src="delete.png">');
+            $('#stored_sites').append('<tr><td>'+site+'<td><input class="domainvalue" type="text" data-old="'+domain+'" value="'+domain+'"><td>'+settings.generation+'<td>'+settings.type+'<td>3'+'<td><img class="delete" src="delete.png">');
         });
     });
 });
@@ -85,6 +85,20 @@ window.addEventListener('masterpassword-configload', function(e){
 $(document).on('dragover dragenter', function(e){
     e.preventDefault();
     e.stopPropagation();
+});
+
+$('#stored_sites').on('change','.domainvalue',function(e){
+    var $t = $(this), domain = $t.attr('data-old'), newdomain = $t.val(), site;
+    $t.attr('data-old', newdomain);
+    $t=this;
+    do { $t = $t.parentNode;
+    } while($t.nodeName != 'TR');
+    site=$($t).children('td:eq(0)').text();
+
+    if (! (newdomain in stored_sites)) stored_sites[newdomain] = {};
+    stored_sites[newdomain][site] = stored_sites[domain][site];
+    delete stored_sites[domain][site];
+    save_sites_to_backend();
 });
 
 $('#stored_sites').on('click','.delete',function(e){
@@ -95,7 +109,7 @@ $('#stored_sites').on('click','.delete',function(e){
     t=t.parentNode;
     $t=$(t);
 
-    delete stored_sites[$t.children('td:eq(1)').text().slice(1,-1)][$t.children('td:eq(0)').text()];
+    delete stored_sites[$t.find('td:eq(1) > input').val()][$t.children('td:eq(0)').text()];
     $(t).remove();
     save_sites_to_backend();
 });
@@ -116,7 +130,7 @@ $(document).on('drop', function(e){
             var y = this.sitename.split("@");
             if (y.len>1) this.sitesearch=y[1];
             else this.sitesearch=this.sitename;
-            $('#stored_sites').append('<tr><td>'+this.sitename+'<td>('+this.sitesearch+')<td>'+this.passcnt+'<td>'+this.passtype+'<td>'+this.passalgo+'<td><img class="delete" src="delete.png">');
+            $('#stored_sites').append('<tr><td>'+this.sitename+'<td><input class="domainvalue" type="text" data-old="'+this.sitesearch+'" value="'+this.sitesearch+'"><td>'+this.passcnt+'<td>'+this.passtype+'<td>'+this.passalgo+'<td><img class="delete" src="delete.png">');
             if (! (this.sitesearch in stored_sites)) stored_sites[this.sitesearch] = {};
             stored_sites[this.sitesearch][this.sitename]={'generation':this.passcnt,'type':this.passtype};
         });
