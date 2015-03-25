@@ -51,7 +51,8 @@ function recalculate(hide_after_copy) {
     var i,s="",pass=mpw_session($('#sitename').val(), parseInt($('#passwdgeneration').val()), $('#passwdtype').val());
         for (i=0;i<pass.length;i++)s+="&middot;";
 
-        $('#thepassword').html(pass);
+        $('#thepassword').html('<a href="" id="showpass">'+s+'</a>');
+        $('#thepassword').attr('data-pass',pass);
 
         copy_to_clipboard("text/plain",pass);
         update_page_password_input(pass);
@@ -150,6 +151,11 @@ $('#generatepassword').on('click', function(){
 $('#siteconfig_show').on('click', function(){
     $('#siteconfig').show();
     $(this).hide();
+    return false;
+});
+$('#thepassword').on('click', '#showpass', function(e){
+    var $t = $(this.parentNode);
+    $t.html( $t.attr('data-pass') );
     return false;
 });
 
