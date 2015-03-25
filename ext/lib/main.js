@@ -69,7 +69,7 @@ function createPanel() {
                 if (! /^resource:.*config\.html$/.test(tab.url)) return;
                 var worker = tab.attach({ contentScriptFile: self.data.url('config-cs.js') });
                 worker.port.on('configload', function(m) {
-                    worker.port.emit('configload',session_store.sites);
+                    worker.port.emit('configload', {sites:session_store.sites, username:session_store.username});
                 });
                 worker.port.on('configstore', function(d) {
                     session_store.sites = d;
