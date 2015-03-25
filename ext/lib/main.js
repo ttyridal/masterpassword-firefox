@@ -62,6 +62,23 @@ function createPanel() {
         ss.storage.username = d.username;
         ss.storage.sites = d.sites;
     });
+    panel.port.on('openconfig', function(d){
+        tabs.open({
+            url: self.data.url("config.html"),
+            onReady: function(tab) {
+                if (! /^resource:.*config\.html$/.test(tab.url)) return;
+                var worker = tab.attach({ contentScriptFile: self.data.url('config-cs.js') });
+                worker.port.on('configload', function(m) {
+                    worker.port.emit('configload',session_store.sites);
+                });
+                worker.port.on('configstore', function(d) {
+                    session_store.sites = d;
+                    ss.storage.sites = d;
+                });
+            }
+        });
+    });
+
     panel.port.on('to_clipboard', function(d){
         const gClipboardHelper = Cc["@mozilla.org/widget/clipboardhelper;1"]
                                        .getService(Ci.nsIClipboardHelper);

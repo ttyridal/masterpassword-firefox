@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns="http://www.w3.org/2000/svg"
+   width="100"
+   height="100"
+   id="svg2"
+   version="1.1">
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-952.36218)">
+    <path
+       sodipodi:type="arc"
+       style="fill:#ff0000;fill-opacity:1;stroke:none"
+       id="path2985"
+       sodipodi:cx="48.992397"
+       sodipodi:cy="52.775368"
+       sodipodi:rx="42.678944"
+       sodipodi:ry="42.678944"
+       d="m 91.671341,52.775368 a 42.678944,42.678944 0 1 1 -85.3578873,0 42.678944,42.678944 0 1 1 85.3578873,0 z"
+       transform="matrix(1.1708636,0,0,1.1708636,-7.3608679,940.56687)" />
+    <path
+       style="fill:none;stroke:#ffffff;stroke-width:14;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
+       d="M 16.414979,15.652262 C 83.590123,82.827407 83.590123,82.827407 83.590123,82.827407"
+       id="path3755"
+       inkscape:connector-curvature="0"
+       transform="translate(0,952.36218)" />
+    <path
+       style="fill:none;stroke:#ffffff;stroke-width:14;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       d="m 84.852782,969.52965 c -67.17508,67.17515 -67.17508,67.17515 -67.17508,67.17515"
+       id="path3755-7"
+       inkscape:connector-curvature="0" />
+  </g>
+</svg>

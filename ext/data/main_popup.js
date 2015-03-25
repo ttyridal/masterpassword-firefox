@@ -192,5 +192,9 @@ function save_site_changes_and_recalc(){
 $('#siteconfig').on('change','select,input',save_site_changes_and_recalc);
 $('#sitename').on('change',save_site_changes_and_recalc);
 
+$('#configbtn').on('click',function(){
+    addon.port.emit('openconfig');
+});
+
 }());
 addon.port.emit('loaded');

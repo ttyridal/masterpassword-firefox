@@ -1,0 +1,54 @@
+<!doctype html>
+<head style="margin:0;padding:0">
+<meta charset="UTF-8">
+<style>
+tr td:nth-child(3) { text-align:center;}
+tr td:nth-child(4) { text-align:center;}
+tr td:nth-child(5) { text-align:center;}
+td img { width: 15px; height:15px;}
+</style>
+<body style="margin:0;padding:0;padding-left:1em;">
+<img src="icon64.png" style="float:left;height:4em;padding-top:0;padding-right:0.5em">
+<h1 style="padding-top:0.5em;">MasterPassword config</h1>
+<h2>Stored sites:</h2>
+<table id="stored_sites" style="padding-left:2em">
+    <thead><tr><th>sitename<th>(matching)<th>count<th>type<th>ver
+<tbody>
+</table>
+<script src="./js/jquery-2.1.3.min.js"></script>
+<script type="text/javascript">
+
+(function(){
+
+ var stored_sites={};
+
+function save_sites_to_backend() {
+    var event = document.createEvent('CustomEvent');
+    event.initCustomEvent("masterpassword-siteupdate", true, true, stored_sites);
+    document.documentElement.dispatchEvent(event);
+}
+
+window.addEventListener('masterpassword-configload', function(e){
+    stored_sites = e.detail;
+    $.each(e.detail, function(domain,v){
+        $.each(v, function(site, settings){
+            $('#stored_sites').append('<tr><td>'+site+'<td>('+domain+')<td>'+settings.generation+'<td>'+settings.type+'<td>3'+'<td><img class="delete" src="delete.png">');
+        });
+    });
+});
+
+$('#stored_sites').on('click','.delete',function(e){
+    var $t, t = this;
+    console.log(t);
+    while (t.parentNode.nodeName != 'TR') t=t.parentNode;
+    if (! t.parentNode.nodeName == 'TR') throw "logic error";
+    t=t.parentNode;
+    $t=$(t);
+
+    delete stored_sites[$t.children('td:eq(1)').text().slice(1,-1)][$t.children('td:eq(0)').text()];
+    $(t).remove();
+    save_sites_to_backend();
+});
+
+}());
+</script>
