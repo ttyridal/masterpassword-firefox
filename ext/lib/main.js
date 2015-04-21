@@ -9,8 +9,33 @@ var self = require("sdk/self");
 const {Cc,Ci} = require("chrome");
 var ss = require("sdk/simple-storage");
 
+function fix_session_store_password_type() {
+    console.log('updating masterpassword storage');
+    var s,d;
+    if (! ss.storage.sites) return;
+    for (s in ss.storage.sites) {
+        if (! ss.storage.sites.hasOwnProperty(s)) continue;
+        for (d in ss.storage.sites[s]) {
+            if (! ss.storage.sites[s].hasOwnProperty(d)) continue;
+            switch (ss.storage.sites[s][d].type) {
+                case 'maximum': ss.storage.sites[s][d].type = 'x'; break;
+                case 'long': ss.storage.sites[s][d].type = 'l'; break;
+                case 'medium': ss.storage.sites[s][d].type = 'm'; break;
+                case 'basic': ss.storage.sites[s][d].type = 'b'; break;
+                case 'short': ss.storage.sites[s][d].type = 's'; break;
+                case 'pin': ss.storage.sites[s][d].type = 'i'; break;
+                case 'name': ss.storage.sites[s][d].type = 'n'; break;
+                case 'phrase': ss.storage.sites[s][d].type = 'p'; break;
+                default: break;
+            }
+        }
+    }
+    ss.storage.version=2;
+}
+
 var session_store = {'username':null,'masterkey':null,'sites':{}};
 if (ss.storage.username) session_store.username = ss.storage.username;
+if (!ss.storage.version || ss.storage.version < 2) fix_session_store_password_type();
 if (ss.storage.sites) session_store.sites = ss.storage.sites;
 
 var button = buttons.ToggleButton({
