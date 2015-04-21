@@ -33,19 +33,32 @@ function update_page_password_input(data) {
 var mpw_session=null;
 var session_store={};
 
-function recalculate(hide_after_copy) {
+function recalculate(hide_after_copy, retry) {
     $('#thepassword').html('(calculating..)');
     $('#usermessage').html("Please wait...");
     if ($('#sitename').val()==null || $('#sitename').val()=="") {
         $('#usermessage').html("need sitename");
         return;
     }
-    if (!mpw_session)
-        mpw_session = mpw(
-        session_store.username,
-        session_store.masterkey);
 
-
+    if (!mpw_session) {
+        try {
+            mpw_session = mpw(
+            session_store.username,
+            session_store.masterkey);
+        } catch(err)
+        {
+            if (retry) {
+                $('#usermessage').html("Waiting didn't help :(");
+                $('#thepassword').html('(Failed)');
+                console.log(err.message,"\n",err.stack);
+            } else {
+                $('#usermessage').html("waiting for asm.js");
+                setTimeout(function(){ recalculate(hide_after_copy, true); }, 300);
+            }
+            return;
+        }
+    }
 
     console.log("calc password "+$('#sitename').val()+" . "+parseInt($('#passwdgeneration').val())+" . "+$('#passwdtype').val());
     var i,s="",pass=mpw_session($('#sitename').val(), parseInt($('#passwdgeneration').val()), $('#passwdtype').val());
