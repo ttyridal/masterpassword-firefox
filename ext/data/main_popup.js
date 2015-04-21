@@ -34,7 +34,7 @@ var mpw_session=null;
 var session_store={};
 
 function recalculate(hide_after_copy) {
-    $('#thepassword').html('(calculating)');
+    $('#thepassword').html('(calculating..)');
     $('#usermessage').html("Please wait...");
     if ($('#sitename').val()==null || $('#sitename').val()=="") {
         $('#usermessage').html("need sitename");
