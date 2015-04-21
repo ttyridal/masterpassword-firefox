@@ -147,10 +147,10 @@ $(document).on('drop', function(e){
         var x = read_mpsites(x.target.result);
         $.each(x, function(){
             var y = this.sitename.split("@");
-            if (y.len>1) this.sitesearch=y[1];
+            if (y.length>1) this.sitesearch=y[1];
             else this.sitesearch=this.sitename;
 
-            stored_sites_table_append(domain,this.sitename,this.passtype,this.passcnt,this.passalgo);
+            stored_sites_table_append(this.sitesearch,this.sitename,this.passtype,this.passcnt,this.passalgo);
 
             if (! (this.sitesearch in stored_sites)) stored_sites[this.sitesearch] = {};
             stored_sites[this.sitesearch][this.sitename]={'generation':this.passcnt,'type':this.passtype};
