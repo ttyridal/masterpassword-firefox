@@ -61,7 +61,7 @@ function recalculate(hide_after_copy, retry) {
     }
 
     console.log("calc password "+$('#sitename').val()+" . "+parseInt($('#passwdgeneration').val())+" . "+$('#passwdtype').val());
-    var i,s="",pass=mpw_session($('#sitename').val(), parseInt($('#passwdgeneration').val()), $('#passwdtype').val());
+    var i,s="",pass=mpw_session($('#sitename').val(), parseInt($('#passwdgeneration').val()), $('#passwdtype').val()),
         verify_pass=mpw_session(".", 0, "n");
         for (i=0;i<pass.length;i++)s+="&middot;";
 
