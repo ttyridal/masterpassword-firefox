@@ -1,7 +1,7 @@
 {
   "name": "masterpassword-firefox",
   "title": "masterpassword for Firefox",
-  "id": "jid1-pn4AFskf9WBAdA",
+  "id": "jid1-pn4AFskf9WBAdA@jetpack",
   "description": "Masterpassword (see masterpasswordapp.com) as an extension for Firefox",
   "author": "Torbjorn Tyridal (ttyridal)",
   "license": "GPLv3",
@@ -10,6 +10,7 @@
   "icon64": "data/icon64.png",
   "permissions": {"private-browsing": true},
   "homepage": "https://github.com/ttyridal/masterpassword-firefox",
+  "main": "lib/main.js",
   "preferences": [
      { "name":"hotkeycombo","title":"shortcut","description":"hotkey combination","type":"string","value":"accel-alt-p" }
   ]
