@@ -46,6 +46,7 @@ function recalculate(hide_after_copy, retry) {
             mpw_session = mpw(
                 session_store.username,
                 session_store.masterkey);
+            $('#verify_pass_fld').html("Verify: " + mpw_session(".", 0, "n"));
         } catch(err)
         {
             if (retry) {
@@ -74,14 +75,11 @@ function recalculate(hide_after_copy, retry) {
         pass = mpw_session(
                  $('#sitename').val(),
                  parseInt($('#passwdgeneration').val()),
-                 $('#passwdtype').val()),
-        verify_pass = mpw_session(".", 0, "n");
-
+                 $('#passwdtype').val());
 
         for (i = 0; i < pass.length; i++)
             s += "&middot;";
 
-        $('#verify_pass_fld').html("Verify: " + verify_pass);
         $('#thepassword').html('<a href="" id="showpass">' + s + '</a>');
         $('#thepassword').attr('data-pass', pass);
 
