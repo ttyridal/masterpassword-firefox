@@ -99,6 +99,7 @@ function update_with_settings_for(domain) {
     if (session_store['sites'] === undefined) return;
     if (session_store.sites[domain] === undefined) return;
 
+    $('#storedids').empty();
     $.each(session_store.sites[domain], function(key, val) {
         $('#storedids').append('<option>' + key);
         if (first) {
