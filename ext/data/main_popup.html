@@ -22,7 +22,9 @@
     html,body,div { overflow: hidden;}
     input,select { margin-bottom:0.8em;}
     .btntool:hover { border:1px outset silver;}
-    .btntool { position:absolute;right:1px;top:1px;width:32px;height:32px;;cursor:pointer;background-size:cover;}
+    .btntool { width:32px;height:32px;cursor:pointer;background-size:cover;}
+    .btnconfig { background-image:url(wrench.png); }
+    .btnlogout { background-image:url(exit.png); }
 	#usermessage {
         text-align:left;
         position:absolute;bottom:0;
@@ -33,7 +35,6 @@
         top:50px;
         width:100%;
         bottom:1em;
-        display:none;
     }
 
     a, a:visited, a:hover { color: #a0a0a0; text-decoration: none;}
@@ -49,16 +50,16 @@
 
 
 <div id="sessionsetup" style="display:none">
-    <div id="configbtn" class="btntool" style="background-image:url(wrench.png)"></div>
+    <div class="btntool btnconfig" style="position:absolute;right:1px;top:1px;"></div>
     <form>
         <label for="username">Your (full) name<br><input id="username" placeholder="Your Name"/></label><br>
         <label for="masterkey">Master password<br><input id="masterkey" type="password" placeholder="password" autocomplete="off"/></label><br>
         <input type="submit" value="OK" style="margin-top:1em;padding:0.1em 3em;"/>
     </form>
 </div>
-<div id="logoutbtn" class="btntool" style="display:none;background-image:url(exit.png)"></div>
 
-<div id="main">
+<div id="main" style="display:none">
+    <div class="btntool btnlogout" style="position:absolute;right:1px;top:-49px;"></div>
     <select id="storedids" size="4" style="display:none;position:absolute;font-size:1.5em;width:99%;z-index:99"></select>
     <input id="sitename" class="domain" type="text" style="background-color:rgba(60,60,60,0.6);width:100%;text-align:center;font-size:2em;margin-bottom:0;color:white" placeholder="site"/>
     <button id="storedids_dropdown" style="display:none;position:absolute;height:2em;right:1em;top:1px;z-index:100;background-color:rgba(0,0,0,0)">&#9660;</button>

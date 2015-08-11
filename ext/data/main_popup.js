@@ -117,7 +117,6 @@ function popup(session_store_, opened_by_hotkey) {
     session_store = session_store_;
     if (session_store.username == null || session_store.masterkey == null) {
         $('#main').hide();
-        $('#logoutbtn').hide();
         $('#sessionsetup').show();
         mpw_session = null;
         if (session_store.username == null)
@@ -132,7 +131,6 @@ function popup(session_store_, opened_by_hotkey) {
         }
     } else {
         recalc = true;
-        $('#logoutbtn').show();
         $('#main').show();
     }
 
@@ -170,13 +168,12 @@ $('#sessionsetup > form').on('submit', function(){
     addon.port.emit('store_update', session_store);
 
     $('#sessionsetup').hide();
-    $('#logoutbtn').show();
     $('#main').show();
     recalculate();
     return false;
 });
 
-$('#logoutbtn').on('click',function(){
+$('#mainPopup').on('click','.btnlogout',function(){
     session_store.masterkey = null;
     addon.port.emit('store_update', session_store);
     popup(session_store);
@@ -240,7 +237,7 @@ function save_site_changes_and_recalc(){
 $('#siteconfig').on('change', 'select,input', save_site_changes_and_recalc);
 $('#sitename').on('change', save_site_changes_and_recalc);
 
-$('#configbtn').on('click',function(){
+$('#mainPopup').on('click','.btnconfig',function(){
     addon.port.emit('openconfig');
 });
 
