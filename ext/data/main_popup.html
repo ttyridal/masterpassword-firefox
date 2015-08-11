@@ -28,6 +28,13 @@
         position:absolute;bottom:0;
         color:#a0a0a0;
 	}
+    #main {
+        position:absolute;
+        top:50px;
+        width:100%;
+        bottom:1em;
+        display:none;
+    }
 
     a, a:visited, a:hover { color: #a0a0a0; text-decoration: none;}
     a:hover { text-decoration: underline;}
@@ -42,7 +49,7 @@
 
 
 <div id="sessionsetup" style="display:none">
-<div id="configbtn" class="btntool" style="background-image:url(wrench.png)"></div>
+    <div id="configbtn" class="btntool" style="background-image:url(wrench.png)"></div>
     <form>
         <label for="username">Your (full) name<br><input id="username" placeholder="Your Name"/></label><br>
         <label for="masterkey">Master password<br><input id="masterkey" type="password" placeholder="password" autocomplete="off"/></label><br>
@@ -51,32 +58,34 @@
 </div>
 <div id="logoutbtn" class="btntool" style="display:none;background-image:url(exit.png)"></div>
 
-<div id="main" style="position:relative;display:none">
+<div id="main">
     <select id="storedids" size="4" style="display:none;position:absolute;font-size:1.5em;width:99%;z-index:99"></select>
     <input id="sitename" class="domain" type="text" style="background-color:rgba(60,60,60,0.6);width:100%;text-align:center;font-size:2em;margin-bottom:0;color:white" placeholder="site"/>
     <button id="storedids_dropdown" style="display:none;position:absolute;height:2em;right:1em;top:1px;z-index:100;background-color:rgba(0,0,0,0)">&#9660;</button>
     <br>
-<a id="siteconfig_show" href="">[advanced]</a>
-<div id="siteconfig" style="display:none;background-color:rgba(60,60,60,0.6);padding:0.8em 0 0 0;">
-    <form>
-        <input id="domain" class="domain" type="hidden"/><br>
-        <label for="passwdtype">Password type<br><select id="passwdtype">
-            <option value="x">Maximum
-            <option value="l" selected>Long
-            <option value="m">Medium
-            <option value="b">Basic
-            <option value="s">Short
-            <option value="i">Pin
-            <option value="n">Name
-            <option value="p">Phrase
-        </select></label><br>
-        <label for="passwdgeneration">password generation<br><input id="passwdgeneration" type="number" min="1" step="1" value="1" style="width:2.5em"/></label><br>
-    </form>
-</div>
+    <a id="siteconfig_show" href="">[advanced]</a>
+    <div id="siteconfig" style="display:none;background-color:rgba(60,60,60,0.6);padding:0.8em 0 0 0;">
+        <form>
+            <input id="domain" class="domain" type="hidden"/><br>
+            <label for="passwdtype">Password type<br><select id="passwdtype">
+                <option value="x">Maximum
+                <option value="l" selected>Long
+                <option value="m">Medium
+                <option value="b">Basic
+                <option value="s">Short
+                <option value="i">Pin
+                <option value="n">Name
+                <option value="p">Phrase
+            </select></label><br>
+            <label for="passwdgeneration">password generation<br><input id="passwdgeneration" type="number" min="1" step="1" value="1" style="width:2.5em"/></label><br>
+        </form>
+    </div>
 
-<div style="clear:both;margin-top:.5em;">
-    <span style="position:relative;display:inline-block">Password</span>
-    <div id="thepassword" style="font-size:2em;margin-top:.5em;">(calculating)</div></div>
+    <div style="clear:both;margin-top:.5em;">
+        <span style="position:relative;display:inline-block">Password</span>
+        <div id="thepassword" style="font-size:2em;margin-top:.5em;">(calculating)</div>
+    </div>
+
     <div style="position:absolute;bottom:0" id="verify_pass_fld"></div>
 </div>
 
