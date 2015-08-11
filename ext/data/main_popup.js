@@ -72,6 +72,7 @@ function recalculate(hide_after_copy, retry) {
 
     var i,
         s = "",
+        $t = $('#thepassword'),
         pass = mpw_session(
                  $('#sitename').val(),
                  parseInt($('#passwdgeneration').val()),
@@ -80,8 +81,12 @@ function recalculate(hide_after_copy, retry) {
         for (i = 0; i < pass.length; i++)
             s += "&middot;";
 
-        $('#thepassword').html('<a href="" id="showpass">' + s + '</a>');
-        $('#thepassword').attr('data-pass', pass);
+
+        if ($t.attr('data-visible') == 'true')
+            $t.html('<span>' + pass + '</span>');
+        else
+            $t.html('<a href="" id="showpass">' + s + '</a>');
+        $t.attr('data-pass', pass);
 
         copy_to_clipboard("text/plain", pass);
         update_page_password_input(pass);
@@ -190,6 +195,7 @@ $('#siteconfig_show').on('click', function(){
 $('#thepassword').on('click', '#showpass', function(e){
     var $t = $(this.parentNode);
     $t.html( $t.attr('data-pass') );
+    $t.attr('data-visible', "true") ;
     return false;
 });
 
