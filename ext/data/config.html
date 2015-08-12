@@ -13,7 +13,7 @@ td img { width: 15px; height:15px;}
 <h2>Stored sites:</h2>
 <p>(You can drag-drop a .mpsites file here to import it)</p>
 <table id="stored_sites" style="padding-left:2em">
-    <thead><tr><th>sitename<th>(matching)<th>count<th>type<th>ver
+    <thead><tr><th>sitename<th>(matching)<th>Login<th>count<th>type<th>ver
 <tbody>
 </table>
 <button id="export_mpsites">export</button>
@@ -31,7 +31,7 @@ function save_sites_to_backend() {
     document.documentElement.dispatchEvent(event);
 }
 
-function stored_sites_table_append(domain,site,type,count,ver) {
+function stored_sites_table_append(domain,site,type,loginname,count,ver) {
     switch(type) {
         case 'x': type="Maximum"; break;
         case 'l': type="Long"; break;
@@ -44,7 +44,7 @@ function stored_sites_table_append(domain,site,type,count,ver) {
         default: throw "Logic error";
     }
     $('#stored_sites').append('<tr><td>'+site+'<td><input class="domainvalue" type="text" data-old="'+
-        domain+'" value="'+domain+'"><td>'+count+'<td>'+type+'<td>'+ver+
+        domain+'" value="'+domain+'"><td>'+loginname+'<td>'+count+'<td>'+type+'<td>'+ver+
         '<td><img class="delete" src="delete.png">');
 }
 
@@ -83,6 +83,7 @@ function read_mpsites(d){
             passtype: s[3],
             passalgo: s[4],
             passcnt: s[5],
+            loginname: s[6],
             sitename: s[7],
             sitepass: s[8]
           };
@@ -96,7 +97,9 @@ window.addEventListener('masterpassword-configload', function(e){
     username = e.detail.username;
     $.each(stored_sites, function(domain,v){
         $.each(v, function(site, settings){
-            stored_sites_table_append(domain,site,settings.type,settings.generation,"3")
+            if (settings.username === undefined)
+                settings.username=""
+            stored_sites_table_append(domain,site,settings.type,settings.username,settings.generation,"3")
         });
     });
 });
@@ -150,7 +153,7 @@ $(document).on('drop', function(e){
             if (y.length>1) this.sitesearch=y[1];
             else this.sitesearch=this.sitename;
 
-            stored_sites_table_append(this.sitesearch,this.sitename,this.passtype,this.passcnt,this.passalgo);
+            stored_sites_table_append(this.sitesearch,this.sitename,this.passtype,this.loginname,this.passcnt,this.passalgo);
 
             if (! (this.sitesearch in stored_sites)) stored_sites[this.sitesearch] = {};
             stored_sites[this.sitesearch][this.sitename]={'generation':this.passcnt,'type':this.passtype};
@@ -190,6 +193,7 @@ function make_mpsites() {
     $.each(stored_sites, function(domain,v){
         $.each(v, function(site, settings){
             var x;
+            var loginname;
             switch(settings.type){
                 case 's': x='20'; break;
                 case 'x': x='16'; break;
@@ -204,7 +208,13 @@ function make_mpsites() {
             x+=':3:'+settings.generation;
             while (x.length<8) x=" "+x;
             while (site.length<25) site=" "+site;
-            a.push('2015-03-23T13:06:35Z         0  '+x+'                           \t'+site+'\t\n');
+            if (settings.username === undefined)
+                loginname=""
+            else
+                loginname = settings.username.substring(0,25);
+            while (loginname.length<25) loginname=" "+loginname;
+
+            a.push('2015-03-23T13:06:35Z         0  '+x+'  '+loginname+'\t'+site+'\t\n');
         });
     });
     return a;

@@ -109,6 +109,10 @@ function update_with_settings_for(domain) {
             $('#sitename').val(key);
             $('#passwdgeneration').val(val.generation);
             $('#passwdtype').val(val.type);
+            if (val.username)
+                $('#loginname').val(val.username);
+            else
+                $('#loginname').val("");
             first = false;
         } else
             $('#storedids_dropdown').show();
@@ -212,11 +216,17 @@ $('#storedids_dropdown').on('click', function(e){
 
 $('#storedids').on('change', function(){
     var site = $(this).val(),
-        domain = $('#domain').val();
+        domain = $('#domain').val(),
+        val = session_store.sites[domain][site];
 
     $('#sitename').val(site);
-    $('#passwdgeneration').val(session_store.sites[domain][site].generation);
-    $('#passwdtype').val(session_store.sites[domain][site].type);
+    $('#passwdgeneration').val(val.generation);
+    $('#passwdtype').val(val.type);
+    if (val.username)
+        $('#loginname').val(val.username);
+    else
+        $('#loginname').val("");
+
     $(this).toggle();
     recalculate();
 });
@@ -231,7 +241,8 @@ function save_site_changes_and_recalc(){
 
     session_store.sites[domain][$('#sitename').val()] = {
         generation:$('#passwdgeneration').val(),
-        type:$('#passwdtype').val()
+        type:$('#passwdtype').val(),
+        username:$('#loginname').val()
     };
     addon.port.emit('store_update', session_store);
     if (Object.keys(session_store.sites[domain]).length>1)
@@ -241,6 +252,8 @@ function save_site_changes_and_recalc(){
 
 $('#siteconfig').on('change', 'select,input', save_site_changes_and_recalc);
 $('#sitename').on('change', save_site_changes_and_recalc);
+$('#loginname').on('change', save_site_changes_and_recalc);
+
 
 $('#mainPopup').on('click','.btnconfig',function(){
     addon.port.emit('openconfig');
