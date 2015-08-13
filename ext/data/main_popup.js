@@ -154,7 +154,7 @@ function popup(session_store_, opened_by_hotkey) {
         domain = domain.join(".");
         $('.domain').attr('value', domain);
         update_with_settings_for(domain);
-        if(recalc) {
+        if(recalc) {
             recalculate(opened_by_hotkey);
         }
     });
