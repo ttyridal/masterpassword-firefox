@@ -12,6 +12,16 @@
   "homepage": "https://github.com/ttyridal/masterpassword-firefox",
   "main": "lib/main.js",
   "preferences": [
-     { "name":"hotkeycombo","title":"shortcut","description":"hotkey combination","type":"string","value":"accel-alt-p" }
+     { "name":"hotkeycombo","title":"shortcut","description":"hotkey combination","type":"string","value":"accel-alt-p" },
+     { "name":"defaulttype", "title":"Default password type", "type":"menulist", "value":"l", "options": [
+         {"label":"Maximum", "value":"x"},
+         {"label":"Long", "value":"l"},
+         {"label":"Medium", "value":"m"},
+         {"label":"Basic", "value":"b"},
+         {"label":"Short", "value":"s"},
+         {"label":"Pin", "value":"i"},
+         {"label":"Name", "value":"n"},
+         {"label":"Phrase", "value":"p"}
+     ]}
   ]
 }

@@ -4,6 +4,7 @@ var tabs = require("sdk/tabs");
 var { viewFor } = require("sdk/view/core");
 var tab_utils = require("sdk/tabs/utils");
 var { Hotkey } = require("sdk/hotkeys");
+var prefs = require("sdk/simple-prefs").prefs;
 
 var self = require("sdk/self");
 const {Cc,Ci} = require("chrome");
@@ -33,7 +34,7 @@ function fix_session_store_password_type() {
     ss.storage.version=2;
 }
 
-var session_store = {'username':null,'masterkey':null,'sites':{}};
+var session_store = {'username':null,'masterkey':null,'sites':{}, 'defaulttype': prefs.defaulttype};
 if (ss.storage.username) session_store.username = ss.storage.username;
 if (!ss.storage.version || ss.storage.version < 2) fix_session_store_password_type();
 if (ss.storage.sites) session_store.sites = ss.storage.sites;
@@ -50,16 +51,18 @@ var button = buttons.ToggleButton({
         if (state.checked) {
             var panel = createPanel();
             panel.show({position: button});
+            session_store.defaulttype = prefs.defaulttype;
             panel.port.on('loaded' ,function(){ panel.port.emit("popup", session_store,false); });
         }
     }
 });
 
 var hotPassword = Hotkey({
-  combo: require("sdk/simple-prefs").prefs.hotkeycombo,
+  combo: prefs.hotkeycombo,
   onPress: function() {
     var panel = createPanel();
     panel.show({position: button});
+    session_store.defaulttype = prefs.defaulttype;
     panel.port.on('loaded' ,function(){ panel.port.emit("popup", session_store, true); });
   }
 });

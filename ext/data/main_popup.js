@@ -142,6 +142,8 @@ function popup(session_store_, opened_by_hotkey) {
         $('#main').show();
     }
 
+    $('#passwdtype').val(session_store.defaulttype);
+
     get_active_tab_url().then(function(url){
         var domain = parse_uri(url)['domain'].split("."),
             significant_parts = 2;
