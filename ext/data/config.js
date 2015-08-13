@@ -134,7 +134,11 @@ $(document).on('drop', function(e){
             stored_sites_table_append(this.sitesearch,this.sitename,this.passtype,this.loginname,this.passcnt,this.passalgo);
 
             if (! (this.sitesearch in stored_sites)) stored_sites[this.sitesearch] = {};
-            stored_sites[this.sitesearch][this.sitename]={'generation':this.passcnt,'type':this.passtype};
+            stored_sites[this.sitesearch][this.sitename] = {
+                'generation':this.passcnt,
+                'type':this.passtype,
+                'username':this.loginname
+            };
         });
 
         save_sites_to_backend();
