@@ -76,8 +76,8 @@ window.addEventListener('masterpassword-configload', function(e){
     $.each(stored_sites, function(domain,v){
         $.each(v, function(site, settings){
             if (settings.username === undefined)
-                settings.username=""
-            stored_sites_table_append(domain,site,settings.type,settings.username,settings.generation,"3")
+                settings.username="";
+            stored_sites_table_append(domain,site,settings.type,settings.username,settings.generation,"3");
         });
     });
 });
