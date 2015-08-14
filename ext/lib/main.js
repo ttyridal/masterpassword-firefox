@@ -1,4 +1,5 @@
 var buttons = require('sdk/ui/button/toggle');
+var clipboard = require("sdk/clipboard");
 var panels = require("sdk/panel");
 var tabs = require("sdk/tabs");
 var { viewFor } = require("sdk/view/core");
@@ -7,7 +8,6 @@ var { Hotkey } = require("sdk/hotkeys");
 var prefs = require("sdk/simple-prefs").prefs;
 
 var self = require("sdk/self");
-const {Cc,Ci} = require("chrome");
 var ss = require("sdk/simple-storage");
 
 function fix_session_store_password_type() {
@@ -108,9 +108,7 @@ function createPanel() {
     });
 
     panel.port.on('to_clipboard', function(d){
-        const gClipboardHelper = Cc["@mozilla.org/widget/clipboardhelper;1"]
-                                       .getService(Ci.nsIClipboardHelper);
-        gClipboardHelper.copyString(d);
+        clipboard.set(d, 'text');
     });
     panel.port.on('get_tab_url', function(d){
         panel.port.emit('get_tab_url_resp', tabs.activeTab.url);
