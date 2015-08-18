@@ -34,7 +34,7 @@ function fix_session_store_password_type() {
     ss.storage.version=2;
 }
 
-var session_store = {'username':null,'masterkey':null,'sites':{}, 'defaulttype': prefs.defaulttype};
+var session_store = {'username':null,'masterkey':null,'sites':{}, 'defaulttype': prefs.defaulttype};
 if (ss.storage.username) session_store.username = ss.storage.username;
 if (!ss.storage.version || ss.storage.version < 2) fix_session_store_password_type();
 if (ss.storage.sites) session_store.sites = ss.storage.sites;
