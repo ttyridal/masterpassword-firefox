@@ -28,6 +28,9 @@ var prefs = require("sdk/simple-prefs").prefs;
 var self = require("sdk/self");
 var ss = require("sdk/simple-storage");
 
+var system_password_manager = require("./system_password_manager.js").manager(prefs.pass_store)
+
+
 function fix_session_store_password_type() {
     console.log('updating masterpassword storage');
     var s,d;
@@ -56,6 +59,11 @@ var session_store = {'username':null,'masterkey':null,'sites':{}, 'defaulttype':
 if (ss.storage.username) session_store.username = ss.storage.username;
 if (!ss.storage.version || ss.storage.version < 2) fix_session_store_password_type();
 if (ss.storage.sites) session_store.sites = ss.storage.sites;
+
+if (system_password_manager != null) {
+    console.log('getting pwmgr pass');
+    session_store.masterkey = system_password_manager.get_password();
+}
 
 var button = buttons.ToggleButton({
     id: "com_github_ttyridal_masterpassword",
@@ -103,6 +111,9 @@ function createPanel() {
             return;
         }
         var k;
+        if (d.masterkey && d.masterkey != session_store.masterkey &&  system_password_manager)
+            system_password_manager.set_password(d.masterkey);
+
         for (k in d)
             session_store[k] = d[k];
         ss.storage.username = d.username;
