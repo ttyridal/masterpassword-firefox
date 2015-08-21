@@ -1,12 +1,41 @@
-var main = require("./main");
 
 exports["test main"] = function(assert) {
-  assert.pass("Unit test running!");
+    var main = require("../lib/main.js");
+    assert.pass("main.js loaded successfully");
 };
 
-exports["test main async"] = function(assert, done) {
-  assert.pass("async Unit test running!");
-  done();
+if (require("sdk/system/runtime").OS == 'Linux') {
+    // test dbus stuff
+}
+
+exports["test main handlers"] = function(assert) {
+    var self = require("sdk/self");
+    const { sandbox, evaluate, load } = require("sdk/loader/sandbox");
+    var scope = sandbox();
+    var addon_script_ready=0;
+    scope.addon = {
+        port: {
+            on:function(x){},
+            emit:function(x){ if (x==='loaded') addon_script_ready++; }
+        }
+    };
+    scope['$'] = function(){ return {
+        on: function(x){}
+    }};
+    load(scope, self.data.url('main_popup.js'));
+    assert.ok(addon_script_ready == 1, "main_popup.js loaded successfully");
 };
+
+
+// exports["test libscrypt"] = function(assert) {
+//     // clearly I'd like to avoid this sandbox nonsense.
+//     var self = require("sdk/self");
+//     const { sandbox, evaluate, load } = require("sdk/loader/sandbox");
+//     var scope = sandbox();
+//     scope.window = {};
+//     load(scope, self.data.url('js/scrypt-asm.js'));
+//     assert.pass("scrypt asm loaded");
+// };
+
 
 require("sdk/test").run(exports);
