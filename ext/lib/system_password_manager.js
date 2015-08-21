@@ -1,20 +1,27 @@
 /* Copyright Torbjorn Tyridal 2015
 
-    This file is part of Masterpassword for Firefox.
+    This file is part of Masterpassword for Firefox (herby known as "the software")
 
-    Foobar is free software: you can redistribute it and/or modify
+    The software is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    Foobar is distributed in the hope that it will be useful,
+    The software is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+    along with the software.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+/*
+ *
+ * Minimal dbus api for accessing Secret Services API (gnome keyring / ksecretservice)
+ * and Kwallet.
+ *
+ **/
 
 var {Cu} = require('chrome');
 Cu.import("resource://gre/modules/ctypes.jsm");
@@ -22,114 +29,6 @@ Cu.import("resource://gre/modules/ctypes.jsm");
 
 const APPNAME = 'masterpassword-for-firefox',
       USAGE = 'masterkey';
-
-var keep_us_safe = null; // need to hold on to the libgnome-keyring reference indefinetively
-function load_gnome_keyring() {
-    var lib;
-
-    try { lib = ctypes.open("libgnome-keyring.so"); }
-    catch(e) { return null; }
-    keep_us_safe = lib;
-
-    const GNOME_KEYRING_ITEM_GENERIC_SECRET = 0,
-          GNOME_KEYRING_ATTRIBUTE_TYPE_STRING = 0;
-
-    const struct_pwschemaAttribute = ctypes.StructType('GnomeKeyringPasswordSchemaAttribute', [
-                {'name': ctypes.char.ptr},
-                {'type': ctypes.int}]),
-        struct_pwschema = ctypes.StructType('GnomeKeyringPasswordSchema', [
-                {'item_type': ctypes.int},
-                {'attributes': struct_pwschemaAttribute.array(32)},
-                {'reserved1': ctypes.uintptr_t},
-                {'reserved2': ctypes.uintptr_t},
-                {'reserved3': ctypes.uintptr_t}]),
-        struct_attribute = ctypes.StructType('GnomeKeyringAttribute', [
-                {'name': ctypes.char.ptr},
-                {'type': ctypes.int},
-                {'value': ctypes.char.ptr}]);
-
-    const keyring_available = lib.declare("gnome_keyring_is_available", ctypes.default_abi, ctypes.bool),
-          free_password = lib.declare("gnome_keyring_free_password", ctypes.default_abi, ctypes.void_t, ctypes.char.ptr),
-          store_password_sync = lib.declare("gnome_keyring_store_password_sync", ctypes.default_abi, ctypes.int,
-            struct_pwschema.ptr,
-            ctypes.char.ptr, //keyring
-            ctypes.char.ptr, //display_name
-            ctypes.char.ptr, //password
-            ctypes.char.ptr, //attrname
-            ctypes.char.ptr, //attrval
-            ctypes.char.ptr, //attrname
-            ctypes.char.ptr, //attrval
-            ctypes.char.ptr),
-          find_password_sync = lib.declare("gnome_keyring_find_password_sync", ctypes.default_abi, ctypes.int,
-            struct_pwschema.ptr,
-            ctypes.char.ptr.ptr, //output
-            ctypes.char.ptr, //attrname
-            ctypes.char.ptr, //attrval
-            ctypes.char.ptr, //attrname
-            ctypes.char.ptr, //attrval
-            ctypes.char.ptr);  //term
-
-    const result_to_message = (function () {
-                var fn = lib.declare("gnome_keyring_result_to_message", ctypes.default_abi, ctypes.char.ptr, ctypes.int);
-                return function(res) { return fn(res).readString(); }
-          }());
-
-
-    if(!keyring_available()) {
-        //lib.close(); -can't do that.. or firefox will crash!
-        return null;
-    }
-
-    const my_schema = new struct_pwschema();
-    my_schema.item_type = GNOME_KEYRING_ITEM_GENERIC_SECRET;
-    my_schema.attributes[0].name = ctypes.char.array()('appname');
-    my_schema.attributes[0].type = GNOME_KEYRING_ATTRIBUTE_TYPE_STRING;
-    my_schema.attributes[1].name = ctypes.char.array()('usage');
-    my_schema.attributes[1].type = GNOME_KEYRING_ATTRIBUTE_TYPE_STRING;
-    my_schema.attributes[2].name = null;
-    my_schema.attributes[2].type = 0;
-
-
-    const set_password = function(p) {
-        var res = store_password_sync(my_schema.address(), null,
-                "Masterpassword firefox master",
-                p,
-                "appname", APPNAME,
-                "usage", USAGE,
-                null);
-        switch (res) {
-            case 0: break;
-            default:
-                console.log("store password failed",res, result_to_message(res));
-        };
-    }
-
-    const get_password = function() {
-        var res_str = new ctypes.char.ptr();
-        var res = find_password_sync(my_schema.address(),
-                res_str.address(),
-                "appname", APPNAME,
-                "usage", USAGE,
-                null);
-        switch (res) {
-            case 0:
-                res = res_str.readString();
-                free_password(res_str);
-                break;
-            case 9:
-                res = "";
-                console.log("No password on store");
-                break;
-            default:
-                res = null;
-                console.log("find password failed",res, result_to_message(res));
-        };
-        return res
-    }
-
-    return {'set_password':set_password, 'get_password':get_password};
-}
-
 
 function dbus() {
     var lib
@@ -183,39 +82,64 @@ function dbus() {
                   DBusMessageIter.ptr, ctypes.int, ctypes.voidptr_t),
           message_iter_next = lib.declare('dbus_message_iter_next', ctypes.default_abi, ctypes.bool,
                   DBusMessageIter.ptr),
+          message_iter_open_container = lib.declare('dbus_message_iter_open_container', ctypes.default_abi, ctypes.bool,
+                  DBusMessageIter.ptr, ctypes.int, ctypes.char.ptr, DBusMessageIter.ptr),
+          message_iter_close_container = lib.declare('dbus_message_iter_close_container', ctypes.default_abi, ctypes.bool,
+                  DBusMessageIter.ptr, DBusMessageIter.ptr),
           message_new_method_call = lib.declare('dbus_message_new_method_call', ctypes.default_abi, DBusMessage.ptr,
                   ctypes.char.ptr, ctypes.char.ptr, ctypes.char.ptr, ctypes.char.ptr ),
           connection_send_with_reply_and_block = lib.declare('dbus_connection_send_with_reply_and_block', ctypes.default_abi, DBusMessage.ptr,
                   DBusConnection.ptr, DBusMessage.ptr, ctypes.int, DBusError.ptr);
 
-    var iter_result = function(it) {
+    const dbus_type = {'string': 's'.charCodeAt(0),
+                       'objectpath': 'o'.charCodeAt(0),
+                       'integer': 'i'.charCodeAt(0),
+                       'bool': 'b'.charCodeAt(0),
+                       'int64': 'x'.charCodeAt(0),
+                       'variant': 'v'.charCodeAt(0),
+                       'array': 'a'.charCodeAt(0),
+                       'byte': 'y'.charCodeAt(0),
+                       'struct': 'r'.charCodeAt(0),
+                       'dict_entry': 'e'.charCodeAt(0),
+    }
+
+    function iter_result(it) {
         var typ, data, ret = [];
         for (typ = message_iter_get_arg_type(it); typ != 0; message_iter_next(it), typ = message_iter_get_arg_type(it)) {
             switch(typ) {
-                case 115: // s
+                case dbus_type.objectpath:
+                case dbus_type.string:
                     data = ctypes.char.ptr();
+                    message_iter_get_basic(it, data.address());
+                    ret.push(data.readString());
                     break;
-                case 105: // i
+                case dbus_type.integer:
                     data = ctypes.int();
+                    message_iter_get_basic(it, data.address());
+                    ret.push(data.value);
                     break;
-                case 120: // x
+                case dbus_type.int64:
                     data = ctypes.int64_t();
+                    message_iter_get_basic(it, data.address());
+                    ret.push(data.value);
                     break;
-                case 97:  // a
-                    console.log('sub array result');
+                case dbus_type.byte:
+                    data = ctypes.uint8_t();
+                    message_iter_get_basic(it, data.address());
+                    ret.push(data.value);
+                    break;
+                case dbus_type.struct:
+                case dbus_type.variant:
+                case dbus_type.array:
                     data = new DBusMessageIter();
                     message_iter_recurse(it, data.address());
-                    ret.push( iter_result(data.address()) );
-                    data = null;
+                    if (typ==dbus_type.variant)
+                        ret.push( iter_result(data.address())[0] );
+                    else
+                        ret.push( iter_result(data.address()) );
                     break;
                 default:
-                    console.log("iter_result, Unknown data type",typ);
-                    data = null;
-            }
-            if (data !== null) {
-                message_iter_get_basic(it, data.address());
-                if (typ == 115) ret.push(data.readString());
-                else ret.push(data.value);
+                    console.warn("iter_result, Unknown data type",typ);
             }
         }
         return ret;
@@ -224,32 +148,111 @@ function dbus() {
     var err = new DBusError();
     var dbus_con = bus_get(0, err.address());
     if (dbus_con.isNull()) {
-        console.log('Failed to get bus', err.name, err.message);
+        console.error('Failed to get bus', err.name, err.message);
         return null;
     }
 
-    var new_method_call = function(dest, path, iface, method) {
+    /// helpers ///
+    function iter_each(ar, cb) {
+        for (var key in ar)
+            if (ar.hasOwnProperty(key))
+                cb(key, ar[key]);
+    }
+    function msg_arg_str(it, s) {
+        var ss = ctypes.char.array()(s);
+        var x = ctypes.cast(ss.address(), ctypes.char.ptr);
+        message_iter_append_basic(it, dbus_type.string, x.address());
+    }
+    function msg_arg_objectpath(it, s) {
+        var ss = ctypes.char.array()(s);
+        var x = ctypes.cast(ss.address(), ctypes.char.ptr);
+        message_iter_append_basic(it, dbus_type.objectpath, x.address());
+    }
+    function msg_arg_dict(it, typ, then) {
+        var dic = new DBusMessageIter();
+        message_iter_open_container(it, dbus_type.array, typ, dic.address());
+        then(dic.address());
+        message_iter_close_container(it, dic.address());
+    }
+    function msg_arg_dict_entry(dic, key, then) {
+        var entry = new DBusMessageIter();
+        message_iter_open_container(dic, dbus_type.dict_entry, null, entry.address());
+        msg_arg_str(entry.address(), key);
+        then(entry.address());
+        message_iter_close_container(dic, entry.address());
+    }
+    function msg_arg_variant(it, typ, then) {
+        var va = new DBusMessageIter();
+        message_iter_open_container(it, dbus_type.variant, typ, va.address());
+        then(va.address());
+        message_iter_close_container(it, va.address());
+    }
+    function msg_arg_struct(it, then) {
+        var va = new DBusMessageIter();
+        message_iter_open_container(it, dbus_type.struct, null, va.address());
+        then(va.address());
+        message_iter_close_container(it, va.address());
+    }
+    function msg_arg_bytearray(it, ar) {
+        var va = new DBusMessageIter();
+        message_iter_open_container(it, dbus_type.array, 'y', va.address());
+        for (var x of ar) {
+            if (x.charCodeAt(0) > 255) throw "Illegal byte array thing.. did you forget to convert to utf-8?";
+            var x = ctypes.uint8_t(x.charCodeAt(0));
+            message_iter_append_basic(va.address(), dbus_type.byte, x.address());
+        }
+        message_iter_close_container(it, va.address());
+    }
+    //compounds
+    function msg_arg_var_str(it, s) {
+        msg_arg_variant(it, 's', function(v){ msg_arg_str(v, s);});
+    }
+    function msg_arg_dict_strs(it, d) {
+        msg_arg_dict(it, '{ss}', function(dic) {
+            iter_each(d, function(key, val) {
+                msg_arg_dict_entry(dic, key, function(c){ msg_arg_str(c, d[key]); });
+            });
+        });
+    }
+
+    const new_method_call = function(dest, path, iface, method) {
         var m = message_new_method_call(dest, path, iface, method);
         var it = new DBusMessageIter();
         message_iter_init_append(m, it.address());
         return {
-            'string_arg': function(s) {
-                var ss = ctypes.char.array()(s);
-                var x = ctypes.cast(ss.address(), ctypes.char.ptr);
-                message_iter_append_basic(it.address(), 115, x.address());
+            'secret_services_attributes_arg': function(label, attrs) {
+                msg_arg_dict(it.address(), '{sv}', function(dic) {
+                    msg_arg_dict_entry(dic, 'org.freedesktop.Secret.Item.Label', function(e){ msg_arg_var_str(e, label); });
+                    msg_arg_dict_entry(dic, 'org.freedesktop.Secret.Item.Attributes', function(e) {
+                        msg_arg_variant(e, 'a{ss}', function(v) {
+                            msg_arg_dict_strs(v, attrs);
+                        });
+                    });
+                });
             },
+            'secret_services_passwd_arg': function(session, session_key, pass, pass_fmt) {
+                msg_arg_struct(it.address(), function(s) {
+                    msg_arg_objectpath(s, session);
+                    msg_arg_bytearray(s, session_key);
+                    msg_arg_bytearray(s, pass);
+                    msg_arg_str(s, pass_fmt);
+                });
+            },
+            'dict_str_arg': function(s) { msg_arg_dict_strs(it.address(), s); },
+            'var_string_arg': function(s) { msg_arg_var_str(it.address(), s); },
+            'string_arg': function(s) { msg_arg_str(it.address(), s); },
+            'objpath_arg': function(s) { msg_arg_objectpath(it.address(), s); },
             'int_arg': function(s) {
-                var x = ctypes.int(s)
-                message_iter_append_basic(it.address(), 105, x.address());
+                var x = ctypes.int(s);
+                message_iter_append_basic(it.address(), dbus_type.integer, x.address());
             },
             'int64_arg': function(s) {
-                var x = ctypes.int(s)
-                var x = ctypes.int64_t(s)
-                message_iter_append_basic(it.address(), 120, x.address());
+                var x = ctypes.int64_t(s);
+                message_iter_append_basic(it.address(), dbus_type.int64, x.address());
             },
             'bool_arg': function(s) {
-                var x = ctypes.bool(s)
-                message_iter_append_basic(it.address(), 98, x.address());
+                var x = ctypes.int({true:1, false:0}[s]);
+                message_iter_append_basic(it.address(), dbus_type.bool, x.address());
             },
             'execute': function(timeout) {
                 if (timeout === undefined) timeout = 1000;
@@ -257,14 +260,13 @@ function dbus() {
                 var err = new DBusError();
                 var rep = connection_send_with_reply_and_block(dbus_con, m, timeout, err.address());
                 if (rep.isNull()) {
-                    throw "Failed to send message:"+err.name.readString();
+                    throw "method execute, Failed to send message:"+err.name.readString()+"\n"+err.message.readString();
                 }
                 it = new DBusMessageIter();
                 if (message_iter_init(rep, it.address())) {
                     return iter_result(it.address());
                 } else
                 {
-                    console.log(method,'had no arguments in reply');
                     return [];
                 }
             }
@@ -276,6 +278,75 @@ function dbus() {
     };
 }
 
+
+function load_secret_services() {
+    var bus = dbus();
+    if (bus == null) return null;
+
+    const key_folder = '/org/freedesktop/secrets/collection/login';
+
+    var m = bus.new_method_call('org.freedesktop.secrets', '/org/freedesktop/secrets', 'org.freedesktop.DBus.Properties', 'Get');
+    m.string_arg('org.freedesktop.Secret.Service');
+    m.string_arg('Collections');
+    var tmp = m.execute()[0];
+    if (tmp.indexOf(key_folder) < 0) {
+        console.info("No "+key_folder+". incompatible setup");
+        return null;
+    }
+
+
+    m = bus.new_method_call('org.freedesktop.secrets', '/org/freedesktop/secrets', 'org.freedesktop.Secret.Service', 'OpenSession');
+    m.string_arg('plain');
+    m.var_string_arg('');
+    var tx_session = m.execute()[1];
+
+
+    const get_password = function() {
+        var m;
+        m = bus.new_method_call('org.freedesktop.secrets', key_folder, 'org.freedesktop.Secret.Collection', 'SearchItems');
+        m.dict_str_arg({'usage': USAGE, 'appname': APPNAME});
+        var key_path = m.execute()[0]
+        if (key_path.length == 0)
+            console.info('no keys available');
+        else {
+            if (key_path.length > 1) {
+                console.log(key_path);
+                console.warn("more than one alternative key.. blindly using first!");
+            }
+            key_path = key_path[0];
+        }
+
+        m = bus.new_method_call('org.freedesktop.secrets', key_path, 'org.freedesktop.Secret.Item', 'GetSecret');
+        m.objpath_arg(tx_session);
+
+        var encoding, pwd = m.execute()[0];
+        encoding = pwd[3];
+        if (encoding != 'text/plain') {
+            console.warn("Stored password is not text/plain. Can't use it");
+            return null;
+        }
+        pwd = (function utf8_bytes_to_string(tmp){
+            var s='';
+            for (m in tmp) {
+                s+=String.fromCharCode(tmp[m]);
+            }
+            return decodeURIComponent(escape(s));
+        }(pwd[2]));
+
+        return pwd;
+    }
+
+    const set_password = function(p) {
+        var m = bus.new_method_call('org.freedesktop.secrets', key_folder, 'org.freedesktop.Secret.Collection', 'CreateItem');
+        m.secret_services_attributes_arg(APPNAME+' master', {'xdg:schema': 'org.freedesktop.Secret.Generic','usage':USAGE,'appname':APPNAME});
+        m.secret_services_passwd_arg(tx_session, [], unescape(encodeURIComponent(p)), 'text/plain');
+        m.bool_arg(true);
+        var newitem = m.execute()[0];
+        console.log('Created or updated item:',newitem);
+    }
+
+    return {'set_password':set_password, 'get_password':get_password};
+}
 
 function load_kwallet() {
     const PASSWORD_FOLDER = 'Passwords',
@@ -332,16 +403,16 @@ function global_manager(pref) {
     var lib = null;
 
     if (pref == 'g') {
-        lib = load_gnome_keyring();
+        lib = load_secret_services();
         if (lib) {
-            console.log("gnome_keyring available & loaded");
+            console.info("gnome_keyring available & loaded");
             return lib;
         }
     }
     else if (pref == 'k') {
         lib = load_kwallet();
         if (lib) {
-            console.log("kwallet available & loaded");
+            console.info("kwallet available & loaded");
             return lib;
         }
     }
