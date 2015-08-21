@@ -422,6 +422,7 @@ function load_kwallet() {
         m.string_arg(KEYNAME);
         m.string_arg(p);
         m.string_arg(APPNAME);
+        m.execute();
     };
 
     return {'set_password':set_password, 'get_password':get_password};
