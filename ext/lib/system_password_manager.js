@@ -273,42 +273,72 @@ function dbus() {
         };
     }
 
+    const get_property = function(dest, path, iface, prop) {
+        var m = new_method_call(dest, path, 'org.freedesktop.DBus.Properties', 'Get');
+        m.string_arg(iface);
+        m.string_arg(prop);
+        return m.execute()[0];
+    }
+
     return {
-        'new_method_call': new_method_call
+        'get': function (dest) { return {
+            'load': function(path) { return {
+                'bind': function(iface) { return {
+                    'method_call': function(m) { return new_method_call(dest, path, iface, m); },
+                    'get_property': function(p) { return get_property(dest, path, iface, p); }
+                };}
+            };}
+        };}
     };
 }
 
 
+function utf8_bytes_to_string(tmp) {
+    var s='';
+    for (m in tmp) {
+        s+=String.fromCharCode(tmp[m]);
+    }
+    return decodeURIComponent(escape(s));
+}
+
+function string_to_utf8_bytes(tmp) {
+    return unescape(encodeURIComponent(tmp));
+}
+
+
 function load_secret_services() {
+    const key_folder = '/org/freedesktop/secrets/collection/login',
+          CollectionInterface = 'org.freedesktop.Secret.Collection',
+          ServiceInterface = 'org.freedesktop.Secret.Service',
+          ItemInterface = 'org.freedesktop.Secret.Item';
+
     var bus = dbus();
     if (bus == null) return null;
 
-    const key_folder = '/org/freedesktop/secrets/collection/login';
+    bus = bus.get('org.freedesktop.secrets');
 
-    var m = bus.new_method_call('org.freedesktop.secrets', '/org/freedesktop/secrets', 'org.freedesktop.DBus.Properties', 'Get');
-    m.string_arg('org.freedesktop.Secret.Service');
-    m.string_arg('Collections');
-    var tmp = m.execute()[0];
+    var secret_service = bus.load('/org/freedesktop/secrets').bind(ServiceInterface);
+    var tmp = secret_service.get_property('Collections');
     if (tmp.indexOf(key_folder) < 0) {
-        console.info("No "+key_folder+". incompatible setup");
+        console.warn("No "+key_folder+". incompatible setup");
         return null;
     }
 
-
-    m = bus.new_method_call('org.freedesktop.secrets', '/org/freedesktop/secrets', 'org.freedesktop.Secret.Service', 'OpenSession');
+    var m = secret_service.method_call('OpenSession');
     m.string_arg('plain');
     m.var_string_arg('');
     var tx_session = m.execute()[1];
 
 
     const get_password = function() {
-        var m;
-        m = bus.new_method_call('org.freedesktop.secrets', key_folder, 'org.freedesktop.Secret.Collection', 'SearchItems');
+        var col = bus.load(key_folder).bind(CollectionInterface);
+        var m = col.method_call('SearchItems');
         m.dict_str_arg({'usage': USAGE, 'appname': APPNAME});
         var key_path = m.execute()[0]
-        if (key_path.length == 0)
+        if (key_path.length == 0) {
             console.info('no keys available');
-        else {
+            return "";
+        } else {
             if (key_path.length > 1) {
                 console.log(key_path);
                 console.warn("more than one alternative key.. blindly using first!");
@@ -316,7 +346,8 @@ function load_secret_services() {
             key_path = key_path[0];
         }
 
-        m = bus.new_method_call('org.freedesktop.secrets', key_path, 'org.freedesktop.Secret.Item', 'GetSecret');
+        var itms = bus.load(key_path).bind(ItemInterface);
+        m = itms.method_call('GetSecret');
         m.objpath_arg(tx_session);
 
         var encoding, pwd = m.execute()[0];
@@ -325,21 +356,18 @@ function load_secret_services() {
             console.warn("Stored password is not text/plain. Can't use it");
             return null;
         }
-        pwd = (function utf8_bytes_to_string(tmp){
-            var s='';
-            for (m in tmp) {
-                s+=String.fromCharCode(tmp[m]);
-            }
-            return decodeURIComponent(escape(s));
-        }(pwd[2]));
-
-        return pwd;
+        return utf8_bytes_to_string(pwd[2]);
     }
 
     const set_password = function(p) {
-        var m = bus.new_method_call('org.freedesktop.secrets', key_folder, 'org.freedesktop.Secret.Collection', 'CreateItem');
-        m.secret_services_attributes_arg(APPNAME+' master', {'xdg:schema': 'org.freedesktop.Secret.Generic','usage':USAGE,'appname':APPNAME});
-        m.secret_services_passwd_arg(tx_session, [], unescape(encodeURIComponent(p)), 'text/plain');
+        var col = bus.load(key_folder).bind(CollectionInterface);
+        var m = col.method_call('CreateItem');
+        m.secret_services_attributes_arg(APPNAME+' master', {
+            'xdg:schema': 'org.freedesktop.Secret.Generic',
+            'usage': USAGE,
+            'appname': APPNAME
+        });
+        m.secret_services_passwd_arg(tx_session, [], string_to_utf8_bytes(p), 'text/plain');
         m.bool_arg(true);
         var newitem = m.execute()[0];
         console.log('Created or updated item:',newitem);
@@ -348,6 +376,7 @@ function load_secret_services() {
     return {'set_password':set_password, 'get_password':get_password};
 }
 
+
 function load_kwallet() {
     const PASSWORD_FOLDER = 'Passwords',
           KEYNAME = APPNAME+'-master';
@@ -355,17 +384,18 @@ function load_kwallet() {
     var bus = dbus();
     if (bus == null) return null;
 
-    var handle = (function init(){
-        var m = bus.new_method_call('org.kde.kwalletd', '/modules/kwalletd', ctypes.char.ptr(), 'localWallet'),
-            walletname;
+    bus = bus.get('org.kde.kwalletd').load('/modules/kwalletd').bind('org.kde.KWallet');
 
-        walletname = m.execute()[0];
+    var handle = (function init(){
+        var m = bus.method_call('localWallet'),
+            walletname = m.execute()[0];
+
         if (!walletname) {
             console.log('wallet name get failed', walletname);
             return null;
         }
 
-        m = bus.new_method_call('org.kde.kwalletd', '/modules/kwalletd', null, 'open');
+        m = bus.method_call('open');
         m.string_arg(walletname);
         m.int64_arg(0);
         m.string_arg(APPNAME);
@@ -377,7 +407,7 @@ function load_kwallet() {
     if (!handle) return null;
 
     const get_password = function () {
-        var m = bus.new_method_call('org.kde.kwalletd', '/modules/kwalletd', null, 'readPassword');
+        var m = bus.method_call('readPassword');
         m.int_arg(handle);
         m.string_arg(PASSWORD_FOLDER);
         m.string_arg(KEYNAME);
@@ -386,7 +416,7 @@ function load_kwallet() {
     };
 
     const set_password = function (p) {
-        var m = bus.new_method_call('org.kde.kwalletd', '/modules/kwalletd', null, 'writePassword');
+        var m = bus.method_call('writePassword');
         m.int_arg(handle);
         m.string_arg(PASSWORD_FOLDER);
         m.string_arg(KEYNAME);
