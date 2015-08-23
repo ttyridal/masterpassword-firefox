@@ -20,8 +20,6 @@ var buttons = require('sdk/ui/button/toggle');
 var clipboard = require("sdk/clipboard");
 var panels = require("sdk/panel");
 var tabs = require("sdk/tabs");
-var { viewFor } = require("sdk/view/core");
-var tab_utils = require("sdk/tabs/utils");
 var { Hotkey } = require("sdk/hotkeys");
 var prefs = require("sdk/simple-prefs").prefs;
 
@@ -132,20 +130,8 @@ function createPanel() {
         panel.port.emit('get_tab_url_resp', tabs.activeTab.url);
     });
     panel.port.on('update_page_password_input', function(d){
-        var lltab = viewFor(tabs.activeTab);
-        var browser = tab_utils.getBrowserForTab(lltab);
-        if (!browser ||
-            !browser.contentDocument ||
-            !browser.contentDocument.activeElement ||
-            browser.contentDocument.activeElement.tagName != "INPUT") {
-            return;
-        }
-        if (browser.contentDocument.activeElement.type=="password")
-            browser.contentDocument.activeElement.value=d;
-        else {
-            console.log('focused element is not password field');
-        }
-
+        var worker = tabs.activeTab.attach({ contentScriptFile: self.data.url('password-fill-cs.js') });
+        worker.port.emit('the_password', d);
     });
     return panel;
 }
