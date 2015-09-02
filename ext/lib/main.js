@@ -22,7 +22,8 @@ var panels = require("sdk/panel");
 var tabs = require("sdk/tabs");
 var { Hotkey } = require("sdk/hotkeys");
 var prefs = require("sdk/simple-prefs").prefs;
-
+var windows = require("sdk/windows");
+var isPrivate = require("sdk/private-browsing").isPrivate;
 var self = require("sdk/self");
 var ss = require("sdk/simple-storage");
 
@@ -96,7 +97,7 @@ function createPanel() {
     panel.port.on('close', function() { panel.hide(); });
 
     panel.port.on('store_update', function(d){
-        if (require("sdk/private-browsing").isPrivate(require("sdk/windows").activeWindow)) {
+        if (isPrivate(windows.activeWindow)) {
             console.log("won't store anything for private windows");
             return;
         }
