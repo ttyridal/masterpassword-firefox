@@ -24,6 +24,7 @@ var { Hotkey } = require("sdk/hotkeys");
 var prefs = require("sdk/simple-prefs").prefs;
 var windows = require("sdk/windows");
 var isPrivate = require("sdk/private-browsing").isPrivate;
+var pagemod = require("sdk/page-mod")
 var self = require("sdk/self");
 var ss = require("sdk/simple-storage");
 
@@ -84,6 +85,24 @@ var hotPassword = Hotkey({
   }
 });
 
+
+var pm_config_handler = pagemod.PageMod({
+    include: self.data.url("config.html"),
+    contentScriptFile: self.data.url('config-cs.js'),
+    attachTo: ['top'],
+    onAttach: function(worker) {
+        if (!worker.tab || worker.tab.id != tabs.activeTab.id) worker.destroy();
+        worker.port.on('configload', function(m) {
+            worker.port.emit('configload', {sites:session_store.sites, username:session_store.username});
+        });
+        worker.port.on('configstore', function(d) {
+            session_store.sites = d;
+            ss.storage.sites = d;
+        });
+    }
+});
+
+
 function createPanel() {
     var panel = panels.Panel({
         width:360,
@@ -108,20 +127,7 @@ function createPanel() {
         ss.storage.sites = d.sites;
     });
     panel.port.on('openconfig', function(d){
-        tabs.open({
-            url: self.data.url("config.html"),
-            onReady: function(tab) {
-                if (! /^resource:.*config\.html$/.test(tab.url)) return;
-                var worker = tab.attach({ contentScriptFile: self.data.url('config-cs.js') });
-                worker.port.on('configload', function(m) {
-                    worker.port.emit('configload', {sites:session_store.sites, username:session_store.username});
-                });
-                worker.port.on('configstore', function(d) {
-                    session_store.sites = d;
-                    ss.storage.sites = d;
-                });
-            }
-        });
+        tabs.open({ url: self.data.url("config.html") });
     });
 
     panel.port.on('to_clipboard', function(d){
@@ -131,8 +137,22 @@ function createPanel() {
         panel.port.emit('get_tab_url_resp', tabs.activeTab.url);
     });
     panel.port.on('update_page_password_input', function(d){
-        var worker = tabs.activeTab.attach({ contentScriptFile: self.data.url('password-fill-cs.js') });
-        worker.port.emit('the_password', d);
+        console.log("emit to active tab");
+
+        // tab.attach doesn't work with e10s on 43a nightly. :(
+        //var worker = tabs.activeTab.attach({ contentScriptFile: self.data.url('password-fill-cs.js') });
+        //worker.port.emit('the_password', d);
+        var pm = pagemod.PageMod({
+            include: tabs.activeTab.url,
+            contentScriptFile: self.data.url('password-fill-cs.js'),
+            attachTo: ['existing','top'],
+            onAttach: function(worker) {
+                if (!worker.tab || worker.tab.id != tabs.activeTab.id) worker.destroy();
+                worker.port.emit('the_password', d);
+                worker.destroy();
+                pm.destroy();
+            }
+        });
     });
     return panel;
 }
