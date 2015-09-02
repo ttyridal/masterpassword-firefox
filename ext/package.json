@@ -8,7 +8,7 @@
   "version": "1.0",
   "icon": "data/icon32.png",
   "icon64": "data/icon64.png",
-  "permissions": {"private-browsing": true},
+  "permissions": {"private-browsing": true, "multiprocess": true},
   "homepage": "https://github.com/ttyridal/masterpassword-firefox",
   "main": "lib/main.js",
   "preferences": [
