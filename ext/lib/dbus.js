@@ -85,6 +85,8 @@ function dbus() {
                   DBusMessageIter.ptr, DBusMessageIter.ptr),
           message_new_method_call = lib.declare('dbus_message_new_method_call', ctypes.default_abi, DBusMessage.ptr,
                   ctypes.char.ptr, ctypes.char.ptr, ctypes.char.ptr, ctypes.char.ptr ),
+          message_unref = lib.declare('dbus_message_unref', ctypes.default_abi, ctypes.void_t,
+                  DBusMessage.ptr ),
           connection_send_with_reply_and_block = lib.declare('dbus_connection_send_with_reply_and_block', ctypes.default_abi, DBusMessage.ptr,
                   DBusConnection.ptr, DBusMessage.ptr, ctypes.int, DBusError.ptr);
 
@@ -256,14 +258,18 @@ function dbus() {
                 console.log('execute',method,'timeout:',timeout);
                 var err = new DBusError();
                 var rep = connection_send_with_reply_and_block(dbus_con, m, timeout, err.address());
+                message_unref(m);
                 if (rep.isNull()) {
                     throw "method execute, Failed to send message:"+err.name.readString()+"\n"+err.message.readString();
                 }
                 it = new DBusMessageIter();
                 if (message_iter_init(rep, it.address())) {
-                    return iter_result(it.address());
+                    var toreturn = iter_result(it.address());
+                    message_unref(rep);
+                    return toreturn;
                 } else
                 {
+                    message_unref(rep);
                     return [];
                 }
             }
