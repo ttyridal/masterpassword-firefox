@@ -23,8 +23,15 @@
  *
  **/
 
-var {Cu} = require('chrome');
-Cu.import("resource://gre/modules/ctypes.jsm");
+exports.dbus = (function(){
+
+try {
+    var {Cu} = require('chrome');
+    Cu.import("resource://gre/modules/ctypes.jsm");
+} catch(e) {
+    console.error("Failed to load js-ctypes");
+    return null;
+}
 
 
 function dbus() {
@@ -294,5 +301,5 @@ function dbus() {
         };}
     };
 }
-
-exports.dbus = dbus;
+return dbus
+})();
