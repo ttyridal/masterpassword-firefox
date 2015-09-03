@@ -60,9 +60,17 @@ if (ss.storage.username) session_store.username = ss.storage.username;
 if (!ss.storage.version || ss.storage.version < 2) fix_session_store_password_type();
 if (ss.storage.sites) session_store.sites = ss.storage.sites;
 
-if (system_password_manager != null) {
-    console.log('getting pwmgr pass');
-    session_store.masterkey = system_password_manager.get_password();
+if (system_password_manager) {
+    system_password_manager.then(function(lib){
+        lib.get_password(function(pwd, err){
+            if (pwd === undefined)
+                console.log("failed to get master key from os-store", err);
+            else if (pwd == '') {
+            }
+            else
+                session_store.masterkey = pwd;
+        });
+    });
 }
 
 var button = buttons.ToggleButton({
@@ -112,7 +120,7 @@ function createPanel() {
         }
         var k;
         if (d.masterkey && d.masterkey != session_store.masterkey &&  system_password_manager)
-            system_password_manager.set_password(d.masterkey);
+            system_password_manager.then(function(lib){ lib.set_password(d.masterkey); });
 
         for (k in d)
             session_store[k] = d[k];

@@ -26,6 +26,7 @@
 exports.dbus = (function(){
 
 try {
+    var { setTimeout } = require("sdk/timers");
     var {Cu} = require('chrome');
     Cu.import("resource://gre/modules/ctypes.jsm");
 } catch(e) {
@@ -37,7 +38,10 @@ try {
 function dbus() {
     var lib
     try { lib = ctypes.open("libdbus-1.so.3"); }
-    catch(e) { return null; }
+    catch(e) {
+        console.error("Failed to load libdbus-1.so.3");
+        return null;
+    }
 
     const DBusError = ctypes.StructType('DBusError', [
             {'name': ctypes.char.ptr},
@@ -67,8 +71,8 @@ function dbus() {
             {'pad2': ctypes.int},
             {'pad3': ctypes.voidptr_t}
 
-        ]);
-
+        ]),
+        DBusPendingCall = ctypes.StructType('DBusPendingCall');
 
     const bus_get = lib.declare('dbus_bus_get', ctypes.default_abi, DBusConnection.ptr,
                   ctypes.int, DBusError.ptr),
@@ -96,6 +100,18 @@ function dbus() {
                   DBusMessage.ptr ),
           connection_send_with_reply_and_block = lib.declare('dbus_connection_send_with_reply_and_block', ctypes.default_abi, DBusMessage.ptr,
                   DBusConnection.ptr, DBusMessage.ptr, ctypes.int, DBusError.ptr);
+          connection_send_with_reply = lib.declare('dbus_connection_send_with_reply', ctypes.default_abi, ctypes.bool,
+                  DBusConnection.ptr, DBusMessage.ptr, DBusPendingCall.ptr.ptr, ctypes.int);
+          pending_call_block = lib.declare('dbus_pending_call_block', ctypes.default_abi, ctypes.void_t,
+                  DBusPendingCall.ptr);
+          pending_call_steal_reply = lib.declare('dbus_pending_call_steal_reply', ctypes.default_abi, DBusMessage.ptr,
+                  DBusPendingCall.ptr);
+          pending_call_unref = lib.declare('dbus_pending_call_unref', ctypes.default_abi, ctypes.void_t,
+                  DBusPendingCall.ptr);
+          pending_call_get_completed = lib.declare('dbus_pending_call_get_completed', ctypes.default_abi, ctypes.bool,
+                  DBusPendingCall.ptr);
+          set_error_from_message = lib.declare('dbus_set_error_from_message', ctypes.default_abi, ctypes.bool,
+                  DBusError.ptr, DBusMessage.ptr);
 
     const dbus_type = {'string': 's'.charCodeAt(0),
                        'objectpath': 'o'.charCodeAt(0),
@@ -107,6 +123,46 @@ function dbus() {
                        'byte': 'y'.charCodeAt(0),
                        'struct': 'r'.charCodeAt(0),
                        'dict_entry': 'e'.charCodeAt(0),
+    }
+
+    function send_with_reply(con, msg, timeout) {
+        var toreturn = [],
+            rep,
+            pendingCall = DBusPendingCall.ptr();
+
+        if (timeout == undefined) timeout = -1;
+        else timeout = Math.round(timeout * 1000);
+
+        connection_send_with_reply(con, msg, pendingCall.address(), timeout);
+        //pending_call_block(pendingCall);
+
+        return new Promise(function(resolve, fail){
+
+            (function loop(){
+                if (!pending_call_get_completed(pendingCall)) {
+                    setTimeout(loop, 200);
+                    return;
+                }
+
+                rep = pending_call_steal_reply(pendingCall);
+                if (rep.isNull()) {
+                    throw new Error("steal_reply returned null");
+                }
+
+                var err = new DBusError();
+                if (set_error_from_message(err.address(), rep)) {
+                    throw new Error("method execute, Failed to send message:"+err.name.readString()+"\n"+err.message.readString());
+                } else {
+                    it = new DBusMessageIter();
+                    if (message_iter_init(rep, it.address()))
+                        toreturn = iter_result(it.address());
+                }
+                message_unref(rep);
+                pending_call_unref(pendingCall);
+
+                resolve(toreturn);
+            })();
+        });
     }
 
     function iter_result(it) {
@@ -203,7 +259,7 @@ function dbus() {
         var va = new DBusMessageIter();
         message_iter_open_container(it, dbus_type.array, 'y', va.address());
         for (var x of ar) {
-            if (x.charCodeAt(0) > 255) throw "Illegal byte array thing.. did you forget to convert to utf-8?";
+            if (x.charCodeAt(0) > 255) throw new Error("Illegal byte array thing.. did you forget to convert to utf-8?");
             var x = ctypes.uint8_t(x.charCodeAt(0));
             message_iter_append_basic(va.address(), dbus_type.byte, x.address());
         }
@@ -261,24 +317,10 @@ function dbus() {
                 message_iter_append_basic(it.address(), dbus_type.bool, x.address());
             },
             'execute': function(timeout) {
-                if (timeout === undefined) timeout = 1000;
-                console.log('execute',method,'timeout:',timeout);
-                var err = new DBusError();
-                var rep = connection_send_with_reply_and_block(dbus_con, m, timeout, err.address());
+                console.log('execute',method);
+                var p = send_with_reply(dbus_con, m, timeout);
                 message_unref(m);
-                if (rep.isNull()) {
-                    throw "method execute, Failed to send message:"+err.name.readString()+"\n"+err.message.readString();
-                }
-                it = new DBusMessageIter();
-                if (message_iter_init(rep, it.address())) {
-                    var toreturn = iter_result(it.address());
-                    message_unref(rep);
-                    return toreturn;
-                } else
-                {
-                    message_unref(rep);
-                    return [];
-                }
+                return p;
             }
         };
     }
@@ -287,7 +329,7 @@ function dbus() {
         var m = new_method_call(dest, path, 'org.freedesktop.DBus.Properties', 'Get');
         m.string_arg(iface);
         m.string_arg(prop);
-        return m.execute()[0];
+        return m.execute().then(function(dta){ return dta[0]; });
     }
 
     return {
@@ -295,7 +337,7 @@ function dbus() {
             'load': function(path) { return {
                 'bind': function(iface) { return {
                     'method_call': function(m) { return new_method_call(dest, path, iface, m); },
-                    'get_property': function(p) { return get_property(dest, path, iface, p); }
+                    'get_property': function(p, cb) { return get_property(dest, path, iface, p, cb); }
                 };}
             };}
         };}
