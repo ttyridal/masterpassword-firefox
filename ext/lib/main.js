@@ -147,8 +147,12 @@ function createPanel() {
             contentScriptFile: self.data.url('password-fill-cs.js'),
             attachTo: ['existing','top'],
             onAttach: function(worker) {
-                if (!worker.tab || worker.tab.id != tabs.activeTab.id) worker.destroy();
-                worker.port.emit('the_password', d);
+                if (!worker.tab || worker.tab.id != tabs.activeTab.id) {
+                    worker.destroy();
+                }
+                else {
+                    worker.port.emit('the_password', d);
+                }
                 worker.destroy();
                 pm.destroy();
             }
