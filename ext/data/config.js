@@ -147,8 +147,10 @@ $(document).on('drop', function(e){
         var x = read_mpsites(x.target.result);
         $.each(x, function(){
             var y = this.sitename.split("@");
-            if (y.length>1) this.sitesearch=y[1];
-            else this.sitesearch=this.sitename;
+            if (y.length>1)
+                this.sitesearch = y[y.length-1];
+            else
+                this.sitesearch = this.sitename;
 
             stored_sites_table_append(this.sitesearch,this.sitename,this.passtype,this.loginname,this.passcnt,this.passalgo);
 
