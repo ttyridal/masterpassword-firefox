@@ -5,7 +5,7 @@
   "description": "Masterpassword (see masterpasswordapp.com) as an extension for Firefox",
   "author": "Torbjorn Tyridal (ttyridal)",
   "license": "GPLv3",
-  "version": "1.0",
+  "version": "2.0.0pre",
   "icon": "data/icon32.png",
   "icon64": "data/icon64.png",
   "permissions": {"private-browsing": true, "multiprocess": true},
@@ -22,6 +22,11 @@
          {"label":"Pin", "value":"i"},
          {"label":"Name", "value":"n"},
          {"label":"Phrase", "value":"p"}
+     ]},
+     { "name":"pass_store", "title":"Use system password storage", "type":"menulist", "value":"n", "options": [
+         {"label":"No", "value":"n"},
+         {"label":"Secret Services", "value":"g"},
+         {"label":"Kwallet", "value":"k"}
      ]}
   ]
 }

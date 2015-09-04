@@ -19,3 +19,13 @@ Many sites (like google) have localized url's (google.de, google.co.uk etc). It 
 When you first open masterpassword on a localized domain, that domain will be suggested in masterpassword. You can change this. It will be remembered for your next visit.
 
 If you have several accounts at a domain, it is suggested to prefix the site name with something like "username@" (ie myself@google.com). The site name in masterpassword will change to a dropdown if you have multiple variants.
+
+# KWallet / GNOME Keyring security
+`version >= 2.0pre1`
+
+The plugin can store your master key in your OS' key store (ie GNOME Keyring or KWallet, Linux only!). This feature is turned off by default and must be enabled in the addon preferences menu. Before you do, please consider the following:
+
+While both solutions claim to store the password in an encrypted database, you might as well just keep your passwords in a plain text file - with a big fat **PASSWORD** as name - and put that file on an encrypted disk. There is absolutely _no_ isolation against rouge software. Any client can connect to the server and request for every password stored there.
+
+As with most things, it is a balancing act: if you feel that the convenience outweighs the risks, the feature is there for you.
+
