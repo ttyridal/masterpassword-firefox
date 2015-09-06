@@ -24,6 +24,7 @@
  **/
 
 var dbus = require("./dbus.js").dbus;
+var osx = require('./osx_keychain.js').osx;
 
 const APPNAME = 'masterpassword-for-firefox',
       USAGE = 'masterkey';
@@ -193,6 +194,28 @@ function load_kwallet() {
     });
 }
 
+function load_osx() {
+    if (osx == null) return null;
+
+    return new Promise(function(lib_load_resolved, lib_load_rejected){
+            const get_password = function (cb) {
+                osx.getPassword(APPNAME, USAGE)
+                .then(function(pw) {
+                    if (pw == undefined) pw = '';
+                    cb(pw, undefined);
+                })
+                .catch(function(err) {
+                    cb(undefined, err);
+                });
+            };
+            const set_password = function (p) {
+                osx.setPassword(APPNAME, USAGE, p);
+            };
+
+            lib_load_resolved({'set_password':set_password, 'get_password':get_password});
+    });
+}
+
 
 function global_manager(pref) {
     if (pref == 'g') {
@@ -205,6 +228,13 @@ function global_manager(pref) {
     else if (pref == 'k') {
         try {
             return load_kwallet();
+        } catch(e) {
+            console.error(e)
+        }
+    }
+    else if (pref == 'o') {
+        try {
+            return load_osx();
         } catch(e) {
             console.error(e)
         }

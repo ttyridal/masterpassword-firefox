@@ -26,7 +26,8 @@
      { "name":"pass_store", "title":"Use system password storage", "type":"menulist", "value":"n", "options": [
          {"label":"No", "value":"n"},
          {"label":"Secret Services", "value":"g"},
-         {"label":"Kwallet", "value":"k"}
+         {"label":"Kwallet", "value":"k"},
+         {"label":"OSX Keychain", "value":"o"}
      ]}
   ]
 }
