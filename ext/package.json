@@ -27,7 +27,8 @@
          {"label":"No", "value":"n"},
          {"label":"Secret Services", "value":"g"},
          {"label":"Kwallet", "value":"k"},
-         {"label":"OSX Keychain", "value":"o"}
+         {"label":"OSX Keychain", "value":"o"},
+         {"label":"Windows Vault", "value":"w"}
      ]}
   ]
 }

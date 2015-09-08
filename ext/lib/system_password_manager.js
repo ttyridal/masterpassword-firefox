@@ -25,6 +25,7 @@
 
 var dbus = require("./dbus.js").dbus;
 var osx = require('./osx_keychain.js').osx;
+var win = require('./wincred.js').win;
 
 const APPNAME = 'masterpassword-for-firefox',
       USAGE = 'masterkey';
@@ -216,6 +217,27 @@ function load_osx() {
     });
 }
 
+function load_win() {
+    if (win == null) return null;
+
+    return new Promise(function(lib_load_resolved, lib_load_rejected){
+            const get_password = function (cb) {
+                try {
+					var pw = win.getPassword(APPNAME);
+					cb(pw, undefined);
+				} catch (err) {
+					cb(undefined, err);
+				}
+            };
+
+            const set_password = function (p) {
+                win.setPassword(APPNAME, USAGE, p);
+            }
+
+            lib_load_resolved({'set_password':set_password, 'get_password':get_password});
+    });
+}
+
 
 function global_manager(pref) {
     if (pref == 'g') {
@@ -235,6 +257,13 @@ function global_manager(pref) {
     else if (pref == 'o') {
         try {
             return load_osx();
+        } catch(e) {
+            console.error(e)
+        }
+    }
+    else if (pref == 'w') {
+        try {
+            return load_win();
         } catch(e) {
             console.error(e)
         }

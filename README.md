@@ -22,18 +22,18 @@ When you first open masterpassword on a localized domain, that domain will be su
 
 If you have several accounts at a domain, it is suggested to prefix the site name with something like "username@" (ie myself@google.com). The site name in masterpassword will change to a dropdown if you have multiple variants.
 
-# KWallet, GNOME Keyring security
-`version >= 2.0pre1`
-
-The plugin can store your master key in your OS' key store (ie GNOME Keyring or KWallet, Linux only!). This feature is turned off by default and must be enabled in the addon preferences menu. Before you do, please consider the following:
-
-While both solutions claim to store the password in an encrypted database, you might as well just keep your passwords in a plain text file - with a big fat **PASSWORD** as name - and put that file on an encrypted disk. There is absolutely _no_ isolation against rouge software. Any client can connect to the server and request for every password stored there.
-
-As with most things, it is a balancing act: if you feel that the convenience outweighs the risks, the feature is there for you.
-
-# OSX Keychain security
+# System password vaults
 `version >= 2.0pre3`
 
-The plugin can store your master key in OSX' system Keychain. This feature is turned off by default and must be enabled in the addon preferences menu. Before you do, please consider the following:
+The plugin can store your master key in your OS' key store (ie GNOME Keyring, KWallet, OSX Keychain or Windows Password Vault).
+This feature is disabled by default and must be enabled in the addon preferences menu.
 
-Contrary to KWallet and GNOME keyring, OSX Keychain will maintain pr application access control to the password. Unfortunately, the application in this case is Firefox, not MasterPassword. Hence any app running in Firefox (eg another addon) can potentially get access to the stored password.
+Keeping your passwords in MasterPassword is relatively secure, given that your master key is not easily guessed.
+
+These system password vaults have a varying degree of protection (encrypted on disk etc), but are generally not
+protecting you from attacks while you are logged in (typically, any program can access all passwords). Some (hey
+windows) even "roam" your password by default. Sounds nice, but that basically means that your passwords are floating
+around the internet, hopefully well encrypted.
+
+In summary, your master key is kept safest when stored only between your ears. If you, however, accept the risks, it is quite
+convenient and the feature is there for you.
