@@ -23,16 +23,12 @@
  *
  **/
 
-var dbus = require("./dbus.js").dbus;
-var osx = require('./osx_keychain.js').osx;
-var win = require('./wincred.js').win;
-
 const APPNAME = 'masterpassword-for-firefox',
       USAGE = 'masterkey';
 
 function utf8_bytes_to_string(tmp) {
     var s='';
-    for (m in tmp) {
+    for (let m in tmp) {
         s+=String.fromCharCode(tmp[m]);
     }
     return decodeURIComponent(escape(s));
@@ -49,6 +45,7 @@ function load_secret_services() {
           ServiceInterface = 'org.freedesktop.Secret.Service',
           ItemInterface = 'org.freedesktop.Secret.Item';
 
+    var dbus = require("./dbus.js").dbus;
     if (dbus == null) return false;
     var bus = dbus();
     if (bus == null) return false;
@@ -137,6 +134,7 @@ function load_kwallet() {
     const PASSWORD_FOLDER = 'Passwords',
           KEYNAME = APPNAME+'-master';
 
+    var dbus = require("./dbus.js").dbus;
     if (dbus == null) return null;
     var bus = dbus();
     if (bus == null) return null;
@@ -196,6 +194,7 @@ function load_kwallet() {
 }
 
 function load_osx() {
+    var osx = require('./osx_keychain.js').osx;
     if (osx == null) return null;
 
     return new Promise(function(lib_load_resolved, lib_load_rejected){
@@ -218,6 +217,7 @@ function load_osx() {
 }
 
 function load_win() {
+    var win = require('./wincred.js').win;
     if (win == null) return null;
 
     return new Promise(function(lib_load_resolved, lib_load_rejected){

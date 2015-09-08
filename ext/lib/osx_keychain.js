@@ -136,7 +136,8 @@ function SecKeychainFindGenericPassword(service, account, return_item) {
     var pw_len = ctypes.uint32_t(),
         item = null,
         itemr = null,
-        pw_data = ctypes.voidptr_t();
+        pw_data = ctypes.voidptr_t(),
+        rc;
 
     if (return_item) {
         item = SecKeychainItemRef();

@@ -258,9 +258,9 @@ function dbus() {
     function msg_arg_bytearray(it, ar) {
         var va = new DBusMessageIter();
         message_iter_open_container(it, dbus_type.array, 'y', va.address());
-        for (var x of ar) {
+        for (let x of ar) {
             if (x.charCodeAt(0) > 255) throw new Error("Illegal byte array thing.. did you forget to convert to utf-8?");
-            var x = ctypes.uint8_t(x.charCodeAt(0));
+            x = ctypes.uint8_t(x.charCodeAt(0));
             message_iter_append_basic(va.address(), dbus_type.byte, x.address());
         }
         message_iter_close_container(it, va.address());
