@@ -27,8 +27,9 @@ var isPrivate = require("sdk/private-browsing").isPrivate;
 var pagemod = require("sdk/page-mod")
 var self = require("sdk/self");
 var ss = require("sdk/simple-storage");
+var pwmgr = require("./system_password_manager.js").manager;
 
-var system_password_manager = require("./system_password_manager.js").manager(prefs.pass_store)
+var system_password_manager = pwmgr(prefs.pass_store);
 
 
 function fix_session_store_password_type() {
@@ -137,8 +138,11 @@ function createPanel() {
             return;
         }
         var k;
-        if (d.masterkey && d.masterkey != session_store.masterkey &&  system_password_manager)
-            system_password_manager.then(function(lib){ lib.set_password(d.masterkey); });
+        if (d.masterkey && d.masterkey != session_store.masterkey  && prefs.pass_store != 'n') {
+            if (!system_password_manager) system_password_manager = pwmgr(prefs.pass_store);
+            if (system_password_manager)
+                system_password_manager.then(function(lib){ lib.set_password(d.masterkey); });
+        }
 
         for (k in d)
             session_store[k] = d[k];

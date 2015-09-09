@@ -124,6 +124,7 @@ function load_secret_services() {
             }
         }).catch(function(reason){
             console.error("secret services (gnome keyring) load failed:",reason.message,'\n', reason.stack);
+            lib_load_rejected();
         });
     });
 
