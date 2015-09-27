@@ -38,6 +38,24 @@ unsigned char * scrypt_hmac_sha256(unsigned char * key, unsigned keylen,
     return hmac_sha256_digest;
 }
 
+char * sha256_digest(unsigned char * bytes, unsigned len)
+{
+    static unsigned char digest[65];
+    int i;
+    char hex_map[] = "0123456789abcdef";
+    SHA256_CTX ctx;
+    libscrypt_SHA256_Init(&ctx);
+    libscrypt_SHA256_Update(&ctx, bytes, len);
+    libscrypt_SHA256_Final(digest, &ctx);
+    digest[64]=0;
+
+    for (i = 31; i >= 0; i--) {
+        digest[i*2 + 1] = hex_map[digest[i]&0xf];
+        digest[i*2 + 0] = hex_map[digest[i]>>4];
+    }
+    return (char*)digest;
+}
+
 void int_to_network_bytes(uint32_t i, char * b)
 {
     i = htonl(i);
