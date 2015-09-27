@@ -56,6 +56,11 @@ char * sha256_digest(unsigned char * bytes, unsigned len)
     return (char*)digest;
 }
 
+unsigned char * get_masterkey(void)
+{
+    return scrypt_ret;
+}
+
 void int_to_network_bytes(uint32_t i, char * b)
 {
     i = htonl(i);
