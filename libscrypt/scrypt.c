@@ -26,7 +26,7 @@ unsigned char * scrypt(char * password, unsigned password_len,
             (unsigned char*)salt, salt_len,
             N, r, p,
             scrypt_ret, sizeof scrypt_ret);
-    if (i!=0)return NULL;
+    if (i!=0) return NULL;
     return scrypt_ret;
 }
 
@@ -69,7 +69,7 @@ void int_to_network_bytes(uint32_t i, char * b)
     memcpy(b,&i,sizeof i);
 }
 
-int mp_key(char * mp_utf8, char * name_utf8)
+unsigned char * mp_key(char * mp_utf8, char * name_utf8)
 {
     const unsigned N = 32768,r=8,p=2;
     const unsigned mplen = strlen(mp_utf8);
@@ -78,7 +78,7 @@ int mp_key(char * mp_utf8, char * name_utf8)
     char tmp[512];
 
     if (sizeof(NSgeneral)-1+namelen+4 > sizeof tmp)
-        return -1;
+        return NULL;
     memcpy(tmp,NSgeneral,sizeof(NSgeneral)-1);
     saltlen = sizeof(NSgeneral)-1;
     int_to_network_bytes(namelen, tmp+saltlen);
@@ -87,8 +87,8 @@ int mp_key(char * mp_utf8, char * name_utf8)
     saltlen+=namelen;
 
     if (scrypt(mp_utf8, mplen, tmp, saltlen, N,r,p) == NULL)
-        return -2;
-    return 0;
+        return NULL;
+    return scrypt_ret;
 }
 
 static int mp_seed(char * site_utf8, unsigned counter, const char *  namespace)
@@ -210,11 +210,11 @@ void mp_clean(void){
 #include <assert.h>
 #define ASSERT_EQUAL(a,b) if (strcmp(a,b)!=0){printf("Failed %s != %s, line %d\n",a,b, __LINE__);exit(1);}
 int main(int argc, char** argv) {
-    if(mp_key("test","test")) printf("keying failed\n");
+    if(!mp_key("test","test")) printf("keying failed\n");
     ASSERT_EQUAL("xoxgubavi", mp_password(".", 0, 'n'));
     ASSERT_EQUAL("95212fae6842582826f620d402b19aeaf38a77d612c24529bd5c89bacfd42288", sha256_digest(get_masterkey(),64));
 
-    if(mp_key("testtesttest","test")) printf("keying failed\n");
+    if(!mp_key("testtesttest","test")) printf("keying failed\n");
     ASSERT_EQUAL("15e1741aa454746472af7b0bbda637b1d02cb700a5f1a21d23656c905cf08353", sha256_digest(get_masterkey(),64));
 
     /* silence unused argument warning */
