@@ -1,5 +1,7 @@
-// This code is trivial..
-// license: public domain
+/*
+ * MasterPassword implementation for emscripten
+ *
+ */
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -9,27 +11,27 @@
 #include <arpa/inet.h>
 unsigned char scrypt_ret[64];
 unsigned char hmac_sha256_digest[32];
-unsigned char mp_pass_ret[64];
+char mp_pass_ret[64];
 
-static const unsigned char NSgeneral[] = "com.lyndir.masterpassword";
-static const unsigned char NSlogin[] = "com.lyndir.masterpassword.login";
-static const unsigned char NSanswer[] = "com.lyndir.masterpassword.answer";
+static const char NSgeneral[] = "com.lyndir.masterpassword";
+static const char NSlogin[] = "com.lyndir.masterpassword.login";
+static const char NSanswer[] = "com.lyndir.masterpassword.answer";
 
-unsigned char * scrypt(unsigned char * password, unsigned password_len,
-                       unsigned char * salt, unsigned salt_len,
+unsigned char * scrypt(char * password, unsigned password_len,
+                       char * salt, unsigned salt_len,
                        unsigned N, unsigned r, unsigned p)
 {
     int i = libscrypt_scrypt(
-            password, password_len,
-            salt, salt_len,
+            (unsigned char*)password, password_len,
+            (unsigned char*)salt, salt_len,
             N, r, p,
             scrypt_ret, sizeof scrypt_ret);
     if (i!=0)return NULL;
     return scrypt_ret;
 }
 
-unsigned char * scrypt_hmac_sha256(unsigned char * key, unsigned keylen,
-                                   unsigned char * data, unsigned datalen)
+unsigned char * scrypt_hmac_sha256(const unsigned char * key, unsigned keylen,
+                                   char * data, unsigned datalen)
 {
     HMAC_SHA256_CTX hctx;
     libscrypt_HMAC_SHA256_Init(&hctx, key, keylen);
@@ -67,13 +69,13 @@ void int_to_network_bytes(uint32_t i, char * b)
     memcpy(b,&i,sizeof i);
 }
 
-int mp_key(unsigned char * mp_utf8, unsigned char * name_utf8)
+int mp_key(char * mp_utf8, char * name_utf8)
 {
     const unsigned N = 32768,r=8,p=2;
     const unsigned mplen = strlen(mp_utf8);
     const unsigned namelen = strlen(name_utf8);
     unsigned saltlen = 0;
-    unsigned char tmp[512];
+    char tmp[512];
 
     if (sizeof(NSgeneral)-1+namelen+4 > sizeof tmp)
         return -1;
@@ -89,12 +91,12 @@ int mp_key(unsigned char * mp_utf8, unsigned char * name_utf8)
     return 0;
 }
 
-static int mp_seed(unsigned char * site_utf8, unsigned counter, const unsigned char *  namespace)
+static int mp_seed(char * site_utf8, unsigned counter, const char *  namespace)
 {
     const unsigned sitelen = strlen(site_utf8);
     const unsigned nslen = strlen(namespace);
     unsigned saltlen = 0;
-    unsigned char tmp[512];
+    char tmp[512];
     if (nslen+sitelen+8 > sizeof tmp)
         return -1;
     memcpy(tmp,namespace,nslen);
@@ -110,22 +112,22 @@ static int mp_seed(unsigned char * site_utf8, unsigned counter, const unsigned c
     return 0;
 }
 
-unsigned char * mp_password(unsigned char * site_utf8, unsigned counter, char type)
+char * mp_password(char * site_utf8, unsigned counter, char type)
 {
-    const unsigned char * pintemplates[] = {"nnnn"};
-    const unsigned char * basictemplates[] = { "aaanaaan", "aannaaan", "aaannaaa"};
-    const unsigned char * shorttemplates[] = { "Cvcn" };
-    const unsigned char * mediumtemplates[] = { "CvcnoCvc", "CvcCvcno" };
-    const unsigned char * longtemplates[] = { "CvcvnoCvcvCvcv", "CvcvCvcvnoCvcv", "CvcvCvcvCvcvno", "CvccnoCvcvCvcv", "CvccCvcvnoCvcv",
+    const char * pintemplates[] = {"nnnn"};
+    const char * basictemplates[] = { "aaanaaan", "aannaaan", "aaannaaa"};
+    const char * shorttemplates[] = { "Cvcn" };
+    const char * mediumtemplates[] = { "CvcnoCvc", "CvcCvcno" };
+    const char * longtemplates[] = { "CvcvnoCvcvCvcv", "CvcvCvcvnoCvcv", "CvcvCvcvCvcvno", "CvccnoCvcvCvcv", "CvccCvcvnoCvcv",
                                               "CvccCvcvCvcvno", "CvcvnoCvccCvcv", "CvcvCvccnoCvcv", "CvcvCvccCvcvno", "CvcvnoCvcvCvcc",
                                               "CvcvCvcvnoCvcc", "CvcvCvcvCvccno", "CvccnoCvccCvcv", "CvccCvccnoCvcv", "CvccCvccCvcvno",
                                               "CvcvnoCvccCvcc", "CvcvCvccnoCvcc", "CvcvCvccCvccno", "CvccnoCvcvCvcc", "CvccCvcvnoCvcc",
                                               "CvccCvcvCvccno" };
-    const unsigned char * maxtemplates[] = { "anoxxxxxxxxxxxxxxxxx","axxxxxxxxxxxxxxxxxno" };
-    const unsigned char * nametemplates[] = { "cvccvcvcv" };
-    const unsigned char * phrasetemplates[] = { "cvcc cvc cvccvcv cvc", "cvc cvccvcvcv cvcv", "cv cvccv cvc cvcvccv"};
+    const char * maxtemplates[] = { "anoxxxxxxxxxxxxxxxxx","axxxxxxxxxxxxxxxxxno" };
+    const char * nametemplates[] = { "cvccvcvcv" };
+    const char * phrasetemplates[] = { "cvcc cvc cvccvcv cvc", "cvc cvccvcvcv cvcv", "cv cvccv cvc cvcvccv"};
 
-    const unsigned char * template;
+    const char * template;
     unsigned i;
     unsigned passlen=0;
 
@@ -175,7 +177,7 @@ unsigned char * mp_password(unsigned char * site_utf8, unsigned counter, char ty
 
     passlen=strlen(template);
     for(i=0;i<passlen;i++) {
-        const unsigned char * passChars;
+        const char * passChars;
         switch(template[i])
         {
             case 'V': passChars = "AEIOU"; break;
@@ -202,7 +204,22 @@ void mp_clean(void){
     memset(mp_pass_ret,0,sizeof mp_pass_ret);
 }
 
-// int main(int argc, char**argv) {
-//     if(mp_key("test","test"))printf("keying failed\n");
-//     printf("pass:%s\n",mp_password(argv[1],1,'p'));
-// }
+#ifdef FORTEST
+#include <stdio.h>
+#include <string.h>
+#include <assert.h>
+#define ASSERT_EQUAL(a,b) if (strcmp(a,b)!=0){printf("Failed %s != %s, line %d\n",a,b, __LINE__);exit(1);}
+int main(int argc, char** argv) {
+    if(mp_key("test","test")) printf("keying failed\n");
+    ASSERT_EQUAL("xoxgubavi", mp_password(".", 0, 'n'));
+    ASSERT_EQUAL("95212fae6842582826f620d402b19aeaf38a77d612c24529bd5c89bacfd42288", sha256_digest(get_masterkey(),64));
+
+    if(mp_key("testtesttest","test")) printf("keying failed\n");
+    ASSERT_EQUAL("15e1741aa454746472af7b0bbda637b1d02cb700a5f1a21d23656c905cf08353", sha256_digest(get_masterkey(),64));
+
+    /* silence unused argument warning */
+    (void)argc;
+    (void)argv;
+    return 0;
+}
+#endif

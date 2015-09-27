@@ -17,10 +17,13 @@
 main: scrypt-asm.js
 
 scrypt.js: scrypt.c wrapper.js
-	emcc scrypt.c crypto_scrypt-nosse.c sha256.c -o scrypt.js -Os --js-opts 0 -Wno-pointer-sign --memory-init-file 0  -s TOTAL_MEMORY=67108864 -s EXPORTED_FUNCTIONS="['_scrypt','_scrypt_hmac_sha256','_mp_key','_mp_seed','_mp_password','_mp_clean']"
+	emcc scrypt.c crypto_scrypt-nosse.c sha256.c -o scrypt.js -Os --js-opts 0 -Wno-pointer-sign --memory-init-file 0  -s TOTAL_MEMORY=67108864 -s EXPORTED_FUNCTIONS="['_scrypt','_scrypt_hmac_sha256','_sha256_digest','_mp_key','_mp_seed','_mp_password','_mp_clean','_get_masterkey']"
 	#manual steps: remove lot's of unused stuff
 	patch < remove_cruft.patch
 	cat wrapper.js >> scrypt.js
 scrypt-asm.js: scrypt.js
 	python $(EMSCRIPTEN)/tools/js_optimizer.py scrypt.js asm cleanup asmLastOpts minifyWhitespace eliminate eliminateMemSafe simplifyExpressions simplifyIfs optimizeFrounds registerize minifyNames last noop
 	mv scrypt.js.jsopt.js scrypt-asm.js
+
+for_test: scrypt.c
+	gcc -Wall -Wextra -pedantic scrypt.c crypto_scrypt-nosse.c sha256.c -o for_test -DFORTEST
