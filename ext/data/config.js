@@ -21,6 +21,7 @@
 
  var stored_sites={};
  var username="";
+ var key_id = undefined;
 
 function save_sites_to_backend() {
     var event = document.createEvent('CustomEvent');
@@ -45,18 +46,38 @@ function stored_sites_table_append(domain,site,type,loginname,count,ver) {
         '<td><img class="delete" src="delete.png">');
 }
 
+function mpsites_import_error(code, message) {
+    this.name = 'mpsites_import_error';
+    this.message = message || '';
+    this.code = code || 0;
+    this.stack = (new Error()).stack;
+}
+mpsites_import_error.prototype = Object.create(Error.prototype);
+mpsites_import_error.prototype.constructor = mpsites_import_error;
+
 function read_mpsites(d){
-    var ret=[],l,fheader={'format':-1};
+    var ret=[],l,fheader={'format':-1, 'key_id':undefined, 'username':undefined};
     d = d.split("\n");
     if (!d.shift() == "# Master Password site export") throw "not a mpsites file";
     while((l = d.shift()) != "##"){}
     while((l = d.shift()) != "##"){
         l = l.split(":");
         if (l[0]=="# Format") fheader.format = 0+$.trim(l[1]);
+        if (l[0]=="# Key ID") fheader.key_id = $.trim(l[1]);
+        if (l[0]=="# User Name") fheader.username = $.trim(l[1]);
     }
     if (fheader.format != 1) {
         console.log(fheader);
-        throw "Unsupported mpsites format";
+        throw new mpsites_import_error(1, "Unsupported mpsites format");
+    }
+    if (fheader.username && fheader.username != username) {
+        if (!confirm("Username mismatch!\n\nYou may still import this file, "+
+                "but passwords will be different from where you exported the file"))
+            return undefined;
+    } else if (fheader.key_id && fheader.key_id != key_id) {
+        if (!confirm("Key ID mismatch!\n\nYou may still import this file, "+
+                "but passwords will be different from where you exported the file"))
+            return undefined;
     }
     $.each(d, function(){
         var s,re = /([-0-9T:Z]+)  +([0-9]+)  +([0-9]+):([0-9]+):([0-9]+)  +([^\t]*)\t *([^\t]*)\t(.*)$/g;
@@ -92,6 +113,7 @@ function read_mpsites(d){
 window.addEventListener('masterpassword-configload', function(e){
     stored_sites = e.detail.sites;
     username = e.detail.username;
+    key_id = e.detail.key_id;
     $.each(stored_sites, function(domain,v){
         $.each(v, function(site, settings){
             if (settings.username === undefined)
@@ -144,7 +166,16 @@ $(document).on('drop', function(e){
     }
     var fr = new FileReader();
     fr.onload=function(x){
-        var x = read_mpsites(x.target.result);
+        try {
+            x = read_mpsites(x.target.result);
+            if (!x) return;
+        } catch (e) {
+            if (e.name == 'mpsites_import_error') {
+                alert(e.message);
+                return;
+            }
+            else throw e;
+        }
         $.each(x, function(){
             var y = this.sitename.split("@");
             if (y.length>1)
@@ -183,7 +214,7 @@ function make_mpsites() {
         '# User Name: '+username+'\n',
         '# Full Name: '+username+'\n',
         '# Avatar: 0\n',
-        '# Key ID:\n',
+        '# Key ID: '+key_id+'\n',
         '# Version: 2.2\n',
         '# Algorithm: 3\n',
         '# Default Type: 17\n',
