@@ -19,8 +19,8 @@ var mpw=function(name, password){
     function mp_seed(site, count, type) {
         var namespace, hmac;
         switch (type){
-            case 'n': namespace = NSlogin; break;
-            case 'p': namespace = NSanswer; break;
+            case 'nx': namespace = NSlogin; break;
+            case 'px': namespace = NSanswer; break;
             default: namespace = NSgeneral; break;
         }
         Module.HEAPU8.set(key, keyofs);
@@ -53,7 +53,9 @@ var mpw=function(name, password){
                                   "CvcvnoCvccCvcc", "CvcvCvccnoCvcc", "CvcvCvccCvccno", "CvccnoCvcvCvcc", "CvccCvcvnoCvcc",
                                   "CvccCvcvCvccno"]; break;
             case 'x': template = ["anoxxxxxxxxxxxxxxxxx","axxxxxxxxxxxxxxxxxno"]; break;
+            case 'nx':
             case 'n': template = ["cvccvcvcv"]; break;
+            case 'px':
             case 'p': template = ["cvcc cvc cvccvcv cvc", "cvc cvccvcvcv cvcv", "cv cvccv cvc cvcvccv"]; break;
             default:
                 console.error('unknown password type', type);

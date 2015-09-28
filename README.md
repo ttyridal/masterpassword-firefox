@@ -22,6 +22,16 @@ When you first open masterpassword on a localized domain, that domain will be su
 
 If you have several accounts at a domain, it is suggested to prefix the site name with something like "username@" (ie myself@google.com). The site name in masterpassword will change to a dropdown if you have multiple variants.
 
+# Differences on name and phrase type passwords
+`version >= 2.0rc2`
+There was a descrepancy between how MasterPassword for Firefox and other implementations handled
+passwords with the type *name* and *phrase*. This has been corrected in versions after 2.0rc2. To get the old
+behaviour select the *name (v)* or *phrase (v)* option.
+
+Specifically, versions prior to 2.0rc2 forced the *variant* for such types to be respectively /login/ or /answer/.
+The variant concept is not commonly available in other implementations.
+
+
 # System password vaults
 `version >= 2.0pre3`
 

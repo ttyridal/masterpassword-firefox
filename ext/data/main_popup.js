@@ -63,7 +63,7 @@ function recalculate(hide_after_copy, retry) {
             mpw_session = mpw(
                 session_store.username,
                 session_store.masterkey);
-            $('#verify_pass_fld').html("Verify: " + mpw_session.sitepassword(".", 0, "n"));
+            $('#verify_pass_fld').html("Verify: " + mpw_session.sitepassword(".", 0, "nx"));
         } catch(err)
         {
             if (retry) {
