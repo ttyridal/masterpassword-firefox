@@ -56,7 +56,14 @@ function fix_session_store_password_type() {
     ss.storage.version=2;
 }
 
-var session_store = {'username':null,'masterkey':null,'sites':{}, 'defaulttype': prefs.defaulttype};
+var session_store = {
+    'username':null,
+    'masterkey':null,
+    'sites':{},
+    'defaulttype': prefs.defaulttype,
+    'key_id': undefined
+};
+
 if (ss.storage.username) session_store.username = ss.storage.username;
 if (!ss.storage.version || ss.storage.version < 2) fix_session_store_password_type();
 if (ss.storage.sites) session_store.sites = ss.storage.sites;
@@ -110,7 +117,11 @@ var pm_config_handler = pagemod.PageMod({
     onAttach: function(worker) {
         if (!worker.tab || worker.tab.id != tabs.activeTab.id) worker.destroy();
         worker.port.on('configload', function(m) {
-            worker.port.emit('configload', {sites:session_store.sites, username:session_store.username});
+            worker.port.emit('configload', {
+                sites:session_store.sites,
+                username:session_store.username,
+                key_id:session_store.key_id}
+            );
         });
         worker.port.on('configstore', function(d) {
             session_store.sites = d;
@@ -148,6 +159,7 @@ function createPanel() {
             session_store[k] = d[k];
         ss.storage.username = d.username;
         ss.storage.sites = d.sites;
+        ss.storage.key_id = d.key_id;
     });
     panel.port.on('openconfig', function(d){
         tabs.open({ url: self.data.url("config.html") });

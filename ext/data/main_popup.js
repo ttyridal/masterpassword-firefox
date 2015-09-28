@@ -57,6 +57,7 @@ function recalculate(hide_after_copy, retry) {
         $('#usermessage').html("need sitename");
         return;
     }
+    var key_id_mismatch = false;
 
     if (!mpw_session) {
         try {
@@ -64,6 +65,14 @@ function recalculate(hide_after_copy, retry) {
                 session_store.username,
                 session_store.masterkey);
             $('#verify_pass_fld').html("Verify: " + mpw_session.sitepassword(".", 0, "nx"));
+            var key_id = mpw_session.key_id();
+            if (session_store.key_id && key_id != session_store.key_id) {
+                warn_keyid_not_matching();
+                key_id_mismatch = true;
+            }
+            else
+                session_store.key_id = key_id;
+            addon.port.emit('store_update', session_store);
         } catch(err)
         {
             if (retry) {
@@ -110,7 +119,8 @@ function recalculate(hide_after_copy, retry) {
         if (hide_after_copy) {
             addon.port.emit('close');
         }
-        $('#usermessage').html("Password for " + $('#sitename').val() + " copied to clipboard");
+        if (!key_id_mismatch)
+            $('#usermessage').html("Password for " + $('#sitename').val() + " copied to clipboard");
 }
 
 function update_with_settings_for(domain) {
@@ -192,7 +202,6 @@ $('#sessionsetup > form').on('submit', function(){
     session_store.username=$('#username').val();
     session_store.masterkey=$('#masterkey').val();
     $('#masterkey').val('');
-    addon.port.emit('store_update', session_store);
 
     $('#sessionsetup').hide();
     $('#main').show();
@@ -274,6 +283,12 @@ function save_site_changes_and_recalc(){
     recalculate();
 }
 
+function warn_keyid_not_matching()
+{
+    console.log("keyids did not match!");
+    $('#usermessage').html("<span style='color:red'>Master password possible mismatch!</span> <button id='change_keyid_ok' title='set as new'>OK</button>");
+}
+
 $('#siteconfig').on('change', 'select,input', save_site_changes_and_recalc);
 $('#sitename').on('change', save_site_changes_and_recalc);
 $('#loginname').on('change', save_site_changes_and_recalc);
@@ -283,6 +298,14 @@ $('#mainPopup').on('click','.btnconfig',function(){
     $('#burgermenu').toggle();
     addon.port.emit('openconfig');
     addon.port.emit('close');
+});
+
+$('#mainPopup').on('click','#change_keyid_ok',function(){
+    var key_id = mpw_session.key_id();
+    console.log('save new keyid:',key_id);
+    session_store.key_id = key_id;
+    addon.port.emit('store_update', session_store);
+    $('#usermessage').html("Password for " + $('#sitename').val() + " copied to clipboard");
 });
 
 }());
