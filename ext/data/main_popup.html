@@ -58,6 +58,7 @@
     .btntool { width:32px;height:32px;cursor:pointer;background-size:cover;display:inline-block;}
     .btnconfig { background-image:url(wrench.png); }
     .btnlogout { background-image:url(exit.png); }
+    .btnburger { background-image:url(burger.png); }
     .btnproperties { background-image:url(gear.png); }
 	#usermessage {
         text-align:left;
@@ -87,7 +88,6 @@
 
 
 <div id="sessionsetup" style="display:none">
-    <div class="btntool btnconfig" style="position:absolute;right:1px;top:1px;"></div>
     <form>
         <label for="username">Your (full) name</label><br><input id="username" placeholder="Your Name"/><br>
         <label for="masterkey">Master password</label><br><input id="masterkey" type="password" placeholder="password" autocomplete="off"/><br>
@@ -96,7 +96,11 @@
 </div>
 
 <div id="main" style="display:none">
-    <div class="btntool btnlogout" style="position:absolute;right:1px;top:-49px;"></div>
+    <div id="burgermenu" style="background:black;right:1px;top:1px;padding-top:2px;width:100px;height:35px;display:none;text-align:left;position:fixed;">
+        <div class="btntool btnlogout"></div>
+        <div class="btntool btnconfig"></div>
+    </div>
+    <div class="btntool btnburger" style="position:absolute;right:1px;top:-47px;"></div>
     <select id="storedids" size="4" style="display:none;position:absolute;font-size:1.5em;width:99%;z-index:99"></select>
     <input id="sitename" class="domain highlight" type="text" style="width:100%;text-align:center;font-size:2em;" placeholder="site"/>
     <button id="storedids_dropdown" style="display:none;position:absolute;height:2em;right:1em;top:1px;z-index:98;background-color:rgba(0,0,0,0)">&#9660;</button>

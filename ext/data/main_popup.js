@@ -202,9 +202,14 @@ $('#sessionsetup > form').on('submit', function(){
 
 $('#mainPopup').on('click','.btnlogout',function(){
     session_store.masterkey = null;
+    $('#burgermenu').toggle();
     addon.port.emit('store_update', session_store);
     popup(session_store);
     $('#usermessage').html("session destroyed");
+});
+
+$('#mainPopup').on('click','.btnburger',function(){
+    $('#burgermenu').toggle();
 });
 
 $('#generatepassword').on('click', function(){});
@@ -275,7 +280,9 @@ $('#loginname').on('change', save_site_changes_and_recalc);
 
 
 $('#mainPopup').on('click','.btnconfig',function(){
+    $('#burgermenu').toggle();
     addon.port.emit('openconfig');
+    addon.port.emit('close');
 });
 
 }());

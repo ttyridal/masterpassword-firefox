@@ -1,0 +1,25 @@
+<svg width="60" height="60" xmlns="http://www.w3.org/2000/svg">
+<!-- Copyright Torbjorn Tyridal 2015
+
+    This file is part of Masterpassword for Firefox.
+
+    Foobar is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Foobar is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<g>
+<line x1="10" y1="23" x2="50" y2="23" stroke="#a0a0a0" stroke-width="4" stroke-linecap="round" fill=""/>
+<line x1="10" y1="30" x2="50" y2="30" stroke="#a0a0a0" stroke-width="4" stroke-linecap="round" fill=""/>
+<line x1="10" y1="37" x2="50" y2="37" stroke="#a0a0a0" stroke-width="4" stroke-linecap="round" fill=""/>
+</g></svg>
+
