@@ -11,11 +11,8 @@
 #include <arpa/inet.h>
 unsigned char scrypt_ret[64];
 unsigned char hmac_sha256_digest[32];
-char mp_pass_ret[64];
 
 static const char NSgeneral[] = "com.lyndir.masterpassword";
-static const char NSlogin[] = "com.lyndir.masterpassword.login";
-static const char NSanswer[] = "com.lyndir.masterpassword.answer";
 
 unsigned char * scrypt(char * password, unsigned password_len,
                        char * salt, unsigned salt_len,
@@ -112,96 +109,9 @@ unsigned char * mp_seed(char * site_utf8, unsigned counter, const char *  namesp
     return hmac_sha256_digest;
 }
 
-char * mp_password(char * site_utf8, unsigned counter, char type)
-{
-    const char * pintemplates[] = {"nnnn"};
-    const char * basictemplates[] = { "aaanaaan", "aannaaan", "aaannaaa"};
-    const char * shorttemplates[] = { "Cvcn" };
-    const char * mediumtemplates[] = { "CvcnoCvc", "CvcCvcno" };
-    const char * longtemplates[] = { "CvcvnoCvcvCvcv", "CvcvCvcvnoCvcv", "CvcvCvcvCvcvno", "CvccnoCvcvCvcv", "CvccCvcvnoCvcv",
-                                              "CvccCvcvCvcvno", "CvcvnoCvccCvcv", "CvcvCvccnoCvcv", "CvcvCvccCvcvno", "CvcvnoCvcvCvcc",
-                                              "CvcvCvcvnoCvcc", "CvcvCvcvCvccno", "CvccnoCvccCvcv", "CvccCvccnoCvcv", "CvccCvccCvcvno",
-                                              "CvcvnoCvccCvcc", "CvcvCvccnoCvcc", "CvcvCvccCvccno", "CvccnoCvcvCvcc", "CvccCvcvnoCvcc",
-                                              "CvccCvcvCvccno" };
-    const char * maxtemplates[] = { "anoxxxxxxxxxxxxxxxxx","axxxxxxxxxxxxxxxxxno" };
-    const char * nametemplates[] = { "cvccvcvcv" };
-    const char * phrasetemplates[] = { "cvcc cvc cvccvcv cvc", "cvc cvccvcvcv cvcv", "cv cvccv cvc cvcvccv"};
-
-    const char * template;
-    unsigned i;
-    unsigned passlen=0;
-
-    switch (type){
-        case 'n': template = NSlogin; break;
-        case 'p': template = NSanswer; break;
-        default: template = NSgeneral; break;
-    }
-    if (!mp_seed(site_utf8, counter, template)) return NULL;
-
-    switch (type){
-    case 'i':
-            i=sizeof pintemplates / sizeof pintemplates[0];
-            template=pintemplates[hmac_sha256_digest[0] % i];
-            break;
-    case 'b':
-            i=sizeof basictemplates / sizeof basictemplates[0];
-            template=basictemplates[hmac_sha256_digest[0] % i];
-            break;
-    case 's':
-            i=sizeof shorttemplates / sizeof shorttemplates[0];
-            template=shorttemplates[hmac_sha256_digest[0] % i];
-            break;
-    case 'm':
-            i=sizeof mediumtemplates / sizeof mediumtemplates[0];
-            template=mediumtemplates[hmac_sha256_digest[0] % i];
-            break;
-    case 'l':
-            i=sizeof longtemplates / sizeof longtemplates[0];
-            template=longtemplates[hmac_sha256_digest[0] % i];
-            break;
-    case 'x':
-            i=sizeof maxtemplates / sizeof maxtemplates[0];
-            template=maxtemplates[hmac_sha256_digest[0] % i];
-            break;
-    case 'n':
-            i=sizeof nametemplates / sizeof nametemplates[0];
-            template=nametemplates[hmac_sha256_digest[0] % i];
-            break;
-    case 'p':
-            i=sizeof phrasetemplates / sizeof phrasetemplates[0];
-            template=phrasetemplates[hmac_sha256_digest[0] % i];
-            break;
-
-    default: return NULL;
-    }
-
-    passlen=strlen(template);
-    for(i=0;i<passlen;i++) {
-        const char * passChars;
-        switch(template[i])
-        {
-            case 'V': passChars = "AEIOU"; break;
-            case 'C': passChars = "BCDFGHJKLMNPQRSTVWXYZ";break;
-            case 'v': passChars = "aeiou"; break;
-            case 'c': passChars = "bcdfghjklmnpqrstvwxyz"; break;
-            case 'A': passChars = "AEIOUBCDFGHJKLMNPQRSTVWXYZ"; break;
-            case 'a': passChars = "AEIOUaeiouBCDFGHJKLMNPQRSTVWXYZbcdfghjklmnpqrstvwxyz"; break;
-            case 'n': passChars = "0123456789"; break;
-            case 'o': passChars = "@&%?,=[]_:-+*$#!'^~;()/."; break;
-            case 'x': passChars = "AEIOUaeiouBCDFGHJKLMNPQRSTVWXYZbcdfghjklmnpqrstvwxyz0123456789!@#$%^&*()"; break;
-            case ' ': passChars = " "; break;
-            default: return NULL;
-        }
-        mp_pass_ret[i] = passChars[hmac_sha256_digest[i+1] % strlen(passChars)];
-    }
-    mp_pass_ret[passlen]=0;
-    return mp_pass_ret;
-}
-
 void mp_clean(void){
     memset(scrypt_ret,0,sizeof scrypt_ret);
     memset(hmac_sha256_digest,0,sizeof hmac_sha256_digest);
-    memset(mp_pass_ret,0,sizeof mp_pass_ret);
 }
 
 #ifdef FORTEST
@@ -211,7 +121,6 @@ void mp_clean(void){
 #define ASSERT_EQUAL(a,b) if (strcmp(a,b)!=0){printf("Failed %s != %s, line %d\n",a,b, __LINE__);exit(1);}
 int main(int argc, char** argv) {
     if(!mp_key("test","test")) printf("keying failed\n");
-    ASSERT_EQUAL("xoxgubavi", mp_password(".", 0, 'n'));
     ASSERT_EQUAL("95212fae6842582826f620d402b19aeaf38a77d612c24529bd5c89bacfd42288", sha256_digest(get_masterkey(),64));
 
     if(!mp_key("testtesttest","test")) printf("keying failed\n");
