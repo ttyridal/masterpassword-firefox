@@ -199,12 +199,15 @@ $(document).on('drop', function(e){
 
 });
 
-$('#export_mpsites').on('click',function(){
-    var x = make_mpsites();
+$('body').on('click','.export_mpsites',function(){
+    var x, alg_vers = 3;
+    if ($(this).attr('data-fakeold'))
+        alg_vers = 2;
+    var x = make_mpsites(alg_vers);
     start_data_download(x, 'firefox.mpsites');
 });
 
-function make_mpsites() {
+function make_mpsites(alg_version) {
     var a=[ '# Master Password site export\n',
         '#     Export of site names and stored passwords (unless device-private) encrypted with the master key.\n',
         '#\n',
@@ -239,7 +242,7 @@ function make_mpsites() {
                 case 'm': x='18'; break;
                 default: throw "unknown password type";
             }
-            x+=':3:'+settings.generation;
+            x+=':'+alg_version+':'+settings.generation;
             while (x.length<8) x=" "+x;
             while (site.length<25) site=" "+site;
             if (settings.username === undefined)
