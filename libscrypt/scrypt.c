@@ -91,14 +91,14 @@ unsigned char * mp_key(char * mp_utf8, char * name_utf8)
     return scrypt_ret;
 }
 
-static int mp_seed(char * site_utf8, unsigned counter, const char *  namespace)
+unsigned char * mp_seed(char * site_utf8, unsigned counter, const char *  namespace)
 {
     const unsigned sitelen = strlen(site_utf8);
     const unsigned nslen = strlen(namespace);
     unsigned saltlen = 0;
     char tmp[512];
     if (nslen+sitelen+8 > sizeof tmp)
-        return -1;
+        return NULL;
     memcpy(tmp,namespace,nslen);
     saltlen = nslen;
     int_to_network_bytes(sitelen, tmp+saltlen);
@@ -109,7 +109,7 @@ static int mp_seed(char * site_utf8, unsigned counter, const char *  namespace)
     saltlen+=4;
 
     scrypt_hmac_sha256(scrypt_ret, sizeof scrypt_ret, tmp, saltlen);
-    return 0;
+    return hmac_sha256_digest;
 }
 
 char * mp_password(char * site_utf8, unsigned counter, char type)
@@ -136,7 +136,7 @@ char * mp_password(char * site_utf8, unsigned counter, char type)
         case 'p': template = NSanswer; break;
         default: template = NSgeneral; break;
     }
-    if (mp_seed(site_utf8, counter, template)) return NULL;
+    if (!mp_seed(site_utf8, counter, template)) return NULL;
 
     switch (type){
     case 'i':
