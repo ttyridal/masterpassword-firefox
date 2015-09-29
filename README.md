@@ -32,11 +32,12 @@ you should avoid non english/latin characters like æ,ø,å,ß,€ and similar i
 
 # Differences on name and phrase type passwords
 `version >= 2.0rc2`
+
 There was a descrepancy between how MasterPassword for Firefox and other implementations handled
 passwords with the type *name* and *phrase*. This has been corrected in versions after 2.0rc2. To get the old
 behaviour select the *name (v)* or *phrase (v)* option.
 
-Specifically, versions prior to 2.0rc2 forced the *variant* for such types to be respectively /login/ or /answer/.
+Specifically, versions prior to 2.0rc2 forced the *variant* for such types to be respectively *login* or *answer*.
 The variant concept is not commonly available in other implementations.
 
 
