@@ -1,0 +1,102 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8"> 
+<title>test</title>
+<body>
+<script>
+function loadScript(src) {
+    return new Promise(function (resolve, reject) {
+        var s;
+        s = document.createElement('script');
+        s.async = true;
+        s.onload = resolve;
+        s.onerror = reject;
+        s.src = src;
+        document.head.appendChild(s);
+    });
+}
+
+
+function assert_error(msg) {
+    this.name = 'assert_error';
+    this.message = msg; 
+    this.stack = (new Error()).stack;
+}
+assert_error.prototype = Object.create(Error.prototype);
+assert_error.prototype.constructor = assert_error;
+
+function assert_equal(a,b) {
+    if (a != b) throw new assert_error(a+" != "+b);
+}
+function assert_true(a) {
+    if (!a) throw new assert_error('is not true');
+}
+
+function wait_loaded() {
+    return Promise.all([ loadScript('../data/js/scrypt-asm.js'), loadScript('../data/scrypt.js')]);
+}
+
+var start = Date.now();
+wait_loaded()
+.then(function(){
+    var pwcalc, loaded = Date.now();
+
+    console.log("running");
+    var pw = mpw('test','æøå');
+    pwcalc = Date.now();
+
+    assert_true(pw);
+    var totest = ".";
+    var cnt = 1;
+    assert_equal('U^Mh@^%kf3KaaCaRkO9&', pw.sitepassword(totest,cnt,'x'));
+    assert_equal('GekqXiquCidi1+', pw.sitepassword(totest,cnt,'l'));
+    assert_equal('GekQig8#', pw.sitepassword(totest,cnt,'m'));
+    assert_equal('UOl07Hft', pw.sitepassword(totest,cnt,'b'));
+    assert_equal('Gek0', pw.sitepassword(totest,cnt,'s'));
+    assert_equal('4110', pw.sitepassword(totest,cnt,'i'));
+    assert_equal('gekqigode', pw.sitepassword(totest,cnt,'n'));
+    assert_equal('ge qigqu cos lelamra', pw.sitepassword(totest,cnt,'p'));
+
+
+    pw = mpw('test','€ß');
+    assert_true(pw);
+    assert_equal('y3%JI^fQ1)^jmEDrmGKg', pw.sitepassword(totest,cnt,'x'));
+
+    pw = mpw('æøåßß','test');
+    assert_true(pw);
+    assert_equal('A7@BuMpJH&sF*jSeBkFo', pw.sitepassword(totest,cnt,'x'));
+
+    //alg v2
+    pw = mpw('æøåßß','test', 2);
+    assert_true(pw);
+    assert_equal('j3*sW(mU$hkFDzjiKyHU', pw.sitepassword(totest,cnt,'x'));
+
+    // alg v1
+    pw = mpw('abc','abc', 1);
+    assert_true(pw);
+    totest = "æøåß"
+    assert_equal('jV2(RKbXI0hNL$aSCz8.', pw.sitepassword(totest,cnt,'x'));
+
+    pw = mpw('abc','abc');
+    assert_true(pw);
+    assert_equal('cWIVZiNU2G4quLcdYb4.', pw.sitepassword(totest,cnt,'x'));
+
+
+    console.log('all tests passed');
+    pwcalc -= loaded;
+    loaded -= start;
+    start = Date.now() - start;
+    document.body.appendChild(document.createElement('pre'))
+        .appendChild(document.createTextNode('all tests passed\nLoading in '
+                +loaded+'ms\npwcalc in '+pwcalc+'ms\nTotal runtime '+start+'ms'));
+})
+.catch(function(e){
+    document.getElementsByTagName('body')[0].appendChild(document.createTextNode('test Failed'));
+    if (e.name == "assert_error")
+        console.log('Test Failed\n',e.message,'\n',e.stack);
+    else {
+        console.log(e);
+    }
+});
+</script>
