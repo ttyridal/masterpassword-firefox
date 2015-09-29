@@ -91,14 +91,20 @@ unsigned char * mp_key(char * mp_utf8, char * name_utf8, int lenoverride)
     return scrypt_ret;
 }
 
-unsigned char * mp_seed(char * site_utf8, unsigned counter, const char * scope, int lenoverride)
+unsigned char * mp_seed(char * site_utf8, unsigned counter, const char * scope, const char * context, int lenoverride)
 {
     const unsigned sitelen = strlen(site_utf8);
     const unsigned nslen = strlen(scope);
+    unsigned ctxlen;
     unsigned saltlen = 0;
     char tmp[512];
 
-    if (nslen+sitelen+8 > sizeof tmp)
+    if (context) {
+        ctxlen = strlen(context);
+        if (nslen+sitelen+ctxlen+12 > sizeof tmp)
+            return NULL;
+    }
+    else if (nslen+sitelen+8 > sizeof tmp)
         return NULL;
 
     memcpy(tmp,scope,nslen);
@@ -112,6 +118,11 @@ unsigned char * mp_seed(char * site_utf8, unsigned counter, const char * scope, 
     saltlen+=sitelen;
     int_to_network_bytes(counter, tmp+saltlen);
     saltlen+=4;
+    if (context) {
+        int_to_network_bytes(counter, tmp+saltlen);
+        saltlen+=4;
+        memcpy(tmp+saltlen,context,ctxlen);
+    }
 
     scrypt_hmac_sha256(scrypt_ret, sizeof scrypt_ret, tmp, saltlen);
     return hmac_sha256_digest;
