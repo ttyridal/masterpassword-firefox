@@ -1,0 +1,12 @@
+--- scrypt.js.orig	2015-09-29 19:48:17.285275516 +0200
++++ scrypt.js	2015-09-29 19:49:08.725274595 +0200
+@@ -477,7 +477,8 @@
+   }
+ 
+   if (zeroinit) {
+-    var ptr = ret, stop;
++    var stop;
++    ptr = ret;
+     assert((ret & 3) == 0);
+     stop = ret + (size & ~3);
+     for (; ptr < stop; ptr += 4) {
