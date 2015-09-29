@@ -86,7 +86,8 @@
         return retval.join('');
     }
 
-    function encode(key, site, count, type) {
+    function encode(key, site, count, type, lenoverride) {
+        lenoverride = typeof lenoverride !== 'undefined' ? lenoverride : 0;
         var scope,
             hmac;
 
@@ -95,23 +96,34 @@
             case 'px': scope = NSanswer; break;
             default: scope = NSgeneral; break;
         }
-        hmac = mp_seed(key, site, count, scope, null, 0);
+        hmac = mp_seed(key, site, count, scope, null, lenoverride);
 
         return password_from_template(
             char_template(type, hmac),
             hmac);
     }
 
-window.mpw=function(name, password){
+window.mpw=function(name, password, version){
+    version = typeof version !== 'undefined' ? version : 3;
     var key,
         lenoverride = 0;
     keyofs = typeof keyofs !== 'undefined' ? keyofs : Module.ccall('get_masterkey', 'number', [], []);
 
+    if (version<3) {
+        lenoverride = name.length;
+    }
+
     key = mp_key(password, name, lenoverride);
 
     return {
-        sitepassword : function(site, count, type) { return encode(key, site, count, type);},
-        key_id : function() { return sha256_digest(key); }
-        };
+        sitepassword : function(site, count, type) {
+            if (version < 2)
+                return encode(key, site, count, type, site.length);
+            else
+                return encode(key, site, count, type);
+        },
+        key_id : function() { return sha256_digest(key); },
+        v2_compatible : function() { return name.length == encode_utf8(name).length; }
+    };
 };
 }());

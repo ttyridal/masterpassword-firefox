@@ -58,19 +58,16 @@ exports["test mpw"] = function(assert) {
     assert.equal('cWIVZiNU2G4quLcdYb4.', pw.sitepassword(sitename,cnt,'x'));
 
     //alg v2
-//     pw = mpw('æøåßß','test');
-//     assert.ok(pw);
-//     assert.equal('j3*sW(mU$hkFDzjiKyHU', pw.sitepassword(sitename,cnt,'x'));
-
+    pw = mpw('æøåßß','test', 2);
+    sitename = ".";
+    assert.ok(pw);
+    assert.equal('j3*sW(mU$hkFDzjiKyHU', pw.sitepassword(sitename,cnt,'x'));
 
     // alg v1
-//     pw = mpw('abc','abc');
-//     assert.ok(pw);
-//     sitename = "æøåß"
-//     assert.equal('jV2(RKbXI0hNL$aSCz8.', pw.sitepassword(sitename,cnt,'x'));
-
-
-    assert.pass("scrypt asm loaded");
+    pw = mpw('abc','abc', 1);
+    assert.ok(pw);
+    sitename = "æøåß"
+    assert.equal('jV2(RKbXI0hNL$aSCz8.', pw.sitepassword(sitename,cnt,'x'));
 };
 
 require("sdk/test").run(exports);
