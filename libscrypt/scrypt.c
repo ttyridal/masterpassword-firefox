@@ -66,7 +66,7 @@ void int_to_network_bytes(uint32_t i, char * b)
     memcpy(b,&i,sizeof i);
 }
 
-unsigned char * mp_key(char * mp_utf8, char * name_utf8)
+unsigned char * mp_key(char * mp_utf8, char * name_utf8, int lenoverride)
 {
     const unsigned N = 32768,r=8,p=2;
     const unsigned mplen = strlen(mp_utf8);
@@ -78,7 +78,10 @@ unsigned char * mp_key(char * mp_utf8, char * name_utf8)
         return NULL;
     memcpy(tmp,NSgeneral,sizeof(NSgeneral)-1);
     saltlen = sizeof(NSgeneral)-1;
-    int_to_network_bytes(namelen, tmp+saltlen);
+    if (lenoverride > 0) // v1 & v2
+        int_to_network_bytes(lenoverride, tmp+saltlen);
+    else // v3
+        int_to_network_bytes(namelen, tmp+saltlen);
     saltlen+=4;
     memcpy(tmp+saltlen,name_utf8,namelen);
     saltlen+=namelen;
@@ -88,17 +91,22 @@ unsigned char * mp_key(char * mp_utf8, char * name_utf8)
     return scrypt_ret;
 }
 
-unsigned char * mp_seed(char * site_utf8, unsigned counter, const char *  namespace)
+unsigned char * mp_seed(char * site_utf8, unsigned counter, const char * scope, int lenoverride)
 {
     const unsigned sitelen = strlen(site_utf8);
-    const unsigned nslen = strlen(namespace);
+    const unsigned nslen = strlen(scope);
     unsigned saltlen = 0;
     char tmp[512];
+
     if (nslen+sitelen+8 > sizeof tmp)
         return NULL;
-    memcpy(tmp,namespace,nslen);
+
+    memcpy(tmp,scope,nslen);
     saltlen = nslen;
-    int_to_network_bytes(sitelen, tmp+saltlen);
+    if (lenoverride>0) // v1
+        int_to_network_bytes(lenoverride, tmp+saltlen);
+    else // v2 & v3
+        int_to_network_bytes(sitelen, tmp+saltlen);
     saltlen+=4;
     memcpy(tmp+saltlen,site_utf8,sitelen);
     saltlen+=sitelen;
