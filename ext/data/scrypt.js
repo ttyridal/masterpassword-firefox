@@ -1,48 +1,47 @@
-window.mpw=function(name, password){
-    var key,
-        keyofs = Module.ccall('get_masterkey', 'number', [], []);
+(function(){
+    "use strict";
     const
         NSgeneral = "com.lyndir.masterpassword",
         NSlogin = "com.lyndir.masterpassword.login",
         NSanswer = "com.lyndir.masterpassword.answer";
+    var keyofs = undefined;
 
-    if (!Module.ccall('mp_key', 'number', ['string','string', 'number'], [password,name, 0]))
-    {
-        alert("keying failed");
-        return null;
+
+    function encode_utf8(s) {
+      return unescape(encodeURIComponent(s));
     }
-    // the underlaying code will reuse the key memory. By taking
-    // a copy here, we can reset it before the call.
-    key = new Uint8Array(Module.HEAPU8.subarray(keyofs, keyofs+64));
 
-
-
-    function mp_seed(site, count, type) {
-        var namespace, hmac;
-        switch (type){
-            case 'nx': namespace = NSlogin; break;
-            case 'px': namespace = NSanswer; break;
-            default: namespace = NSgeneral; break;
+    function mp_key(password, name, lenoverride) {
+        var key = Module.ccall('mp_key', 'number', ['string','string', 'number'],
+                [password, name, lenoverride]);
+        if (!key)
+        {
+            throw new Error("mp_key failed");
         }
+        return new Uint8Array(Module.HEAPU8.subarray(key, key+64));
+    }
+
+    function mp_seed(key, site, count, scope, context, lenoverride) {
         Module.HEAPU8.set(key, keyofs);
-        hmac = Module.ccall('mp_seed', 'number', ['string','number','string', 'number', 'number'], [site,count,namespace, 0, 0]);
-        if (hmac == 0) return undefined;
-        hmac = new Uint8Array(Module.HEAPU8.subarray(hmac, hmac+32));
+        var hmac = Module.ccall('mp_seed', 'number', ['string','number','string', 'number', 'number'],
+                [site, count, scope, context, lenoverride]);
+        if (!hmac) {
+            throw new Error("mp_seed failed");
+        }
+        hmac = new Uint8Array(Module.HEAPU8.subarray(hmac, hmac + 32));
         return hmac;
     }
 
-    function mp_password(site, count, type) {
-        var passChars,
-            retval,
-            i,
-            template,
-            hmac = mp_seed(site, count, type);
-
-        if (!hmac) {
-            console.error('masterpassword site seeding failed');
-            return;
+    function sha256_digest(data) {
+        if (data.length > 64) {
+            throw new Error("only for use with masterKey!");
         }
+        Module.HEAPU8.set(data, keyofs);
+        return Module.ccall('sha256_digest', 'string', ['number','number'], [keyofs, 64]);
+    }
 
+    function char_template(type, hmac) {
+        var template;
         switch (type) {
             case 'i': template = ["nnnn"]; break;
             case 'b': template = ["aaanaaan", "aannaaan", "aaannaaa"]; break;
@@ -59,12 +58,13 @@ window.mpw=function(name, password){
             case 'px':
             case 'p': template = ["cvcc cvc cvccvcv cvc", "cvc cvccvcvcv cvcv", "cv cvccv cvc cvcvccv"]; break;
             default:
-                console.error('unknown password type', type);
-                return;
+                throw new Error("unknown password type '" + type + "'");
         }
-        template = template[hmac[0] % template.length];
+        return template[hmac[0] % template.length];
+    }
 
-        retval = [];
+    function password_from_template(template, hmac) {
+        var i, passChars, retval = [];
         for (i = 0; i < template.length; i++) {
             switch(template[i])
             {
@@ -78,19 +78,40 @@ window.mpw=function(name, password){
                 case 'o': passChars = "@&%?,=[]_:-+*$#!'^~;()/."; break;
                 case 'x': passChars = "AEIOUaeiouBCDFGHJKLMNPQRSTVWXYZbcdfghjklmnpqrstvwxyz0123456789!@#$%^&*()"; break;
                 case ' ': passChars = " "; break;
-                default: return NULL;
+                default:
+                    throw new Error("Unknown character class '"+template[i]+"'");
             }
             retval.push(passChars[hmac[i+1] % passChars.length]);
         }
         return retval.join('');
     }
 
+    function encode(key, site, count, type) {
+        var scope,
+            hmac;
+
+        switch (type){
+            case 'nx': scope = NSlogin; break;
+            case 'px': scope = NSanswer; break;
+            default: scope = NSgeneral; break;
+        }
+        hmac = mp_seed(key, site, count, scope, null, 0);
+
+        return password_from_template(
+            char_template(type, hmac),
+            hmac);
+    }
+
+window.mpw=function(name, password){
+    var key,
+        lenoverride = 0;
+    keyofs = typeof keyofs !== 'undefined' ? keyofs : Module.ccall('get_masterkey', 'number', [], []);
+
+    key = mp_key(password, name, lenoverride);
 
     return {
-        sitepassword : mp_password,
-        key_id : function() {
-            Module.HEAPU8.set(key, keyofs);
-            return Module.ccall('sha256_digest', 'string', ['number','number'], [keyofs, 64]);
-        }
-    };
+        sitepassword : function(site, count, type) { return encode(key, site, count, type);},
+        key_id : function() { return sha256_digest(key); }
+        };
 };
+}());
