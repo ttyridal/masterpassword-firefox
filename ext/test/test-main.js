@@ -26,16 +26,4 @@ exports["test main handlers"] = function(assert) {
     assert.ok(addon_script_ready == 1, "main_popup.js loaded successfully");
 };
 
-
-// exports["test libscrypt"] = function(assert) {
-//     // clearly I'd like to avoid this sandbox nonsense.
-//     var self = require("sdk/self");
-//     const { sandbox, evaluate, load } = require("sdk/loader/sandbox");
-//     var scope = sandbox();
-//     scope.window = {};
-//     load(scope, self.data.url('js/scrypt-asm.js'));
-//     assert.pass("scrypt asm loaded");
-// };
-
-
 require("sdk/test").run(exports);
