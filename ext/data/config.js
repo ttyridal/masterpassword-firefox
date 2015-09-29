@@ -18,10 +18,14 @@
 
 
 (function(){
+function encode_utf8(s) {
+  return unescape(encodeURIComponent(s));
+}
 
  var stored_sites={};
  var username="";
  var key_id = undefined;
+ var alg_version = 3;
 
 function save_sites_to_backend() {
     var event = document.createEvent('CustomEvent');
@@ -114,11 +118,17 @@ window.addEventListener('masterpassword-configload', function(e){
     stored_sites = e.detail.sites;
     username = e.detail.username;
     key_id = e.detail.key_id;
+
+    if (username.length == encode_utf8(username).length)
+        alg_version = 2;
+    else
+        $('#ver3note').show();
+
     $.each(stored_sites, function(domain,v){
         $.each(v, function(site, settings){
             if (settings.username === undefined)
                 settings.username="";
-            stored_sites_table_append(domain,site,settings.type,settings.username,settings.generation,"3");
+            stored_sites_table_append(domain,site,settings.type,settings.username,settings.generation,""+alg_version);
         });
     });
 });

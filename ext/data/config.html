@@ -36,14 +36,12 @@ td img { width: 15px; height:15px;}
 <tbody>
 </table>
 <button class="export_mpsites">export</button>
-<button class="export_mpsites" data-fakeold="1">export as v2</button>
-<p>"export as v2"<br>
-This browser-plugin implements the 3rd version of the MasterPassword algorithm.
-Many existing implementations (notably the official ios and osx apps) are
-currently at v2 and will not import the default .mpsites file. <br>
-<b>If</b> you've only used plain <a href="https://en.wikipedia.org/wiki/ASCII" target="_blank">ASCII</a>
-characters in your Master Password user name, you can use this button to export your mpsites to
-these apps. The file will claim to be version 2.
+<p id="ver3note" style="display:none">
+Your username contains characters outside the
+plain <a href="https://en.wikipedia.org/wiki/ASCII" target="_blank">ASCII</a> range.<br>
+This browser-plugin implements the third revision of MasterPassword. As a consequence,
+your password list can not be imported in apps supporting max revision 2 (notably the
+official iOS and osX apps with version 2.1.x and earlier)</p>
 
 
 <script src="./js/jquery-2.1.3.min.js"></script>
