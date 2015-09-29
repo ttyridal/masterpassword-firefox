@@ -6,7 +6,7 @@ window.mpw=function(name, password){
         NSlogin = "com.lyndir.masterpassword.login",
         NSanswer = "com.lyndir.masterpassword.answer";
 
-    if (!Module.ccall('mp_key', 'number', ['string','string'], [password,name]))
+    if (!Module.ccall('mp_key', 'number', ['string','string', 'number'], [password,name, 0]))
     {
         alert("keying failed");
         return null;
@@ -25,7 +25,7 @@ window.mpw=function(name, password){
             default: namespace = NSgeneral; break;
         }
         Module.HEAPU8.set(key, keyofs);
-        hmac = Module.ccall('mp_seed', 'number', ['string','number','string'], [site,count,namespace]);
+        hmac = Module.ccall('mp_seed', 'number', ['string','number','string', 'number', 'number'], [site,count,namespace, 0, 0]);
         if (hmac == 0) return undefined;
         hmac = new Uint8Array(Module.HEAPU8.subarray(hmac, hmac+32));
         return hmac;
