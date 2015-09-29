@@ -1,6 +1,10 @@
-var mpw=function(name, password){
+window.mpw=function(name, password){
     var key,
         keyofs = Module.ccall('get_masterkey', 'number', [], []);
+    const
+        NSgeneral = "com.lyndir.masterpassword",
+        NSlogin = "com.lyndir.masterpassword.login",
+        NSanswer = "com.lyndir.masterpassword.answer";
 
     if (!Module.ccall('mp_key', 'number', ['string','string'], [password,name]))
     {
@@ -11,9 +15,6 @@ var mpw=function(name, password){
     // a copy here, we can reset it before the call.
     key = new Uint8Array(Module.HEAPU8.subarray(keyofs, keyofs+64));
 
-    NSgeneral = "com.lyndir.masterpassword";
-    NSlogin = "com.lyndir.masterpassword.login";
-    NSanswer = "com.lyndir.masterpassword.answer";
 
 
     function mp_seed(site, count, type) {
