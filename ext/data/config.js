@@ -223,7 +223,7 @@ function make_mpsites(alg_version) {
         '#\n',
         '##\n',
         '# Format: 1\n',
-        '# Date: 2015-03-24T14:44:51Z\n',
+        '# Date: '+(new Date().toISOString().slice(0,-2))+'Z\n',
         '# User Name: '+username+'\n',
         '# Full Name: '+username+'\n',
         '# Avatar: 0\n',
