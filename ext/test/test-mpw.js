@@ -1,3 +1,50 @@
+exports["test mpw utils import"] = function(assert) {
+    var self = require("sdk/self");
+    const { sandbox, evaluate, load } = require("sdk/loader/sandbox");
+    var scope = sandbox();
+    scope.window = {
+        'addEventListener': function(){},
+    };
+    scope['document'] = {};
+    scope['confirm'] = function(m){return true;};
+    load(scope, self.data.url('../test/jquery_stubs.js'));
+    load(scope, self.data.url('config.js'));
+
+
+    var header = [ '# Master Password site export',
+'#     Export of site names and stored passwords (unless device-private) encrypted with the master key.',
+'# ', '##', '# Format: 1', '# Date: 2015-09-30T10:15:25Z', '# User Name: test', '# Full Name: test',
+'# Avatar: 0', '# Key ID: 95212FAE6842582826F620D402B19AEAF38A77D612C24529BD5C89BACFD42288',
+'# Version: 2.2', '# Algorithm: 3', '# Default Type: 17', '# Passwords: PROTECTED',
+'##', '#',
+'#               Last     Times  Password                      Login\t                     Site\tSite',
+'#               used      used      type                       name\t                     name\tpassword'
+        ];
+
+    var sites = [
+'2015-09-30T10:14:31Z         0    16:1:6                           \t                    asite\t',
+'2015-09-30T10:14:51Z         0    17:3:1                           \t                    csite\t',
+'2015-09-30T10:14:39Z         0    18:2:4                           \t                    åsite\t',
+        ];
+
+    assert.throws(function(){scope.window.mpw_utils.read_mpsites([ 'gargabe' ].join('\n'))}, /Not a mpsites file/);
+    var r = scope.window.mpw_utils.read_mpsites(header.concat(sites).join('\n'));
+    assert.equal(r[0].sitename, 'asite');
+    assert.equal(r[0].passtype, 'x');
+    assert.equal(r[0].passalgo, '1');
+    assert.equal(r[0].passcnt, '6');
+
+    assert.equal(r[1].sitename, 'csite');
+    assert.equal(r[1].passtype, 'l');
+    assert.equal(r[1].passalgo, '3');
+    assert.equal(r[1].passcnt, '1');
+
+    assert.equal(r[2].sitename, 'åsite');
+    assert.equal(r[2].passtype, 'm');
+    assert.equal(r[2].passalgo, '2');
+    assert.equal(r[2].passcnt, '4');
+
+}
 
 exports["test mpw utils export"] = function(assert) {
     var self = require("sdk/self");
