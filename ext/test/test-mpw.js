@@ -1,10 +1,93 @@
+
+exports["test mpw utils export"] = function(assert) {
+    var self = require("sdk/self");
+    const { sandbox, evaluate, load } = require("sdk/loader/sandbox");
+    var scope = sandbox();
+    scope.window = {
+        'addEventListener': function(){},
+    };
+    scope['document'] = {};
+    load(scope, self.data.url('../test/jquery_stubs.js'));
+    load(scope, self.data.url('config.js'));
+
+    var ret = scope.window.mpw_utils.make_mpsites({
+        'testdomain.no': {
+            'test.domain': {type:'m', generation:1},
+            'user@test.domain': {type:'l', username:'reasonably_short', generation:1},
+            'åuser@test.domain': {type:'x', username: 'veryveryveryveryveryveryverylong', generation:2},
+        },
+        'another.domain': {
+            'very@long.domain@another_very_very_long_test.domain': {type:'i', username: 'regular', generation:3},
+        }
+    }, 1);
+
+    var sites_parsed = [];
+    var re = /^([^ ]+) +(\d+) +(\d+)(:\d+)?(:\d+)? +([^\t]*)\t *([^\t]+)\t(.*)/
+    for (var x of ret) {
+        if (x[0] == '#') continue;
+        sites_parsed.push(re.exec(x).slice(1));
+    }
+
+    assert.equal(sites_parsed[0][2], '18');
+    assert.equal(sites_parsed[0][3], ':1');
+    assert.equal(sites_parsed[0][4], ':1');
+    assert.equal(sites_parsed[0][5], '');
+    assert.equal(sites_parsed[0][6], 'test.domain');
+
+    assert.equal(sites_parsed[1][2], '17');
+    assert.equal(sites_parsed[1][3], ':1');
+    assert.equal(sites_parsed[1][4], ':1');
+    assert.equal(sites_parsed[1][5], 'reasonably_short');
+    assert.equal(sites_parsed[1][6], 'user@test.domain');
+
+    assert.equal(sites_parsed[2][2], '16');
+    assert.equal(sites_parsed[2][3], ':2');
+    assert.equal(sites_parsed[2][4], ':2');
+    assert.equal(sites_parsed[2][5], 'veryveryveryveryveryveryverylong');
+    assert.equal(sites_parsed[2][6], 'åuser@test.domain');
+
+    assert.equal(sites_parsed[3][2], '21');
+    assert.equal(sites_parsed[3][3], ':1');
+    assert.equal(sites_parsed[3][4], ':3');
+    assert.equal(sites_parsed[3][5], 'regular');
+    assert.equal(sites_parsed[3][6], 'very@long.domain@another_very_very_long_test.domain');
+
+
+    ret = scope.window.mpw_utils.make_mpsites({
+        'testdomain.no': {
+            'user@test.domain': {type:'p', generation:1},
+            'åuser@test.domain': {type:'b', generation:4},
+        },
+    }, 3);
+
+    sites_parsed = [];
+    re = /^([^ ]+) +(\d+) +(\d+)(:\d+)?(:\d+)? +([^\t]*)\t *([^\t]+)\t(.*)/
+    for (var x of ret) {
+        if (x[0] == '#') continue;
+        sites_parsed.push(re.exec(x).slice(1));
+    }
+    assert.equal(sites_parsed[0][2], '31');
+    assert.equal(sites_parsed[0][3], ':3');
+    assert.equal(sites_parsed[0][4], ':1');
+    assert.equal(sites_parsed[0][5], '');
+    assert.equal(sites_parsed[0][6], 'user@test.domain');
+
+    assert.equal(sites_parsed[1][2], '19');
+    assert.equal(sites_parsed[1][3], ':3');
+    assert.equal(sites_parsed[1][4], ':4');
+    assert.equal(sites_parsed[1][5], '');
+    assert.equal(sites_parsed[1][6], 'åuser@test.domain');
+
+    assert.ok(1);
+}
+
 exports["test mpw"] = function(assert) {
     var self = require("sdk/self");
     const { sandbox, evaluate, load } = require("sdk/loader/sandbox");
     var scope = sandbox();
     scope.window = { };
     scope.XMLHttpRequest = function(){};
-    scope.console = { 
+    scope.console = {
         log: function(){},
         error: console.error,
     };
@@ -71,3 +154,4 @@ exports["test mpw"] = function(assert) {
 };
 
 require("sdk/test").run(exports);
+

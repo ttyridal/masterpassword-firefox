@@ -213,10 +213,33 @@ $(document).on('drop', function(e){
 });
 
 $('body').on('click','.export_mpsites',function(){
-    start_data_download(make_mpsites(), 'firefox.mpsites');
+    start_data_download(make_mpsites(stored_sites, alg_min_version), 'firefox.mpsites');
 });
 
-function make_mpsites() {
+function pad_left(len, s, chr) {
+    chr = chr || ' ';
+    var x, a=[];
+    if (typeof s === 'number')
+        s = ''+s;
+    if (typeof s === 'string') {
+        len -= s.length;
+        if (len <= 0) return s;
+        chr = chr.repeat(len);
+        return [chr, s].join('');
+    }
+    else  {
+        for (x of s) {
+            if (typeof(x) === 'number') x = ''+x;
+            len -= x.length;
+            a.push(x);
+        }
+        if (len <= 0) return a.join[''];
+        a.unshift(chr.repeat(len));
+        return a.join('');
+    }
+}
+
+function make_mpsites(stored_sites, alg_min_version) {
     var a=[ '# Master Password site export\n',
         '#     Export of site names and stored passwords (unless device-private) encrypted with the master key.\n',
         '#\n',
@@ -238,33 +261,30 @@ function make_mpsites() {
 
     $.each(stored_sites, function(domain,v){
         $.each(v, function(site, settings){
-            var x;
-            var loginname;
-            var alg_version = alg_min_version;
+            var typecode,
+                alg_version = alg_min_version;
+
             if (alg_min_version < 3 && (site.length != encode_utf8(site).length))
                 alg_version = 2;
 
             switch(settings.type){
-                case 's': x='20'; break;
-                case 'x': x='16'; break;
-                case 'i': x='21'; break;
-                case 'b': x='19'; break;
-                case 'p': x='31'; break;
-                case 'n': x='30'; break;
-                case 'l': x='17'; break;
-                case 'm': x='18'; break;
+                case 's': typecode = '20'; break;
+                case 'x': typecode = '16'; break;
+                case 'i': typecode = '21'; break;
+                case 'b': typecode = '19'; break;
+                case 'p': typecode = '31'; break;
+                case 'n': typecode = '30'; break;
+                case 'l': typecode = '17'; break;
+                case 'm': typecode = '18'; break;
                 default: throw "unknown password type";
             }
-            x+=':'+alg_version+':'+settings.generation;
-            while (x.length<8) x=" "+x;
-            while (site.length<25) site=" "+site;
-            if (settings.username === undefined)
-                loginname=""
-            else
-                loginname = settings.username.substring(0,25);
-            while (loginname.length<25) loginname=" "+loginname;
 
-            a.push('2015-03-23T13:06:35Z         0  '+x+'  '+loginname+'\t'+site+'\t\n');
+            a.push( ['2015-03-23T13:06:35Z',
+                     '  ', pad_left(8, '0'),
+                     '  ', pad_left(8, [typecode, ':', alg_version, ':', settings.generation]),
+                     '  ', pad_left(25, settings.username || ''),
+                     '\t', pad_left(25, site),
+                     '\t\n'].join(''));
         });
     });
     return a;
@@ -283,5 +303,8 @@ function start_data_download(stringarr,filename) {
     document.body.removeChild(a)
 }
 
-
+window.mpw_utils = {
+    make_mpsites: make_mpsites,
+    read_mpsites: read_mpsites
+};
 }());
