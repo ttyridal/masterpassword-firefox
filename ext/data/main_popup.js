@@ -31,11 +31,11 @@ function parse_uri(sourceUri){
 }
 
 function get_active_tab_url() {
-    var ret = jQuery.Deferred();
-
-    addon.port.emit('get_tab_url');
-    addon.port.once("get_tab_url_resp", function (d) {
-        ret.resolve(d);
+    var ret = new Promise(function(resolve, fail){
+        addon.port.once("get_tab_url_resp", function (d) {
+            resolve(d);
+        });
+        addon.port.emit('get_tab_url');
     });
     return ret;
 }
@@ -155,19 +155,23 @@ function popup(session_store_, opened_by_hotkey) {
 
     $('#passwdtype').val(session_store.defaulttype);
 
-    get_active_tab_url().then(function(url){
-        var domain = parse_uri(url)['domain'].split("."),
+    get_active_tab_url()
+    .then(function(url){
+        var domain = parse_uri(url).domain.split("."),
             significant_parts = 2;
         if (domain.length > 2 && domain[domain.length-2].toLowerCase() == "co")
             significant_parts = 3;
         while(domain.length > 1 && domain.length > significant_parts)
-        domain.shift();
+            domain.shift();
         domain = domain.join(".");
         $('.domain').attr('value', domain);
         update_with_settings_for(domain);
         if(recalc) {
             recalculate(opened_by_hotkey);
         }
+    })
+    .catch(function(x) {
+        console.error('get_active_tab_url failed',x);
     });
 }
 addon.port.on("popup", popup);
