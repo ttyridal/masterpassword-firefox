@@ -25,7 +25,7 @@ function encode_utf8(s) {
  var stored_sites={};
  var username="";
  var key_id = undefined;
- var alg_version = 3;
+ var alg_min_version = 1;
 
 function save_sites_to_backend() {
     var event = document.createEvent('CustomEvent');
@@ -119,13 +119,16 @@ window.addEventListener('masterpassword-configload', function(e){
     username = e.detail.username;
     key_id = e.detail.key_id;
 
-    if (username.length == encode_utf8(username).length)
-        alg_version = 2;
-    else
+    if (username.length != encode_utf8(username).length) {
+        alg_min_version = 3;
         $('#ver3note').show();
+    }
 
     $.each(stored_sites, function(domain,v){
         $.each(v, function(site, settings){
+            var alg_version = alg_min_version;
+            if (alg_min_version < 3 && (site.length != encode_utf8(site).length))
+                alg_version = 2;
             if (settings.username === undefined)
                 settings.username="";
             stored_sites_table_append(domain,site,settings.type,settings.username,settings.generation,""+alg_version);
@@ -210,14 +213,10 @@ $(document).on('drop', function(e){
 });
 
 $('body').on('click','.export_mpsites',function(){
-    var x, alg_vers = 3;
-    if ($(this).attr('data-fakeold'))
-        alg_vers = 2;
-    var x = make_mpsites(alg_vers);
-    start_data_download(x, 'firefox.mpsites');
+    start_data_download(make_mpsites(), 'firefox.mpsites');
 });
 
-function make_mpsites(alg_version) {
+function make_mpsites() {
     var a=[ '# Master Password site export\n',
         '#     Export of site names and stored passwords (unless device-private) encrypted with the master key.\n',
         '#\n',
@@ -241,6 +240,10 @@ function make_mpsites(alg_version) {
         $.each(v, function(site, settings){
             var x;
             var loginname;
+            var alg_version = alg_min_version;
+            if (alg_min_version < 3 && (site.length != encode_utf8(site).length))
+                alg_version = 2;
+
             switch(settings.type){
                 case 's': x='20'; break;
                 case 'x': x='16'; break;
