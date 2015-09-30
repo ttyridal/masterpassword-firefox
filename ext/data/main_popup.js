@@ -17,6 +17,7 @@
 */
 
 (function () {
+    "use strict";
 
 function parse_uri(sourceUri){
     // stolen with pride: http://blog.stevenlevithan.com/archives/parseuri-split-url
@@ -110,8 +111,8 @@ function recalculate(hide_after_copy, retry) {
 function update_with_settings_for(domain) {
     var first = true;
 
-    if (session_store['sites'] === undefined) return;
-    if (session_store.sites[domain] === undefined) return;
+    if (typeof session_store.sites === 'undefined') return;
+    if (typeof session_store.sites[domain] === 'undefined') return;
 
     $('#storedids').empty();
     $.each(session_store.sites[domain], function(key, val) {
@@ -255,9 +256,9 @@ $('#storedids').on('change', function(){
 function save_site_changes_and_recalc(){
     var domain = $('#domain').val();
 
-    if (session_store['sites'] === undefined)
+    if (typeof session_store.sites === 'undefined')
         session_store.sites = {};
-    if (session_store.sites[domain] === undefined)
+    if (typeof session_store.sites[domain] === 'undefined')
         session_store.sites[domain] = {};
 
     session_store.sites[domain][$('#sitename').val()] = {
