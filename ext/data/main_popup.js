@@ -60,33 +60,17 @@ function recalculate(hide_after_copy, retry) {
     var key_id_mismatch = false;
 
     if (!mpw_session) {
-        try {
-            mpw_session = mpw(
-                session_store.username,
-                session_store.masterkey);
-            $('#verify_pass_fld').html("Verify: " + mpw_session.sitepassword(".", 0, "nx"));
-            var key_id = mpw_session.key_id();
-            if (session_store.key_id && key_id != session_store.key_id) {
-                warn_keyid_not_matching();
-                key_id_mismatch = true;
-            }
-            else
-                session_store.key_id = key_id;
-            addon.port.emit('store_update', session_store);
-        } catch(err)
-        {
-            if (retry) {
-                $('#usermessage').html("Waiting didn't help :(");
-                $('#thepassword').html('(Failed)');
-                console.log(err.message, "\n", err.stack);
-            } else {
-                $('#usermessage').html("waiting for asm.js");
-                setTimeout(
-                        function(){ recalculate(hide_after_copy, true); },
-                        300);
-            }
-            return;
+        mpw_session = mpw( session_store.username, session_store.masterkey );
+
+        $('#verify_pass_fld').html("Verify: " + mpw_session.sitepassword(".", 0, "nx"));
+        var key_id = mpw_session.key_id();
+        if (session_store.key_id && key_id != session_store.key_id) {
+            warn_keyid_not_matching();
+            key_id_mismatch = true;
         }
+        else
+            session_store.key_id = key_id;
+        addon.port.emit('store_update', session_store);
     }
 
     console.log("calc password " +
