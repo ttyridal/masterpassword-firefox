@@ -24,7 +24,7 @@ var { Hotkey } = require("sdk/hotkeys");
 var prefs = require("sdk/simple-prefs").prefs;
 var windows = require("sdk/windows");
 var isPrivate = require("sdk/private-browsing").isPrivate;
-var pagemod = require("sdk/page-mod")
+var pagemod = require("sdk/page-mod");
 var self = require("sdk/self");
 var ss = require("sdk/simple-storage");
 var pwmgr = require("./system_password_manager.js").manager;
@@ -73,7 +73,7 @@ if (system_password_manager) {
         lib.get_password(function(pwd, err){
             if (pwd === undefined)
                 console.log("failed to get master key from os-store", err);
-            else if (pwd == '') {
+            else if (pwd === '') {
             }
             else
                 session_store.masterkey = pwd;
@@ -155,8 +155,10 @@ function createPanel() {
                 system_password_manager.then(function(lib){ lib.set_password(d.masterkey); });
         }
 
-        for (k in d)
+        for (k in d) {
+            if (! d.hasOwnProperty(k)) continue;
             session_store[k] = d[k];
+        }
         ss.storage.username = d.username;
         ss.storage.sites = d.sites;
         ss.storage.key_id = d.key_id;

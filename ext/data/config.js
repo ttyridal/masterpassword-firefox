@@ -33,7 +33,7 @@ function save_sites_to_backend() {
     document.documentElement.dispatchEvent(event);
 }
 
-function stored_sites_table_append(domain,site,type,loginname,count,ver) {
+function stored_sites_table_append(domain, site, type, loginname, count, ver) {
     switch(type) {
         case 'x': type="Maximum"; break;
         case 'l': type="Long"; break;
@@ -43,7 +43,7 @@ function stored_sites_table_append(domain,site,type,loginname,count,ver) {
         case 'i': type="Pin"; break;
         case 'n': type="Name"; break;
         case 'p': type="Phrase"; break;
-        default: throw "Logic error";
+        default: throw new Error("Unknown password type");
     }
     $('#stored_sites').append('<tr><td>'+site+'<td><input class="domainvalue" type="text" data-old="'+
         domain+'" value="'+domain+'"><td>'+loginname+'<td>'+count+'<td>'+type+'<td>'+ver+
@@ -62,8 +62,11 @@ mpsites_import_error.prototype.constructor = mpsites_import_error;
 function read_mpsites(d){
     var ret=[],l,fheader={'format':-1, 'key_id':undefined, 'username':undefined};
     d = d.split("\n");
-    if (!d.shift() == "# Master Password site export") throw "not a mpsites file";
+    if (d.shift() != "# Master Password site export")
+        throw new mpsites_import_error(3, "Not a mpsites file");
+
     while((l = d.shift()) != "##"){}
+
     while((l = d.shift()) != "##"){
         l = l.split(":");
         if (l[0]=="# Format") fheader.format = 0+$.trim(l[1]);
@@ -83,6 +86,7 @@ function read_mpsites(d){
                 "but passwords will be different from where you exported the file"))
             return undefined;
     }
+
     $.each(d, function(){
         var s,re = /([-0-9T:Z]+)  +([0-9]+)  +([0-9]+):([0-9]+):([0-9]+)  +([^\t]*)\t *([^\t]*)\t(.*)$/g;
         if (this.charAt(0)=="#") return true;
@@ -130,8 +134,13 @@ window.addEventListener('masterpassword-configload', function(e){
             if (alg_min_version < 3 && (site.length != encode_utf8(site).length))
                 alg_version = 2;
             if (settings.username === undefined)
-                settings.username="";
-            stored_sites_table_append(domain,site,settings.type,settings.username,settings.generation,""+alg_version);
+                settings.username = "";
+            stored_sites_table_append(domain,
+                site,
+                settings.type,
+                settings.username,
+                settings.generation,
+                ""+alg_version);
         });
     });
 });
@@ -159,7 +168,7 @@ $('#stored_sites').on('click','.delete',function(e){
     var $t, t = this;
     console.log(t);
     while (t.parentNode.nodeName != 'TR') t=t.parentNode;
-    if (! t.parentNode.nodeName == 'TR') throw "logic error";
+    if (t.parentNode.nodeName != 'TR') throw new Error("logic error - cant find parent node");
     t=t.parentNode;
     $t=$(t);
 
@@ -196,18 +205,24 @@ $(document).on('drop', function(e){
             else
                 this.sitesearch = this.sitename;
 
-            stored_sites_table_append(this.sitesearch,this.sitename,this.passtype,this.loginname,this.passcnt,this.passalgo);
+            stored_sites_table_append(
+                this.sitesearch,
+                this.sitename,
+                this.passtype,
+                this.loginname,
+                this.passcnt,
+                this.passalgo);
 
             if (! (this.sitesearch in stored_sites)) stored_sites[this.sitesearch] = {};
             stored_sites[this.sitesearch][this.sitename] = {
-                'generation':this.passcnt,
-                'type':this.passtype,
-                'username':this.loginname
+                'generation': this.passcnt,
+                'type': this.passtype,
+                'username': this.loginname
             };
         });
 
         save_sites_to_backend();
-    }
+    };
     fr.readAsText(e.originalEvent.dataTransfer.files[0]);
 
 });
@@ -296,11 +311,11 @@ function start_data_download(stringarr,filename) {
     a.download = filename;
 
     // Append anchor to body.
-    document.body.appendChild(a)
+    document.body.appendChild(a);
     a.click();
 
     // Remove anchor from body
-    document.body.removeChild(a)
+    document.body.removeChild(a);
 }
 
 window.mpw_utils = {
