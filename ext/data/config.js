@@ -110,8 +110,8 @@ function read_mpsites(d){
             lastused: s[1],
             timesused: s[2],
             passtype: s[3],
-            passalgo: s[4],
-            passcnt: s[5],
+            passalgo: parseInt(s[4],10),
+            passcnt: parseInt(s[5],10),
             loginname: s[6],
             sitename: s[7],
             sitepass: s[8]
@@ -192,6 +192,7 @@ $(document).on('drop', function(e){
     }
     var fr = new FileReader();
     fr.onload=function(x){
+        var has_ver1_mb_sites = false;
         try {
             x = read_mpsites(x.target.result);
             if (!x) return;
@@ -217,6 +218,9 @@ $(document).on('drop', function(e){
                 this.passcnt,
                 this.passalgo);
 
+            if (this.passalgo < 2 && !string_is_plain_ascii(this.sitename))
+                has_ver1_mb_sites = true;
+
             if (! (this.sitesearch in stored_sites)) stored_sites[this.sitesearch] = {};
             stored_sites[this.sitesearch][this.sitename] = {
                 'generation': this.passcnt,
@@ -224,6 +228,12 @@ $(document).on('drop', function(e){
                 'username': this.loginname
             };
         });
+
+        if (has_ver1_mb_sites)
+            alert("Version mismatch\n\nYour file contains site names with non ascii characters from "+
+                  "an old masterpassword version. This addon can not reproduce these passwords");
+        else
+            console.debug('Import successful');
 
         save_sites_to_backend();
     };
