@@ -15,6 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with the software.  If not, see <http://www.gnu.org/licenses/>.
 */
+/* global require, console */
 
 var buttons = require('sdk/ui/button/toggle');
 var clipboard = require("sdk/clipboard");
@@ -35,7 +36,10 @@ var system_password_manager = pwmgr(prefs.pass_store);
 function fix_session_store_password_type() {
     console.log('updating masterpassword storage');
     var s,d;
-    if (! ss.storage.sites) return;
+    if (! ss.storage.sites)
+    {
+        return;
+    }
     for (s in ss.storage.sites) {
         if (! ss.storage.sites.hasOwnProperty(s)) continue;
         for (d in ss.storage.sites[s]) {
@@ -56,27 +60,27 @@ function fix_session_store_password_type() {
     ss.storage.version=2;
 }
 
+if (ss.storage.sites && (!ss.storage.version || ss.storage.version < 2)) {
+    fix_session_store_password_type();
+}
+
 var session_store = {
-    'username':null,
-    'masterkey':null,
-    'sites':{},
+    'username': ss.storage.username || null,
+    'masterkey': null,
+    'sites': ss.storage.sites || {},
     'defaulttype': prefs.defaulttype,
     'key_id': undefined
 };
 
-if (ss.storage.username) session_store.username = ss.storage.username;
-if (!ss.storage.version || ss.storage.version < 2) fix_session_store_password_type();
-if (ss.storage.sites) session_store.sites = ss.storage.sites;
-
 if (system_password_manager) {
     system_password_manager.then(function(lib){
         lib.get_password(function(pwd, err){
-            if (pwd === undefined)
+            if (pwd === undefined) {
                 console.log("failed to get master key from os-store", err);
-            else if (pwd === '') {
             }
-            else
+            else if (pwd !== '') {
                 session_store.masterkey = pwd;
+            }
         });
     });
 }
@@ -99,7 +103,7 @@ var button = buttons.ToggleButton({
     }
 });
 
-var hotPassword = Hotkey({
+var hotPassword = new Hotkey({
   combo: prefs.hotkeycombo,
   onPress: function() {
     var panel = createPanel();
@@ -115,7 +119,9 @@ var pm_config_handler = pagemod.PageMod({
     contentScriptFile: self.data.url('config-cs.js'),
     attachTo: ['top'],
     onAttach: function(worker) {
-        if (!worker.tab || worker.tab.id != tabs.activeTab.id) worker.destroy();
+        if (!worker.tab || worker.tab.id !== tabs.activeTab.id) {
+            worker.destroy();
+        }
         worker.port.on('configload', function(m) {
             worker.port.emit('configload', {
                 sites:session_store.sites,
@@ -149,10 +155,11 @@ function createPanel() {
             return;
         }
         var k;
-        if (d.masterkey && d.masterkey != session_store.masterkey  && prefs.pass_store != 'n') {
-            if (!system_password_manager) system_password_manager = pwmgr(prefs.pass_store);
-            if (system_password_manager)
+        if (d.masterkey && d.masterkey !== session_store.masterkey  && prefs.pass_store !== 'n') {
+            system_password_manager = system_password_manager || pwmgr(prefs.pass_store);
+            if (system_password_manager) {
                 system_password_manager.then(function(lib){ lib.set_password(d.masterkey); });
+            }
         }
 
         for (k in d) {
@@ -174,7 +181,7 @@ function createPanel() {
         panel.port.emit('get_tab_url_resp', tabs.activeTab.url);
     });
     panel.port.on('update_page_password_input', function(d){
-        console.log("emit to active tab");
+        console.debug("emit to active tab");
 
         // tab.attach doesn't work with e10s on 43a nightly. :(
         //var worker = tabs.activeTab.attach({ contentScriptFile: self.data.url('password-fill-cs.js') });
@@ -184,7 +191,7 @@ function createPanel() {
             contentScriptFile: self.data.url('password-fill-cs.js'),
             attachTo: ['existing','top'],
             onAttach: function(worker) {
-                if (!worker.tab || worker.tab.id != tabs.activeTab.id) {
+                if (!worker.tab || worker.tab.id !== tabs.activeTab.id) {
                     worker.destroy();
                 }
                 else {

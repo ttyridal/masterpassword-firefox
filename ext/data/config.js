@@ -15,17 +15,20 @@
     You should have received a copy of the GNU General Public License
     along with the software.  If not, see <http://www.gnu.org/licenses/>.
 */
-
+/*jshint browser:true, jquery:true, devel:true, nonstandard:true, -W055 */
 
 (function(){
 function encode_utf8(s) {
   return unescape(encodeURIComponent(s));
 }
+function string_is_plain_ascii(s) {
+    return s.length === encode_utf8(s).length;
+}
 
- var stored_sites={};
- var username="";
- var key_id = undefined;
- var alg_min_version = 1;
+ var stored_sites={},
+     username="",
+     key_id,
+     alg_min_version = 1;
 
 function save_sites_to_backend() {
     var event = document.createEvent('CustomEvent');
@@ -33,8 +36,8 @@ function save_sites_to_backend() {
     document.documentElement.dispatchEvent(event);
 }
 
-function stored_sites_table_append(domain, site, type, loginname, count, ver) {
-    switch(type) {
+function stored_sites_table_append(domain, site, type, loginname, count, ver) {
+    switch(type) {
         case 'x': type="Maximum"; break;
         case 'l': type="Long"; break;
         case 'm': type="Medium"; break;
@@ -62,26 +65,26 @@ mpsites_import_error.prototype.constructor = mpsites_import_error;
 function read_mpsites(d){
     var ret=[],l,fheader={'format':-1, 'key_id':undefined, 'username':undefined};
     d = d.split("\n");
-    if (d.shift() != "# Master Password site export")
+    if (d.shift() !== '# Master Password site export')
         throw new mpsites_import_error(3, "Not a mpsites file");
 
-    while((l = d.shift()) != "##"){}
+    while((l = d.shift()) !== '##'){} //jshint ignore:line
 
-    while((l = d.shift()) != "##"){
+    while((l = d.shift()) !== '##'){
         l = l.split(":");
-        if (l[0]=="# Format") fheader.format = 0+$.trim(l[1]);
-        if (l[0]=="# Key ID") fheader.key_id = $.trim(l[1]);
-        if (l[0]=="# User Name") fheader.username = $.trim(l[1]);
+        if (l[0] === '# Format') fheader.format = parseInt(l[1].trim(),10);
+        if (l[0] === '# Key ID') fheader.key_id = l[1].trim();
+        if (l[0] === '# User Name') fheader.username = l[1].trim();
     }
-    if (fheader.format != 1) {
+    if (fheader.format !== 1) {
         console.log(fheader);
         throw new mpsites_import_error(1, "Unsupported mpsites format");
     }
-    if (fheader.username && fheader.username != username) {
+    if (fheader.username && fheader.username !== username) {
         if (!confirm("Username mismatch!\n\nYou may still import this file, "+
                 "but passwords will be different from where you exported the file"))
             return undefined;
-    } else if (fheader.key_id && fheader.key_id != key_id) {
+    } else if (fheader.key_id && fheader.key_id !== key_id) {
         if (!confirm("Key ID mismatch!\n\nYou may still import this file, "+
                 "but passwords will be different from where you exported the file"))
             return undefined;
@@ -89,7 +92,7 @@ function read_mpsites(d){
 
     $.each(d, function(){
         var s,re = /([-0-9T:Z]+)  +([0-9]+)  +([0-9]+):([0-9]+):([0-9]+)  +([^\t]*)\t *([^\t]*)\t(.*)$/g;
-        if (this.charAt(0)=="#") return true;
+        if (this.charAt(0) === '#') return true;
         s=re.exec(this);
         if (!s) return true;
         switch(s[3]){
@@ -123,7 +126,7 @@ window.addEventListener('masterpassword-configload', function(e){
     username = e.detail.username;
     key_id = e.detail.key_id;
 
-    if (username.length != encode_utf8(username).length) {
+    if (!string_is_plain_ascii(username)) {
         alg_min_version = 3;
         $('#ver3note').show();
     }
@@ -131,7 +134,7 @@ window.addEventListener('masterpassword-configload', function(e){
     $.each(stored_sites, function(domain,v){
         $.each(v, function(site, settings){
             var alg_version = alg_min_version;
-            if (alg_min_version < 3 && (site.length != encode_utf8(site).length))
+            if (alg_min_version < 3 && !string_is_plain_ascii(site))
                 alg_version = 2;
             if (settings.username === undefined)
                 settings.username = "";
@@ -154,8 +157,9 @@ $('#stored_sites').on('change','.domainvalue',function(e){
     var $t = $(this), domain = $t.attr('data-old'), newdomain = $t.val(), site;
     $t.attr('data-old', newdomain);
     $t=this;
-    do { $t = $t.parentNode;
-    } while($t.nodeName != 'TR');
+    do {
+        $t = $t.parentNode;
+    } while($t.nodeName !== 'TR');
     site=$($t).children('td:eq(0)').text();
 
     if (! (newdomain in stored_sites)) stored_sites[newdomain] = {};
@@ -167,8 +171,8 @@ $('#stored_sites').on('change','.domainvalue',function(e){
 $('#stored_sites').on('click','.delete',function(e){
     var $t, t = this;
     console.log(t);
-    while (t.parentNode.nodeName != 'TR') t=t.parentNode;
-    if (t.parentNode.nodeName != 'TR') throw new Error("logic error - cant find parent node");
+    while (t.parentNode.nodeName !== 'TR') t = t.parentNode;
+    if (t.parentNode.nodeName !== 'TR') throw new Error("logic error - cant find parent node");
     t=t.parentNode;
     $t=$(t);
 
@@ -181,7 +185,7 @@ $(document).on('drop', function(e){
     e.originalEvent.dataTransfer.dropEffect='move';
     e.preventDefault();
     e.stopPropagation();
-    if (e.originalEvent.dataTransfer.files.length!=1) return;
+    if (e.originalEvent.dataTransfer.files.length !== 1) return;
     if (! /.*\.mpsites$/gi.test(e.originalEvent.dataTransfer.files[0].name)) {
         alert("need a .mpsites file");
         return;
@@ -192,7 +196,7 @@ $(document).on('drop', function(e){
             x = read_mpsites(x.target.result);
             if (!x) return;
         } catch (e) {
-            if (e.name == 'mpsites_import_error') {
+            if (e.name === 'mpsites_import_error') {
                 alert(e.message);
                 return;
             }
@@ -244,7 +248,7 @@ function pad_left(len, s, chr) {
     }
     else  {
         for (x of s) {
-            if (typeof(x) === 'number') x = ''+x;
+            if (typeof x  === 'number') x = ''+x;
             len -= x.length;
             a.push(x);
         }
@@ -260,7 +264,7 @@ function make_mpsites(stored_sites, alg_min_version) {
         '#\n',
         '##\n',
         '# Format: 1\n',
-        '# Date: '+(new Date().toISOString().slice(0,-2))+'Z\n',
+        '# Date: '+ new Date().toISOString().slice(0,-2) +'Z\n',
         '# User Name: '+username+'\n',
         '# Full Name: '+username+'\n',
         '# Avatar: 0\n',
@@ -279,7 +283,7 @@ function make_mpsites(stored_sites, alg_min_version) {
             var typecode,
                 alg_version = alg_min_version;
 
-            if (alg_min_version < 3 && (site.length != encode_utf8(site).length))
+            if (alg_min_version < 3 && !string_is_plain_ascii(site))
                 alg_version = 2;
 
             switch(settings.type){

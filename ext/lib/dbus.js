@@ -22,6 +22,8 @@
  * and Kwallet.
  *
  **/
+/* globals exports, ctypes, console, require */
+/*jshint -W024 */
 
 exports.dbus = (function(){
 
@@ -36,7 +38,7 @@ try {
 
 
 function dbus() {
-    var lib
+    var lib;
     try { lib = ctypes.open("libdbus-1.so.3"); }
     catch(e) {
         console.error("Failed to load libdbus-1.so.3");
@@ -51,7 +53,7 @@ function dbus() {
             {'dummy3': ctypes.int},
             {'dummy4': ctypes.int},
             {'dummy5': ctypes.int},
-            {'padding': ctypes.voidptr_t},
+            {'padding': ctypes.voidptr_t}
         ]),
         DBusConnection = ctypes.StructType('DBusConnection'),
         DBusMessage = ctypes.StructType('DBusMessage'),
@@ -99,17 +101,17 @@ function dbus() {
           message_unref = lib.declare('dbus_message_unref', ctypes.default_abi, ctypes.void_t,
                   DBusMessage.ptr ),
           connection_send_with_reply_and_block = lib.declare('dbus_connection_send_with_reply_and_block', ctypes.default_abi, DBusMessage.ptr,
-                  DBusConnection.ptr, DBusMessage.ptr, ctypes.int, DBusError.ptr);
+                  DBusConnection.ptr, DBusMessage.ptr, ctypes.int, DBusError.ptr),
           connection_send_with_reply = lib.declare('dbus_connection_send_with_reply', ctypes.default_abi, ctypes.bool,
-                  DBusConnection.ptr, DBusMessage.ptr, DBusPendingCall.ptr.ptr, ctypes.int);
+                  DBusConnection.ptr, DBusMessage.ptr, DBusPendingCall.ptr.ptr, ctypes.int),
           pending_call_block = lib.declare('dbus_pending_call_block', ctypes.default_abi, ctypes.void_t,
-                  DBusPendingCall.ptr);
+                  DBusPendingCall.ptr),
           pending_call_steal_reply = lib.declare('dbus_pending_call_steal_reply', ctypes.default_abi, DBusMessage.ptr,
-                  DBusPendingCall.ptr);
+                  DBusPendingCall.ptr),
           pending_call_unref = lib.declare('dbus_pending_call_unref', ctypes.default_abi, ctypes.void_t,
-                  DBusPendingCall.ptr);
+                  DBusPendingCall.ptr),
           pending_call_get_completed = lib.declare('dbus_pending_call_get_completed', ctypes.default_abi, ctypes.bool,
-                  DBusPendingCall.ptr);
+                  DBusPendingCall.ptr),
           set_error_from_message = lib.declare('dbus_set_error_from_message', ctypes.default_abi, ctypes.bool,
                   DBusError.ptr, DBusMessage.ptr);
 
@@ -122,15 +124,15 @@ function dbus() {
                        'array': 'a'.charCodeAt(0),
                        'byte': 'y'.charCodeAt(0),
                        'struct': 'r'.charCodeAt(0),
-                       'dict_entry': 'e'.charCodeAt(0),
-    }
+                       'dict_entry': 'e'.charCodeAt(0)
+    };
 
     function send_with_reply(con, msg, timeout) {
         var toreturn = [],
             rep,
             pendingCall = DBusPendingCall.ptr();
 
-        if (timeout == undefined) timeout = -1;
+        if (typeof timeout === 'undefined') timeout = -1;
         else timeout = Math.round(timeout * 1000);
 
         connection_send_with_reply(con, msg, pendingCall.address(), timeout);
@@ -153,7 +155,7 @@ function dbus() {
                 if (set_error_from_message(err.address(), rep)) {
                     throw new Error("method execute, Failed to send message:"+err.name.readString()+"\n"+err.message.readString());
                 } else {
-                    it = new DBusMessageIter();
+                    let it = new DBusMessageIter();
                     if (message_iter_init(rep, it.address()))
                         toreturn = iter_result(it.address());
                 }
@@ -167,7 +169,9 @@ function dbus() {
 
     function iter_result(it) {
         var typ, data, ret = [];
-        for (typ = message_iter_get_arg_type(it); typ != 0; message_iter_next(it), typ = message_iter_get_arg_type(it)) {
+        // jshint -W127
+        for (typ = message_iter_get_arg_type(it); typ !== 0; message_iter_next(it), typ = message_iter_get_arg_type(it)) {
+        // jshint +W127
             switch(typ) {
                 case dbus_type.objectpath:
                 case dbus_type.string:
@@ -190,15 +194,16 @@ function dbus() {
                     message_iter_get_basic(it, data.address());
                     ret.push(data.value);
                     break;
-                case dbus_type.struct:
                 case dbus_type.variant:
+                    data = new DBusMessageIter();
+                    message_iter_recurse(it, data.address());
+                    ret.push( iter_result(data.address())[0] );
+                    break;
+                case dbus_type.struct:
                 case dbus_type.array:
                     data = new DBusMessageIter();
                     message_iter_recurse(it, data.address());
-                    if (typ==dbus_type.variant)
-                        ret.push( iter_result(data.address())[0] );
-                    else
-                        ret.push( iter_result(data.address()) );
+                    ret.push( iter_result(data.address()) );
                     break;
                 default:
                     console.warn("iter_result, Unknown data type",typ);
@@ -323,25 +328,25 @@ function dbus() {
                 return p;
             }
         };
-    }
+    };
 
     const get_property = function(dest, path, iface, prop) {
         var m = new_method_call(dest, path, 'org.freedesktop.DBus.Properties', 'Get');
         m.string_arg(iface);
         m.string_arg(prop);
         return m.execute().then(function(dta){ return dta[0]; });
-    }
+    };
 
     return {
         'get': function (dest) { return {
-            'load': function(path) { return {
+            'load': function(path) { return {
                 'bind': function(iface) { return {
-                    'method_call': function(m) { return new_method_call(dest, path, iface, m); },
+                    'method_call': function(m) { return new_method_call(dest, path, iface, m); },
                     'get_property': function(p, cb) { return get_property(dest, path, iface, p, cb); }
                 };}
             };}
         };}
     };
 }
-return dbus
+return dbus;
 })();

@@ -21,26 +21,28 @@
  * js-ctypes interface to osx keychain
  *
  **/
+/* globals exports, ctypes, console, require */
+/*jshint newcap:false, -W024 */
 
 exports.osx = (function(){
 try {
     var {Cu} = require('chrome');
-    Cu.import('resource://gre/modules/ctypes.jsm');
+    Cu.import('resource://gre/modules/ctypes.jsm'); //jshint ignore:line
 } catch(e) {
     console.error("Failed to load js-ctypes");
     return null;
 }
 
 var sf,cf;
-try { 
-    sf = ctypes.open('/System/Library/Frameworks/Security.framework/Versions/Current/Security'); 
+try {
+    sf = ctypes.open('/System/Library/Frameworks/Security.framework/Versions/Current/Security');
     cf = ctypes.open('/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation');
 } catch(e) {
     console.error("Failed to load libraries for osx keychain");
     return null;
 }
 
-const 
+const
     _CFString = ctypes.StructType('CFString'),
     _SecKeychain = ctypes.StructType('SecKeychain'),
     _SecKeychainItem = ctypes.StructType('SecKeychainItem'),
@@ -60,13 +62,13 @@ const
 
 
 const
-    CFStringGetCString = cf.declare('CFStringGetCString', ctypes.default_abi, ctypes.bool, 
+    CFStringGetCString = cf.declare('CFStringGetCString', ctypes.default_abi, ctypes.bool,
             CFStringRef, ctypes.char.ptr, CFIndex, CFStringEncoding),
     CFStringGetLength = cf.declare('CFStringGetLength', ctypes.default_abi, CFIndex,
             CFStringRef),
     CFStringCreateWithBytes = cf.declare('CFStringCreateWithBytes', ctypes.default_abi, CFStringRef,
             ctypes.voidptr_t, ctypes.uint8_t.ptr, CFIndex, CFStringEncoding, ctypes.bool),
-    CFRelease = cf.declare('CFRelease', ctypes.default_abi, ctypes.void_t, 
+    CFRelease = cf.declare('CFRelease', ctypes.default_abi, ctypes.void_t,
             ctypes.voidptr_t),
 
     _SecCopyErrorMessageString = sf.declare('SecCopyErrorMessageString', ctypes.default_abi, CFStringRef,
@@ -88,8 +90,8 @@ const
     _SecKeychainItemFreeContent = sf.declare('SecKeychainItemFreeContent', ctypes.default_abi, OSStatus,
             ctypes.voidptr_t, ctypes.voidptr_t),
     _SecKeychainItemModifyAttributesAndData = sf.declare('SecKeychainItemModifyAttributesAndData', ctypes.default_abi, OSStatus,
-            SecKeychainItemRef, ctypes.voidptr_t, ctypes.uint32_t, ctypes.char.ptr);
-    _SecKeychainSetUserInteractionAllowed = sf.declare('SecKeychainSetUserInteractionAllowed', ctypes.default_abi, OSStatus, 
+            SecKeychainItemRef, ctypes.voidptr_t, ctypes.uint32_t, ctypes.char.ptr),
+    _SecKeychainSetUserInteractionAllowed = sf.declare('SecKeychainSetUserInteractionAllowed', ctypes.default_abi, OSStatus,
             ctypes.bool);
 
 function cfstring_to_js(cfstr) {
@@ -105,34 +107,37 @@ function cfstring_to_js(cfstr) {
 
 function SecCopyErrorMessageString(rc) {
     var cfstr = _SecCopyErrorMessageString(rc, null),
-        s = cfstring_to_js(cfstr) + ' ('+rc+')'; 
+        s = cfstring_to_js(cfstr) + ' ('+rc+')';
     CFRelease(cfstr);
     return s;
 }
 
 function SecKeychainGetStatus() {
-    var stat = SecKeychainStatus(), 
+    var stat = SecKeychainStatus(),
         res = {},
         rc;
-    rc = _SecKeychainGetStatus(null, stat.address());
-    if (rc != 0) throw new Error(SecCopyErrorMessageString(rc));
-    if (stat.value & 1) res['SecUnlockState'] = 1;
-    if (stat.value & 2) res['SecReadPerm'] = 1;
-    if (stat.value & 4) res['SecWritePerm'] = 1;
+    if (_SecKeychainGetStatus(null, stat.address()))
+        throw new Error(SecCopyErrorMessageString(rc));
+    // jshint bitwise:false
+    if (stat.value & 1) res.SecUnlockState = 1;
+    if (stat.value & 2) res.SecReadPerm = 1;
+    if (stat.value & 4) res.SecWritePerm = 1;
     return res;
 }
 
 function SecKeychainSetUserInteractionAllowed(allowed) {
-    var rc = _SecKeychainSetUserInteractionAllowed(allowed);
-    if (rc != 0) throw new Error(SecCopyErrorMessageString(rc));
+    let rc = _SecKeychainSetUserInteractionAllowed(allowed);
+    if (rc)
+        throw new Error(SecCopyErrorMessageString(rc));
 }
 
 function SecKeychainItemFreeContent(attrList, data) {
-    var rc = _SecKeychainItemFreeContent(attrList, data);
-    if (rc != 0) throw new Error(SecCopyErrorMessageString(rc));
+    let rc = _SecKeychainItemFreeContent(attrList, data);
+    if (rc)
+        throw new Error(SecCopyErrorMessageString(rc));
 }
 
-function SecKeychainFindGenericPassword(service, account, return_item) {
+function SecKeychainFindGenericPassword(service, account, return_item) {
     var pw_len = ctypes.uint32_t(),
         item = null,
         itemr = null,
@@ -153,8 +158,8 @@ function SecKeychainFindGenericPassword(service, account, return_item) {
             pw_len.address(),
             pw_data.address(),
             itemr);
-    if (rc == errSecItemNotFound) return undefined;
-    else if (rc != 0) throw new Error(SecCopyErrorMessageString(rc));
+    if (rc === errSecItemNotFound) return undefined;
+    else if (rc) throw new Error(SecCopyErrorMessageString(rc));
 
     let x = CFStringCreateWithBytes(
             null,
@@ -176,11 +181,11 @@ function SecKeychainItemModifyAttributesAndData(itm, new_passwd) {
     new_passwd = ctypes.char.array()(new_passwd);
 
     var rc = _SecKeychainItemModifyAttributesAndData(
-            itm, 
-            null, 
-            new_passwd.length - 1, 
+            itm,
+            null,
+            new_passwd.length - 1,
             new_passwd);
-    if (rc != 0) throw new Error(SecCopyErrorMessageString(rc));
+    if (rc) throw new Error(SecCopyErrorMessageString(rc));
 }
 
 function SecKeychainAddGenericPassword(service, account, passwd) {
@@ -194,12 +199,12 @@ function SecKeychainAddGenericPassword(service, account, passwd) {
             passwd.length-1,
             passwd,
             null);
-    if (rc != 0) throw new Error(SecCopyErrorMessageString(rc));
+    if (rc) throw new Error(SecCopyErrorMessageString(rc));
 }
 
 
 SecKeychainSetUserInteractionAllowed(true);
-if ( ! 'SecUnlockState' in SecKeychainGetStatus())
+if ( ! ('SecUnlockState' in SecKeychainGetStatus()))
     console.log("Unlock keychain fail");
 
 
@@ -222,6 +227,6 @@ return {
             var pw = SecKeychainFindGenericPassword(service, account, false);
             resolve(pw);
         });
-    },
+    }
 };
 })();

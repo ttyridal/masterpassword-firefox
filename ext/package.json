@@ -30,5 +30,11 @@
          {"label":"OSX Keychain", "value":"o"},
          {"label":"Windows Vault", "value":"w"}
      ]}
-  ]
+  ],
+  "jshintConfig": {
+      "enforceall": true,
+      "camelcase": false,
+      "esnext": true,
+      "curly": false
+  }
 }

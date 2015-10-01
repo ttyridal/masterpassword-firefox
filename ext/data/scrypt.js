@@ -1,10 +1,12 @@
+// jshint browser: true, nonstandard: true
+/* global Module */
 (function(){
     "use strict";
     const
         NSgeneral = "com.lyndir.masterpassword",
         NSlogin = "com.lyndir.masterpassword.login",
         NSanswer = "com.lyndir.masterpassword.answer";
-    var keyofs = undefined;
+    var keyofs;
 
 
     function encode_utf8(s) {
@@ -106,12 +108,8 @@
 window.mpw=function(name, password, version){
     version = typeof version !== 'undefined' ? version : 3;
     var key,
-        lenoverride = 0;
+        lenoverride = version < 3 ? name.length : 0;
     keyofs = typeof keyofs !== 'undefined' ? keyofs : Module.ccall('get_masterkey', 'number', [], []);
-
-    if (version<3) {
-        lenoverride = name.length;
-    }
 
     key = mp_key(password, name, lenoverride);
 
@@ -122,8 +120,8 @@ window.mpw=function(name, password, version){
             else
                 return encode(key, site, count, type);
         },
-        key_id : function() { return sha256_digest(key); },
-        v2_compatible : function() { return name.length == encode_utf8(name).length; }
+        key_id : function() { return sha256_digest(key); },
+        v2_compatible : function() { return name.length === encode_utf8(name).length; }
     };
 };
 }());

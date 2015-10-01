@@ -22,16 +22,21 @@
  *
  **/
 
+/* globals exports, ctypes, console, require */
+// jshint newcap:false
+
 exports.win = (function(){
 try {
     var {Cu} = require('chrome');
-    Cu.import('resource://gre/modules/ctypes.jsm');
+    Cu.import('resource://gre/modules/ctypes.jsm');  // jshint ignore:line
 } catch(e) {
     console.error("Failed to load js-ctypes");
     return null;
 }
 
 var sf,cf;
+var kern32, lib, msvcrt;
+
 try {
     kern32 = ctypes.open('Kernel32.dll');
     lib = ctypes.open('advapi32.dll');
@@ -75,10 +80,11 @@ function readPassword(service) {
     var x, pc = PCREDENTIAL();
     if (! CredRead(service, CRED_TYPE_GENERIC, 0, pc.address())) {
 		let err = GetLastError();
-		if (err)
+		if (err) {
 			throw new Error("wincred: read failed "+ GetLastError());
-        else
+        } else {
 			return ""; // no such service
+        }
 		return;
     }
     // byte array (of utf16) to string:
@@ -95,11 +101,11 @@ function writePassword(service, account, passwd) {
 	var pwdx = pwtype(passwd);
 	var pwd = ctypes.uint8_t.array(pwtype.size)();
 	memcpy(pwd, pwdx, pwtype.size);
-	
+
 	var tname = ctypes.jschar.array()(service);
 	var uname = ctypes.jschar.array()(account);
-	
-    c = new CREDENTIAL();
+
+    let c = new CREDENTIAL();
     c.Flags = 0;
     c.Type = CRED_TYPE_GENERIC;
     c.TargetName = tname;
@@ -113,10 +119,11 @@ function writePassword(service, account, passwd) {
 
     if (!CredWrite(c.address(), 0)) {
 		let err = GetLastError();
-		if (err)
+		if (err) {
 			console.log("wincred: failed store", GetLastError());
-		else
+        } else {
 			console.log("wincred: nothing to update");
+        }
 	}
 }
 

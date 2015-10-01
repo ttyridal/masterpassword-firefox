@@ -22,14 +22,16 @@
  * and Kwallet.
  *
  **/
+/* globals exports, ctypes, console, require */
+// jshint nonstandard: true
 
 const APPNAME = 'masterpassword-for-firefox',
       USAGE = 'masterkey';
 
 function utf8_bytes_to_string(tmp) {
     var s='';
-    for (let m in tmp) {
-        s+=String.fromCharCode(tmp[m]);
+    for (let m of tmp) {
+        s+=String.fromCharCode(m);
     }
     return decodeURIComponent(escape(s));
 }
@@ -46,9 +48,9 @@ function load_secret_services() {
           ItemInterface = 'org.freedesktop.Secret.Item';
 
     var dbus = require("./dbus.js").dbus;
-    if (dbus == null) return false;
+    if (!dbus) {return false;}
     var bus = dbus();
-    if (bus == null) return false;
+    if (!bus) {return false;}
     bus = bus.get('org.freedesktop.secrets');
 
     function secret_services_object(tx_session) {
@@ -61,7 +63,7 @@ function load_secret_services() {
             .then(function(key_path){
                 key_path = key_path[0];
 
-                if (key_path.length == 0) {
+                if (!key_path.length) {
                     console.info('no keys available');
                     cb('');
                     return;
@@ -81,12 +83,13 @@ function load_secret_services() {
                 pwd = pwd[0];
                 var encoding = pwd[3];
                 pwd = pwd[2];
-                if (encoding != 'text/plain')
+                if (encoding !== 'text/plain') {
                     cb(undefined, "Stored password is not text/plain. Can't use it");
-                else
+                } else {
                     cb(utf8_bytes_to_string(pwd), undefined);
+                }
             });
-        }
+        };
 
         const set_password = function(p) {
             var m = col.method_call('CreateItem');
@@ -100,7 +103,7 @@ function load_secret_services() {
             m.execute().then(function(newitem){
                 console.log('Created or updated item:',newitem);
             });
-        }
+        };
 
         return {'set_password':set_password, 'get_password':get_password};
     }
@@ -122,7 +125,8 @@ function load_secret_services() {
                     lib_load_resolved( secret_services_object(dta[1]) );
                 });
             }
-        }).catch(function(reason){
+        })
+        .catch(function(reason){ // jshint ignore:line
             console.error("secret services (gnome keyring) load failed:",reason.message,'\n', reason.stack);
             lib_load_rejected();
         });
@@ -136,32 +140,37 @@ function load_kwallet() {
           KEYNAME = APPNAME+'-master';
 
     var dbus = require("./dbus.js").dbus;
-    if (dbus == null) return null;
+    if (!dbus) { return null; }
     var bus = dbus();
-    if (bus == null) return null;
+    if (!bus) { return null; }
     bus = bus.get('org.kde.kwalletd').load('/modules/kwalletd').bind('org.kde.KWallet');
 
 
     return new Promise(function(lib_load_resolved, lib_load_rejected){
         var m = bus.method_call('localWallet');
-        m.execute().then(function(walletname){
+        m.execute()
+        .then(function(walletname){
             walletname = walletname[0];
             if (!walletname) {
                 console.log("wallet name get failed", walletname);
                 throw new Error("Wallet name get failed");
-            } else
+            } else {
                 return walletname;
-        }).then(function(walletname){
+            }
+        })
+        .then(function(walletname){
             m = bus.method_call('open');
             m.string_arg(walletname);
             m.int64_arg(0);
             m.string_arg(APPNAME);
             return m.execute();
-        }).then(function(handle){
+        })
+        .then(function(handle){
             handle = handle[0];
             console.log("Got handle",handle);
-            if (!handle)
+            if (!handle) {
                 throw new Error("wrong handle");
+            }
 
 
             const get_password = function (cb) {
@@ -186,7 +195,8 @@ function load_kwallet() {
             };
 
             lib_load_resolved({'set_password':set_password, 'get_password':get_password});
-        }).catch(function(reason){
+        })
+        .catch(function(reason){ // jshint ignore:line
             console.error("kwallet load failed:",reason.message);
             console.debug(reason.stack);
             lib_load_rejected();
@@ -196,16 +206,15 @@ function load_kwallet() {
 
 function load_osx() {
     var osx = require('./osx_keychain.js').osx;
-    if (osx == null) return null;
+    if (!osx) { return null; }
 
     return new Promise(function(lib_load_resolved, lib_load_rejected){
             const get_password = function (cb) {
                 osx.getPassword(APPNAME, USAGE)
                 .then(function(pw) {
-                    if (pw == undefined) pw = '';
-                    cb(pw, undefined);
+                    cb(pw || '', undefined);
                 })
-                .catch(function(err) {
+                .catch(function(err) { // jshint ignore:line
                     cb(undefined, err);
                 });
             };
@@ -219,7 +228,7 @@ function load_osx() {
 
 function load_win() {
     var win = require('./wincred.js').win;
-    if (win == null) return null;
+    if (!win) {return null;}
 
     return new Promise(function(lib_load_resolved, lib_load_rejected){
             const get_password = function (cb) {
@@ -233,7 +242,7 @@ function load_win() {
 
             const set_password = function (p) {
                 win.setPassword(APPNAME, USAGE, p);
-            }
+            };
 
             lib_load_resolved({'set_password':set_password, 'get_password':get_password});
     });
@@ -241,36 +250,36 @@ function load_win() {
 
 
 function global_manager(pref) {
-    if (pref == 'g') {
+    if (pref === 'g') {
         try {
             return load_secret_services();
         } catch(e) {
-            console.error(e)
+            console.error(e);
         }
     }
-    else if (pref == 'k') {
+    else if (pref === 'k') {
         try {
             return load_kwallet();
         } catch(e) {
-            console.error(e)
+            console.error(e);
         }
     }
-    else if (pref == 'o') {
+    else if (pref === 'o') {
         try {
             return load_osx();
         } catch(e) {
-            console.error(e)
+            console.error(e);
         }
     }
-    else if (pref == 'w') {
+    else if (pref === 'w') {
         try {
             return load_win();
         } catch(e) {
-            console.error(e)
+            console.error(e);
         }
     }
     return null;
 }
 
 
-exports.manager = global_manager
+exports.manager = global_manager;

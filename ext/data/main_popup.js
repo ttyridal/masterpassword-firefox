@@ -15,6 +15,8 @@
     You should have received a copy of the GNU General Public License
     along with the software.  If not, see <http://www.gnu.org/licenses/>.
 */
+/*jshint jquery:true, browser:true, devel:true */
+/* globals addon, mpw */
 
 (function () {
     "use strict";
@@ -25,7 +27,7 @@ function parse_uri(sourceUri){
     uriParts = new RegExp("^(?:([^:/?#.]+):)?(?://)?(([^:/?#]*)(?::(\\d*))?)((/(?:[^?#](?![^?#/]*\\.[^?#/.]+(?:[\\?#]|$)))*/?)?([^?#/]*))?(?:\\?([^#]*))?(?:#(.*))?").exec(sourceUri),
     uri = {};
     for(var i = 0; i < 10; i++)
-        uri[uriPartNames[i]] = (uriParts[i] ? uriParts[i] : "");
+        uri[uriPartNames[i]] = uriParts[i] ? uriParts[i] : "";
     if(uri.directoryPath.length > 0)
         uri.directoryPath = uri.directoryPath.replace(/\/?$/, "/");
     return uri;
@@ -48,13 +50,13 @@ function update_page_password_input(data) {
     addon.port.emit('update_page_password_input', data);
 }
 
-var mpw_session=null;
-var session_store={};
+var mpw_session,
+    session_store = {};
 
 function recalculate(hide_after_copy, retry) {
     $('#thepassword').html('(calculating..)');
     $('#usermessage').html("Please wait...");
-    if ($('#sitename').val() == null || $('#sitename').val() == "") {
+    if (!$('#sitename').val()) {
         $('#usermessage').html("need sitename");
         return;
     }
@@ -65,7 +67,7 @@ function recalculate(hide_after_copy, retry) {
 
         $('#verify_pass_fld').html("Verify: " + mpw_session.sitepassword(".", 0, "nx"));
         var key_id = mpw_session.key_id();
-        if (session_store.key_id && key_id != session_store.key_id) {
+        if (session_store.key_id && key_id !== session_store.key_id) {
             warn_keyid_not_matching();
             key_id_mismatch = true;
         }
@@ -74,10 +76,10 @@ function recalculate(hide_after_copy, retry) {
         addon.port.emit('store_update', session_store);
     }
 
-    console.log("calc password " +
+    console.debug("calc password " +
                 $('#sitename').val() +
                 " . " +
-                parseInt($('#passwdgeneration').val()) +
+                parseInt($('#passwdgeneration').val(), 10) +
                 " . " +
                 $('#passwdtype').val());
 
@@ -86,14 +88,14 @@ function recalculate(hide_after_copy, retry) {
         $t = $('#thepassword'),
         pass = mpw_session.sitepassword(
                  $('#sitename').val(),
-                 parseInt($('#passwdgeneration').val()),
+                 parseInt($('#passwdgeneration').val(), 10),
                  $('#passwdtype').val());
 
         for (i = 0; i < pass.length; i++)
             s += "&middot;";
 
 
-        if ($t.attr('data-visible') == 'true')
+        if ($t.attr('data-visible') === 'true')
             $t.html('<span>' + pass + '</span>');
         else
             $t.html('<a href="" id="showpass">' + s + '</a>');
@@ -115,7 +117,7 @@ function update_with_settings_for(domain) {
     if (typeof session_store.sites[domain] === 'undefined') return;
 
     $('#storedids').empty();
-    $.each(session_store.sites[domain], function(key, val) {
+    $.each(session_store.sites[domain], function(key, val) {
         $('#storedids').append('<option>' + key);
         if (first) {
             $('#sitename').val(key);
@@ -135,11 +137,11 @@ function popup(session_store_, opened_by_hotkey) {
     var recalc = false;
 
     session_store = session_store_;
-    if (session_store.username == null || session_store.masterkey == null) {
+    if (!session_store.username || !session_store.masterkey) {
         $('#main').hide();
         $('#sessionsetup').show();
-        mpw_session = null;
-        if (session_store.username == null)
+        mpw_session = undefined;
+        if (!session_store.username)
             window.setTimeout(
                     function(){$('#username').focus();},
                     0.1);
@@ -160,7 +162,7 @@ function popup(session_store_, opened_by_hotkey) {
     .then(function(url){
         var domain = parse_uri(url).domain.split("."),
             significant_parts = 2;
-        if (domain.length > 2 && domain[domain.length-2].toLowerCase() == "co")
+        if (domain.length > 2 && domain[domain.length-2].toLowerCase() === "co")
             significant_parts = 3;
         while(domain.length > 1 && domain.length > significant_parts)
             domain.shift();
@@ -171,7 +173,7 @@ function popup(session_store_, opened_by_hotkey) {
             recalculate(opened_by_hotkey);
         }
     })
-    .catch(function(x) {
+    .catch(function(x) { //jshint ignore:line
         console.error('get_active_tab_url failed',x);
     });
 }
@@ -274,7 +276,7 @@ function save_site_changes_and_recalc(){
 
 function warn_keyid_not_matching()
 {
-    console.log("keyids did not match!");
+    console.debug("keyids did not match!");
     $('#usermessage').html("<span style='color:red'>Master password possible mismatch!</span> <button id='change_keyid_ok' title='set as new'>OK</button>");
 }
 
@@ -291,7 +293,6 @@ $('#mainPopup').on('click','.btnconfig',function(){
 
 $('#mainPopup').on('click','#change_keyid_ok',function(){
     var key_id = mpw_session.key_id();
-    console.log('save new keyid:',key_id);
     session_store.key_id = key_id;
     addon.port.emit('store_update', session_store);
     $('#usermessage').html("Password for " + $('#sitename').val() + " copied to clipboard");

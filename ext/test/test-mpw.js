@@ -1,12 +1,15 @@
+/* global exports,require,console */
+
 exports["test mpw utils import"] = function(assert) {
     var self = require("sdk/self");
     const { sandbox, evaluate, load } = require("sdk/loader/sandbox");
     var scope = sandbox();
     scope.window = {
-        'addEventListener': function(){},
+        'addEventListener': function(){}
     };
-    scope['document'] = {};
-    scope['confirm'] = function(m){return true;};
+    scope.document = {};
+    scope.console = console;
+    scope.confirm = function(m){return true;};
     load(scope, self.data.url('../test/jquery_stubs.js'));
     load(scope, self.data.url('config.js'));
 
@@ -24,10 +27,10 @@ exports["test mpw utils import"] = function(assert) {
     var sites = [
 '2015-09-30T10:14:31Z         0    16:1:6                           \t                    asite\t',
 '2015-09-30T10:14:51Z         0    17:3:1                           \t                    csite\t',
-'2015-09-30T10:14:39Z         0    18:2:4                           \t                    åsite\t',
+'2015-09-30T10:14:39Z         0    18:2:4                           \t                    åsite\t'
         ];
 
-    assert.throws(function(){scope.window.mpw_utils.read_mpsites([ 'gargabe' ].join('\n'))}, /Not a mpsites file/);
+    assert.throws(function(){scope.window.mpw_utils.read_mpsites([ 'gargabe' ].join('\n'));}, /Not a mpsites file/);
     var r = scope.window.mpw_utils.read_mpsites(header.concat(sites).join('\n'));
     assert.equal(r[0].sitename, 'asite');
     assert.equal(r[0].passtype, 'x');
@@ -44,16 +47,17 @@ exports["test mpw utils import"] = function(assert) {
     assert.equal(r[2].passalgo, '2');
     assert.equal(r[2].passcnt, '4');
 
-}
+};
 
 exports["test mpw utils export"] = function(assert) {
     var self = require("sdk/self");
     const { sandbox, evaluate, load } = require("sdk/loader/sandbox");
     var scope = sandbox();
     scope.window = {
-        'addEventListener': function(){},
+        'addEventListener': function(){}
     };
-    scope['document'] = {};
+    scope.document = {};
+    scope.console = console;
     load(scope, self.data.url('../test/jquery_stubs.js'));
     load(scope, self.data.url('config.js'));
 
@@ -61,17 +65,17 @@ exports["test mpw utils export"] = function(assert) {
         'testdomain.no': {
             'test.domain': {type:'m', generation:1},
             'user@test.domain': {type:'l', username:'reasonably_short', generation:1},
-            'åuser@test.domain': {type:'x', username: 'veryveryveryveryveryveryverylong', generation:2},
+            'åuser@test.domain': {type:'x', username: 'veryveryveryveryveryveryverylong', generation:2}
         },
         'another.domain': {
-            'very@long.domain@another_very_very_long_test.domain': {type:'i', username: 'regular', generation:3},
+            'very@long.domain@another_very_very_long_test.domain': {type:'i', username: 'regular', generation:3}
         }
     }, 1);
 
     var sites_parsed = [];
-    var re = /^([^ ]+) +(\d+) +(\d+)(:\d+)?(:\d+)? +([^\t]*)\t *([^\t]+)\t(.*)/
-    for (var x of ret) {
-        if (x[0] == '#') continue;
+    var re = /^([^ ]+) +(\d+) +(\d+)(:\d+)?(:\d+)? +([^\t]*)\t *([^\t]+)\t(.*)/;
+    for (let x of ret) {
+        if (x[0] === '#') {continue;}
         sites_parsed.push(re.exec(x).slice(1));
     }
 
@@ -103,14 +107,14 @@ exports["test mpw utils export"] = function(assert) {
     ret = scope.window.mpw_utils.make_mpsites({
         'testdomain.no': {
             'user@test.domain': {type:'p', generation:1},
-            'åuser@test.domain': {type:'b', generation:4},
-        },
+            'åuser@test.domain': {type:'b', generation:4}
+        }
     }, 3);
 
     sites_parsed = [];
-    re = /^([^ ]+) +(\d+) +(\d+)(:\d+)?(:\d+)? +([^\t]*)\t *([^\t]+)\t(.*)/
-    for (var x of ret) {
-        if (x[0] == '#') continue;
+    re = /^([^ ]+) +(\d+) +(\d+)(:\d+)?(:\d+)? +([^\t]*)\t *([^\t]+)\t(.*)/;
+    for (let x of ret) {
+        if (x[0] === '#') {continue;}
         sites_parsed.push(re.exec(x).slice(1));
     }
     assert.equal(sites_parsed[0][2], '31');
@@ -126,9 +130,9 @@ exports["test mpw utils export"] = function(assert) {
     assert.equal(sites_parsed[1][6], 'åuser@test.domain');
 
     assert.ok(1);
-}
+};
 
-exports["test mpw"] = function(assert) {
+exports["test mpw algorithm"] = function(assert) {
     var self = require("sdk/self");
     const { sandbox, evaluate, load } = require("sdk/loader/sandbox");
     var scope = sandbox();
@@ -136,12 +140,13 @@ exports["test mpw"] = function(assert) {
     scope.XMLHttpRequest = function(){};
     scope.console = {
         log: function(){},
-        error: console.error,
+        error: console.error
     };
     try {
         load(scope, self.data.url('js/scrypt-asm.js'));
     } catch(e) {
-        if (e.message == "AsmJS modules are not yet supported in XDR serialization.") {}
+        // jshint noempty: false
+        if (e.message === "AsmJS modules are not yet supported in XDR serialization.") {}
         else {
             console.error("loading scrypt-asm threw", e.message);
             throw e;
@@ -219,7 +224,7 @@ exports["test mpw"] = function(assert) {
 
     pw = mpw('abc','abc');
     assert.ok(pw);
-    sitename = "æøåß"
+    sitename = "æøåß";
     assert.equal('cWIVZiNU2G4quLcdYb4.', pw.sitepassword(sitename,cnt,'x'));
 
     //alg v2
@@ -231,7 +236,7 @@ exports["test mpw"] = function(assert) {
     // alg v1
     pw = mpw('abc','abc', 1);
     assert.ok(pw);
-    sitename = "æøåß"
+    sitename = "æøåß";
     assert.equal('jV2(RKbXI0hNL$aSCz8.', pw.sitepassword(sitename,cnt,'x'));
 };
 
