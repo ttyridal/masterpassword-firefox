@@ -155,7 +155,7 @@ function createPanel() {
             return;
         }
         var k;
-        if (d.masterkey && d.masterkey !== session_store.masterkey  && prefs.pass_store !== 'n') {
+        if (d.key_id && d.masterkey && (d.masterkey !== session_store.masterkey || d.force_update)  && prefs.pass_store !== 'n') {
             system_password_manager = system_password_manager || pwmgr(prefs.pass_store);
             if (system_password_manager) {
                 system_password_manager.then(function(lib){ lib.set_password(d.masterkey); });
@@ -163,12 +163,12 @@ function createPanel() {
         }
 
         for (k in d) {
-            if (! d.hasOwnProperty(k)) continue;
-            session_store[k] = d[k];
+            if (d.hasOwnProperty(k) && k !== 'force_update')
+                session_store[k] = d[k];
         }
-        ss.storage.username = d.username;
-        ss.storage.sites = d.sites;
-        ss.storage.key_id = d.key_id;
+        if (d.username) ss.storage.username = d.username;
+        if (d.sites) ss.storage.sites = d.sites;
+        if (d.key_id) ss.storage.key_id = d.key_id;
     });
     panel.port.on('openconfig', function(d){
         tabs.open({ url: self.data.url("config.html") });

@@ -70,10 +70,12 @@ function recalculate(hide_after_copy, retry) {
         if (session_store.key_id && key_id !== session_store.key_id) {
             warn_keyid_not_matching();
             key_id_mismatch = true;
+            addon.port.emit('store_update', {username: session_store.username, masterkey: session_store.masterkey});
         }
-        else
+        else {
             session_store.key_id = key_id;
-        addon.port.emit('store_update', session_store);
+            addon.port.emit('store_update', {username: session_store.username, masterkey: session_store.masterkey, key_id: key_id});
+        }
     }
 
     console.debug("calc password " +
@@ -203,7 +205,7 @@ $('#sessionsetup > form').on('submit', function(){
 $('#mainPopup').on('click','.btnlogout',function(){
     session_store.masterkey = null;
     $('#burgermenu').toggle();
-    addon.port.emit('store_update', session_store);
+    addon.port.emit('store_update', {masterkey: null});
     popup(session_store);
     $('#usermessage').html("session destroyed");
 });
@@ -268,7 +270,7 @@ function save_site_changes_and_recalc(){
         type:$('#passwdtype').val(),
         username:$('#loginname').val()
     };
-    addon.port.emit('store_update', session_store);
+    addon.port.emit('store_update', {sites: session_store.sites});
     if (Object.keys(session_store.sites[domain]).length>1)
         $('#storedids_dropdown').show();
     recalculate();
@@ -292,9 +294,12 @@ $('#mainPopup').on('click','.btnconfig',function(){
 });
 
 $('#mainPopup').on('click','#change_keyid_ok',function(){
-    var key_id = mpw_session.key_id();
-    session_store.key_id = key_id;
-    addon.port.emit('store_update', session_store);
+    addon.port.emit('store_update', {
+        username: session_store.username,
+        masterkey: session_store.masterkey,
+        key_id: mpw_session.key_id(),
+        force_update: true
+    });
     $('#usermessage').html("Password for " + $('#sitename').val() + " copied to clipboard");
 });
 
