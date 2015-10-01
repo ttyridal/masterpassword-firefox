@@ -153,15 +153,50 @@ exports["test mpw"] = function(assert) {
     var sitename = ".";
     var cnt = 1;
     var pwtime = Date.now();
-    var pw = scope.window.mpw('test','test');
+    var pw = scope.window.mpw('Robert Lee Mitchell','banana colored duckling');
     pwtime = Date.now() - pwtime;
     assert.ok(pw, 'mpw object exists');
 
     //console.log('exec time', pwtime);
     assert.ok(pwtime < 500, 'acceptable execute time');
 
-    assert.equal(pw.key_id(), '95212fae6842582826f620d402b19aeaf38a77d612c24529bd5c89bacfd42288');
+    assert.equal(pw.key_id(), '98eef4d1df46d849574a82a03c3177056b15dffca29bb3899de4628453675302');
+    assert.equal('Jejr5[RepuSosp', pw.sitepassword('masterpasswordapp.com',1,'l'));
+    assert.equal('LiheCuwhSerz6)', pw.sitepassword('⛄',1,'l'));
+    assert.equal('XambHoqo6[Peni', pw.sitepassword('masterpasswordapp.com',4294967295,'l'));
+    assert.equal('W6@692^B1#&@gVdSdLZ@', pw.sitepassword('masterpasswordapp.com',1,'x'));
+    assert.equal('Jej2$Quv', pw.sitepassword('masterpasswordapp.com',1,'m'));
+    assert.equal('WAo2xIg6', pw.sitepassword('masterpasswordapp.com',1,'b'));
+    assert.equal('Jej2', pw.sitepassword('masterpasswordapp.com',1,'s'));
+    assert.equal('7662', pw.sitepassword('masterpasswordapp.com',1,'i'));
+    assert.equal('jejraquvo', pw.sitepassword('masterpasswordapp.com',1,'n'));
+    assert.equal('jejr quv cabsibu tam', pw.sitepassword('masterpasswordapp.com',1,'p'));
+    assert.equal('wohzaqage', pw.sitepassword('masterpasswordapp.com',1,'nx'));
 
+//     <case id="v3_securityAnswer" parent="v3">
+//         <siteVariant>Answer</siteVariant>
+//         <siteType>GeneratedPhrase</siteType>
+//         <result>xin diyjiqoja hubu</result>
+//     </case>
+//     <case id="v3_securityAnswer_context" parent="v3_securityAnswer">
+//         <siteContext>question</siteContext>
+//         <result>xogx tem cegyiva jab</result>
+//     </case>
+
+
+    pw = mpw('⛄','banana colored duckling');
+    assert.equal(pw.key_id(), '1717aa1f9bf5ba56cd0965cda3d78e6d2e6a1ea8c067a8ea621f3ddad4a87eb8');
+    assert.equal('NopaDajh8=Fene', pw.sitepassword('masterpasswordapp.com',1,'l'));
+
+    pw = scope.window.mpw('Robert Lee Mitchell','⛄');
+    assert.equal(pw.key_id(), '351432b8528a5abecab768ca95015097de76fe14c41e10af36c67dcfb8917e08');
+    assert.equal('QesuHirv5-Xepl', pw.sitepassword('masterpasswordapp.com',1,'l'));
+
+    assert.throws(function(){mpw('.'.repeat(500),'.');}, /mp_key failed/);
+    assert.throws(function(){pw.sitepassword('.'.repeat(500),1,'l');}, /mp_seed failed/);
+
+
+    sitename = ".";
     pw = mpw('test','æøå');
     assert.ok(pw, 'mpw object exists');
     assert.equal('U^Mh@^%kf3KaaCaRkO9&', pw.sitepassword(sitename,cnt,'x'));
