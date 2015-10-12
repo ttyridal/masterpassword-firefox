@@ -63,7 +63,7 @@ function recalculate(hide_after_copy, retry) {
     var key_id_mismatch = false;
 
     if (!mpw_session) {
-        mpw_session = mpw( session_store.username, session_store.masterkey );
+        mpw_session = mpw( session_store.username, session_store.masterkey, session_store.max_alg_version );
 
         $('#verify_pass_fld').html("Verify: " + mpw_session.sitepassword(".", 0, "nx"));
         var key_id = mpw_session.key_id();

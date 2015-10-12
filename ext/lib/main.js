@@ -23,6 +23,7 @@ var panels = require("sdk/panel");
 var tabs = require("sdk/tabs");
 var { Hotkey } = require("sdk/hotkeys");
 var prefs = require("sdk/simple-prefs").prefs;
+var global_prefs  = require("sdk/preferences/service");
 var windows = require("sdk/windows");
 var isPrivate = require("sdk/private-browsing").isPrivate;
 var pagemod = require("sdk/page-mod");
@@ -69,6 +70,7 @@ var session_store = {
     'masterkey': null,
     'sites': ss.storage.sites || {},
     'defaulttype': prefs.defaulttype,
+    'max_alg_version': global_prefs.get('extensions.' + self.id + '.max_alg_version', 3),
     'key_id': undefined
 };
 
@@ -126,8 +128,9 @@ var pm_config_handler = pagemod.PageMod({
             worker.port.emit('configload', {
                 sites:session_store.sites,
                 username:session_store.username,
-                key_id:session_store.key_id}
-            );
+                key_id:session_store.key_id,
+                max_alg_version:session_store.max_alg_version
+            });
         });
         worker.port.on('configstore', function(d) {
             session_store.sites = d;

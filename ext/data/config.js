@@ -28,6 +28,7 @@ function string_is_plain_ascii(s) {
  var stored_sites={},
      username="",
      key_id,
+     alg_max_version,
      alg_min_version = 1;
 
 function save_sites_to_backend() {
@@ -125,10 +126,12 @@ window.addEventListener('masterpassword-configload', function(e){
     stored_sites = e.detail.sites;
     username = e.detail.username;
     key_id = e.detail.key_id;
+    alg_max_version = e.detail.max_alg_version;
 
     if (!string_is_plain_ascii(username)) {
-        alg_min_version = 3;
-        $('#ver3note').show();
+        alg_min_version = Math.min(3, alg_max_version);
+        if (alg_min_version > 2)
+            $('#ver3note').show();
     }
 
     $.each(stored_sites, function(domain,v){
@@ -242,7 +245,7 @@ $(document).on('drop', function(e){
 });
 
 $('body').on('click','.export_mpsites',function(){
-    start_data_download(make_mpsites(stored_sites, alg_min_version), 'firefox.mpsites');
+    start_data_download(make_mpsites(stored_sites, alg_min_version, alg_max_version), 'firefox.mpsites');
 });
 
 function pad_left(len, s, chr) {
@@ -268,7 +271,7 @@ function pad_left(len, s, chr) {
     }
 }
 
-function make_mpsites(stored_sites, alg_min_version) {
+function make_mpsites(stored_sites, alg_min_version, alg_version) {
     var a=[ '# Master Password site export\n',
         '#     Export of site names and stored passwords (unless device-private) encrypted with the master key.\n',
         '#\n',
@@ -280,7 +283,7 @@ function make_mpsites(stored_sites, alg_min_version) {
         '# Avatar: 0\n',
         '# Key ID: '+key_id+'\n',
         '# Version: 2.2\n',
-        '# Algorithm: 3\n',
+        '# Algorithm: '+alg_version+'\n',
         '# Default Type: 17\n',
         '# Passwords: PROTECTED\n',
         '##\n',
