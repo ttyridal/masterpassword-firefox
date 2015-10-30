@@ -8,7 +8,7 @@ This is a firefox addon implementing the masterpassword algorithm invented by Ma
 # Installation
 Download from the Mozilla addon store: 
 * [Latest beta](https://addons.mozilla.org/firefox/downloads/latest-beta/583040/addon-583040-latest.xpi)
-* [Latest stable](https://addons.mozilla.org/firefox/downloads/file/337000/masterpassword_for_firefox-1.0-fx.xpi)
+* [Latest stable](https://addons.mozilla.org/firefox/downloads/latest/583040/addon-583040-latest.xpi)
 
 or from the [github release pages](https://github.com/ttyridal/masterpassword-firefox/releases)
 
