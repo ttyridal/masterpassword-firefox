@@ -245,7 +245,7 @@ $(document).on('drop', function(e){
 });
 
 $('body').on('click','.export_mpsites',function(){
-    start_data_download(make_mpsites(stored_sites, alg_min_version, alg_max_version), 'firefox.mpsites');
+    start_data_download(make_mpsites(key_id, stored_sites, alg_min_version, alg_max_version), 'firefox.mpsites');
 });
 
 function pad_left(len, s, chr) {
@@ -271,7 +271,7 @@ function pad_left(len, s, chr) {
     }
 }
 
-function make_mpsites(stored_sites, alg_min_version, alg_version) {
+function make_mpsites(key_id, stored_sites, alg_min_version, alg_version) {
     var a=[ '# Master Password site export\n',
         '#     Export of site names and stored passwords (unless device-private) encrypted with the master key.\n',
         '#\n',
