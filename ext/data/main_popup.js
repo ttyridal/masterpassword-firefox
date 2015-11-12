@@ -57,6 +57,7 @@ function recalculate(hide_after_copy, retry) {
     $('#thepassword').html('(calculating..)');
     $('#usermessage').html("Please wait...");
     if (!$('#sitename').val()) {
+        $('#thepassword').html('(need a sitename!)');
         $('#usermessage').html("need sitename");
         return;
     }
