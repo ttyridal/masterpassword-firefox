@@ -29,6 +29,11 @@
          {"label":"Kwallet", "value":"k"},
          {"label":"OSX Keychain", "value":"o"},
          {"label":"Windows Vault", "value":"w"}
+     ]},
+     { "name":"sdk.console.logLevel", "title":"Log level", "type":"menulist", "value":"error", "options": [
+         {"label":"Error", "value":"error"},
+         {"label":"Warnings & Errors", "value":"warn"},
+         {"label":"All", "value":"all"}
      ]}
   ],
   "jshintConfig": {
