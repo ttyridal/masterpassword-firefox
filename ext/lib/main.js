@@ -71,7 +71,7 @@ var session_store = {
     'sites': ss.storage.sites || {},
     'defaulttype': prefs.defaulttype,
     'max_alg_version': global_prefs.get('extensions.' + self.id + '.max_alg_version', 3),
-    'key_id': undefined
+    'key_id': ss.storage.key_id
 };
 
 if (system_password_manager) {
