@@ -208,7 +208,7 @@ $(document).on('drop', function(e){
         }
         $.each(x, function(){
             var y = this.sitename.split("@");
-            if (y.length>1)
+            if (y.length > 1)
                 this.sitesearch = y[y.length-1];
             else
                 this.sitesearch = this.sitename;
