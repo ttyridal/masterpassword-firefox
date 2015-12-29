@@ -1,5 +1,5 @@
 /*jshint browser:true, jquery:true, devel:true, nonstandard:true, -W055 */
-/*globals self */
+/*globals self, unsafeWindow */
 
 self.port.once("the_password", function (d) {
     if (document.activeElement &&
@@ -8,5 +8,10 @@ self.port.once("the_password", function (d) {
         document.activeElement.type === "password")
     {
         document.activeElement.value = d;
+
+        if ('angular' in unsafeWindow) {
+            var el = unsafeWindow.angular.element(document.activeElement);
+            el.change();
+        }
     }
 });
