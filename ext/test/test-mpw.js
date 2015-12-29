@@ -61,7 +61,7 @@ exports["test mpw utils export"] = function(assert) {
     load(scope, self.data.url('../test/jquery_stubs.js'));
     load(scope, self.data.url('config.js'));
 
-    var ret = scope.window.mpw_utils.make_mpsites({
+    var ret = scope.window.mpw_utils.make_mpsites("0123456",{
         'testdomain.no': {
             'test.domain': {type:'m', generation:1},
             'user@test.domain': {type:'l', username:'reasonably_short', generation:1},
@@ -104,7 +104,7 @@ exports["test mpw utils export"] = function(assert) {
     assert.equal(sites_parsed[3][6], 'very@long.domain@another_very_very_long_test.domain');
 
 
-    ret = scope.window.mpw_utils.make_mpsites({
+    ret = scope.window.mpw_utils.make_mpsites("0123456", {
         'testdomain.no': {
             'user@test.domain': {type:'p', generation:1},
             'åuser@test.domain': {type:'b', generation:4}
