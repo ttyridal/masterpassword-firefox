@@ -98,7 +98,7 @@ function read_mpsites(d, username, key_id, confirm_fn){
 
     $.each(d, function(){
         var s,re = /([-0-9T:Z]+)  +([0-9]+)  +([0-9]+):([0-9]+):([0-9]+)  +([^\t]*)\t *([^\t]*)\t(.*)$/g;
-        if (this.length == 0 || this.charAt(0) === '#') return true;
+        if (this.length === 0 || this.charAt(0) === '#') return true;
         s=re.exec(this);
         if (!s) {
             console.warn("Unexpected sites input", this);

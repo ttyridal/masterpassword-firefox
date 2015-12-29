@@ -45,7 +45,7 @@ exports["test mpsites upload invalid"] = function(assert) {
     scope.console = {
         log: function(){},
         warn: function(){},
-        error: console.error,
+        error: console.error
     };
     scope.confirm = function(m){return true;};
     scope.alert = function(m){if (/Not a mpsites.file/.test(m)) got_alert_not_mpsites = true;};

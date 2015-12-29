@@ -23,8 +23,8 @@ function loadConfigJs() {
 exports["test mpw utils import ios"] = function(assert, async_test_done) {
     var scope = loadConfigJs();
     const {Cu} = require("chrome");
-    const {TextDecoder, OS} = Cu.import("resource://gre/modules/osfile.jsm", {});
-    function confirm_fn(txt) { console.error("cofirmfn:",txt);return true; };
+    const {TextDecoder, OS} = Cu.import("resource://gre/modules/osfile.jsm", {}); //jshint ignore:line
+    function confirm_fn(txt) { console.error("cofirmfn:",txt);return true; }
 
     OS.File.read("test/ios2.1.88_sample.mpsites").then(function(ar){
         let mpsites_txt = (new TextDecoder()).decode(ar);
@@ -54,7 +54,7 @@ exports["test mpw utils import ios"] = function(assert, async_test_done) {
         async_test_done();
     });
 
-}
+};
 
 exports["test mpw utils import confirm"] = function(assert) {
     var scope = loadConfigJs();
@@ -88,7 +88,7 @@ exports["test mpw utils import confirm"] = function(assert) {
     r = scope.window.mpw_utils.read_mpsites(header, 'wronguser', test_key_id, confirm_true);
     assert.equal(true, confirm_called);
     assert.equal(typeof r, typeof [], "Wrong return type");
-}
+};
 
 exports["test mpw utils import"] = function(assert) {
     var scope = loadConfigJs();
@@ -109,7 +109,7 @@ exports["test mpw utils import"] = function(assert) {
 '2015-09-30T10:14:39Z         0    18:2:4                           \t                    åsite\t'
         ];
 
-    function confirm_fn() { return true; };
+    function confirm_fn() { return true; }
 
     assert.throws(function(){
         scope.window.mpw_utils.read_mpsites(
