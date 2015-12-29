@@ -10,6 +10,6 @@ $.each = function(a, cb) {
         if (!a.hasOwnProperty(x)) continue;
         cb.apply(a[x], [x, a[x]]);
     }
-}
+};
 
 $.trim = String.trim;
