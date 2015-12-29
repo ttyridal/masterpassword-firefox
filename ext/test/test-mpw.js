@@ -1,6 +1,6 @@
 /* global exports,require,console */
 
-exports["test mpw utils import"] = function(assert) {
+function loadConfigJs() {
     var self = require("sdk/self");
     const { sandbox, evaluate, load } = require("sdk/loader/sandbox");
     var scope = sandbox();
@@ -13,6 +13,12 @@ exports["test mpw utils import"] = function(assert) {
     load(scope, self.data.url('../test/jquery_stubs.js'));
     load(scope, self.data.url('config.js'));
 
+    return scope;
+}
+
+
+exports["test mpw utils import"] = function(assert) {
+    var scope = loadConfigJs();
 
     var header = [ '# Master Password site export',
 '#     Export of site names and stored passwords (unless device-private) encrypted with the master key.',
@@ -50,16 +56,7 @@ exports["test mpw utils import"] = function(assert) {
 };
 
 exports["test mpw utils export"] = function(assert) {
-    var self = require("sdk/self");
-    const { sandbox, evaluate, load } = require("sdk/loader/sandbox");
-    var scope = sandbox();
-    scope.window = {
-        'addEventListener': function(){}
-    };
-    scope.document = {};
-    scope.console = console;
-    load(scope, self.data.url('../test/jquery_stubs.js'));
-    load(scope, self.data.url('config.js'));
+    var scope = loadConfigJs();
 
     var ret = scope.window.mpw_utils.make_mpsites("0123456",{
         'testdomain.no': {
