@@ -42,7 +42,11 @@ exports["test mpsites upload invalid"] = function(assert) {
         'addEventListener': function(){}
     };
     scope.document = {};
-    scope.console = console;
+    scope.console = {
+        log: function(){},
+        warn: function(){},
+        error: console.error,
+    };
     scope.confirm = function(m){return true;};
     scope.alert = function(m){if (/Not a mpsites.file/.test(m)) got_alert_not_mpsites = true;};
     scope.$ = mpsites_upload_jquery;

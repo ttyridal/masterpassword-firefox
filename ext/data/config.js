@@ -63,11 +63,16 @@ function mpsites_import_error(code, message) {
 mpsites_import_error.prototype = Object.create(Error.prototype);
 mpsites_import_error.prototype.constructor = mpsites_import_error;
 
-function read_mpsites(d){
+function read_mpsites(d, username, key_id, confirm_fn){
     var ret=[],l,fheader={'format':-1, 'key_id':undefined, 'username':undefined};
-    d = d.split("\n");
-    if (d.shift() !== '# Master Password site export')
+    const file_header = '# Master Password site export';
+    d = d.split('\n');
+    d = d.map(function(cv, i, a) { return cv.replace(/^\s+|[\r\n]+$/gm,''); });
+
+    if ((l = d.shift()) !== file_header) {
+        console.warn("header not as expected", l);
         throw new mpsites_import_error(3, "Not a mpsites file");
+    }
 
     while((l = d.shift()) !== '##'){} //jshint ignore:line
 
@@ -81,21 +86,24 @@ function read_mpsites(d){
         console.log(fheader);
         throw new mpsites_import_error(1, "Unsupported mpsites format");
     }
-    if (fheader.username && fheader.username !== username) {
-        if (!confirm("Username mismatch!\n\nYou may still import this file, "+
+    if (username && fheader.username && fheader.username !== username) {
+        if (!confirm_fn("Username mismatch!\n\nYou may still import this file, "+
                 "but passwords will be different from where you exported the file"))
             return undefined;
-    } else if (fheader.key_id && fheader.key_id !== key_id) {
-        if (!confirm("Key ID mismatch!\n\nYou may still import this file, "+
+    } else if (key_id && fheader.key_id && fheader.key_id !== key_id) {
+        if (!confirm_fn("Key ID mismatch!\n\nYou may still import this file, "+
                 "but passwords will be different from where you exported the file"))
             return undefined;
     }
 
     $.each(d, function(){
         var s,re = /([-0-9T:Z]+)  +([0-9]+)  +([0-9]+):([0-9]+):([0-9]+)  +([^\t]*)\t *([^\t]*)\t(.*)$/g;
-        if (this.charAt(0) === '#') return true;
+        if (this.length == 0 || this.charAt(0) === '#') return true;
         s=re.exec(this);
-        if (!s) return true;
+        if (!s) {
+            console.warn("Unexpected sites input", this);
+            return true;
+        }
         switch(s[3]){
           case '20': s[3]='s'; break;
           case '16': s[3]='x'; break;
@@ -197,7 +205,7 @@ $(document).on('drop', function(e){
     fr.onload=function(x){
         var has_ver1_mb_sites = false;
         try {
-            x = read_mpsites(x.target.result);
+            x = read_mpsites(x.target.result, username, key_id, confirm);
             if (!x) return;
         } catch (e) {
             if (e.name === 'mpsites_import_error') {

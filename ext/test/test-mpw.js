@@ -8,7 +8,11 @@ function loadConfigJs() {
         'addEventListener': function(){}
     };
     scope.document = {};
-    scope.console = console;
+    scope.console = {
+        log: function(){},
+        warn: function(){},
+        error: console.error
+    };
     scope.confirm = function(m){return true;};
     load(scope, self.data.url('../test/jquery_stubs.js'));
     load(scope, self.data.url('config.js'));
@@ -20,15 +24,27 @@ exports["test mpw utils import ios"] = function(assert, async_test_done) {
     var scope = loadConfigJs();
     const {Cu} = require("chrome");
     const {TextDecoder, OS} = Cu.import("resource://gre/modules/osfile.jsm", {});
+    function confirm_fn(txt) { console.error("cofirmfn:",txt);return true; };
 
     OS.File.read("test/ios2.1.88_sample.mpsites").then(function(ar){
         let mpsites_txt = (new TextDecoder()).decode(ar);
         var r;
         try {
-            r = scope.window.mpw_utils.read_mpsites(mpsites_txt);
+            r = scope.window.mpw_utils.read_mpsites(
+                mpsites_txt,
+                undefined, undefined,
+                confirm_fn);
         } catch(e) {
-            assert.ok(0, "read_mpsites threw error");
+            assert.ok(0, "read_mpsites threw error "+e);
+            async_test_done();
+            return;
         }
+
+        assert.equal(r.length, 4, "read failed");
+        assert.equal(r[0].sitename, 'a.very.very.very.very.ling.site.com');
+        assert.equal(r[0].passtype, 'l');
+        assert.equal(r[0].passalgo, '2');
+        assert.equal(r[0].passcnt, '1');
 
         async_test_done();
     },
@@ -38,6 +54,40 @@ exports["test mpw utils import ios"] = function(assert, async_test_done) {
         async_test_done();
     });
 
+}
+
+exports["test mpw utils import confirm"] = function(assert) {
+    var scope = loadConfigJs();
+    var test_key_id = '95212FAE6842582826F620D402B19AEAF38A77D612C24529BD5C89BACFD42288';
+    var header = [ '# Master Password site export',
+'#     Export of site names and stored passwords (unless device-private) encrypted with the master key.',
+'# ', '##', '# Format: 1', '# Date: 2015-09-30T10:15:25Z', '# User Name: test', '# Full Name: test',
+'# Avatar: 0', '# Key ID: '+test_key_id,
+'# Version: 2.2', '# Algorithm: 3', '# Default Type: 17', '# Passwords: PROTECTED',
+'##', '#'].join('\n');
+
+    var r;
+    var confirm_called = false;
+    function confirm_true(txt) { confirm_called = true; return true; }
+    function confirm_false(txt) { confirm_called = true; return false; }
+
+    r = scope.window.mpw_utils.read_mpsites(header, 'wrongname', 'wrongkey', confirm_false);
+    assert.equal(true, confirm_called);
+    assert.equal(typeof r, 'undefined');
+
+    confirm_called = false;
+    r = scope.window.mpw_utils.read_mpsites(header, 'test', 'wrongkey', confirm_false);
+    assert.equal(true, confirm_called);
+    assert.equal(typeof r, 'undefined');
+
+    confirm_called = false;
+    r = scope.window.mpw_utils.read_mpsites(header, 'test', test_key_id, confirm_false);
+    assert.equal(false, confirm_called);
+    assert.equal(typeof r, typeof [], "Wrong return type");
+
+    r = scope.window.mpw_utils.read_mpsites(header, 'wronguser', test_key_id, confirm_true);
+    assert.equal(true, confirm_called);
+    assert.equal(typeof r, typeof [], "Wrong return type");
 }
 
 exports["test mpw utils import"] = function(assert) {
@@ -59,7 +109,13 @@ exports["test mpw utils import"] = function(assert) {
 '2015-09-30T10:14:39Z         0    18:2:4                           \t                    åsite\t'
         ];
 
-    assert.throws(function(){scope.window.mpw_utils.read_mpsites([ 'gargabe' ].join('\n'));}, /Not a mpsites file/);
+    function confirm_fn() { return true; };
+
+    assert.throws(function(){
+        scope.window.mpw_utils.read_mpsites(
+            [ 'gargabe' ].join('\n'),
+            undefined, undefined,
+            confirm_fn);}, /Not a mpsites file/);
     var r = scope.window.mpw_utils.read_mpsites(header.concat(sites).join('\n'));
     assert.equal(r[0].sitename, 'asite');
     assert.equal(r[0].passtype, 'x');
