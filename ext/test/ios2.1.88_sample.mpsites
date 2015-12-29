@@ -1,0 +1,19 @@
+# Master Password site export
+#     Export of site names and stored passwords (unless device-private) encrypted with the master key.
+# 
+##
+# User Name: test
+# Avatar: 13
+# Key ID: 95212fae6842582826f620d402b19aeaf38a77d612c24529bd5c89bacfd42288
+# Date: 2015-12-29T08:00:51Z
+# Version: 2188063092190
+# Format: 1
+# Passwords: PROTECTED
+##
+#
+#               Last     Times  Password                      Login	                     Site	Site
+#               used      used      type                       name	                     name	password
+2015-12-29T07:58:58Z         1    17:2:1                           	a.very.very.very.very.ling.site.com	
+2015-12-29T07:58:11Z         5    16:2:1                           	                apple.com	
+2015-12-29T08:00:16Z         1    17:2:1                           	someuser@veryylongsitename-emailaddree.com@sitename.net	
+2015-09-28T19:05:56Z         4    17:2:2                           	               mysite.com	

@@ -16,6 +16,29 @@ function loadConfigJs() {
     return scope;
 }
 
+exports["test mpw utils import ios"] = function(assert, async_test_done) {
+    var scope = loadConfigJs();
+    const {Cu} = require("chrome");
+    const {TextDecoder, OS} = Cu.import("resource://gre/modules/osfile.jsm", {});
+
+    OS.File.read("test/ios2.1.88_sample.mpsites").then(function(ar){
+        let mpsites_txt = (new TextDecoder()).decode(ar);
+        var r;
+        try {
+            r = scope.window.mpw_utils.read_mpsites(mpsites_txt);
+        } catch(e) {
+            assert.ok(0, "read_mpsites threw error");
+        }
+
+        async_test_done();
+    },
+    function failure(reason) {
+        console.log(reason);
+        assert.ok(0, "File read failed");
+        async_test_done();
+    });
+
+}
 
 exports["test mpw utils import"] = function(assert) {
     var scope = loadConfigJs();
