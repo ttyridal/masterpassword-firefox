@@ -69,12 +69,7 @@ if (ss.storage.sites && (!ss.storage.version || ss.storage.version < 2)) {
 if (ss.storage.version !== 2) ss.storage.version = 2;
 
 var session_store = {
-    'username': ss.storage.username || null,
     'masterkey': null,
-    'sites': ss.storage.sites || {},
-    'defaulttype': prefs.defaulttype,
-    'max_alg_version': global_prefs.get('extensions.' + self.id + '.max_alg_version', 3),
-    'key_id': ss.storage.key_id
 };
 
 if (system_password_manager) {
@@ -90,11 +85,26 @@ if (system_password_manager) {
     });
 }
 
+function get_max_alg_version() {
+    return global_prefs.get('extensions.' + self.id + '.max_alg_version', 3);
+}
+
 function show_window() {
     var panel = createPanel();
     panel.show({position: button});
-    session_store.defaulttype = prefs.defaulttype;
-    panel.port.on('loaded' ,function(){ panel.port.emit("popup", session_store,false); });
+    panel.port.on('loaded' ,function(){
+        panel.port.emit(
+            "popup",
+            {
+                'username': ss.storage.username || null,
+                'masterkey': session_store.masterkey,
+                'sites': ss.storage.sites || {},
+                'defaulttype': prefs.defaulttype,
+                'max_alg_version': get_max_alg_version(),
+                'key_id': ss.storage.key_id
+            },
+            false);
+    });
 }
 
 var button = buttons.ToggleButton({
@@ -127,14 +137,13 @@ var pm_config_handler = pagemod.PageMod({
         }
         worker.port.on('configload', function(m) {
             worker.port.emit('configload', {
-                sites:session_store.sites,
-                username:session_store.username,
-                key_id:session_store.key_id,
-                max_alg_version:session_store.max_alg_version
+                'username': ss.storage.username,
+                'sites': ss.storage.sites || {},
+                'key_id': ss.storage.key_id,
+                'max_alg_version': get_max_alg_version()
             });
         });
         worker.port.on('configstore', function(d) {
-            session_store.sites = d;
             ss.storage.sites = d;
         });
     }
@@ -189,7 +198,7 @@ function createPanel() {
         }
         for (let i of ['username', 'sites', 'key_id']) {
             if (i in d)
-                ss.storage[i] = session_store[i] = d[i];
+                ss.storage[i] = d[i];
         }
     });
     panel.port.on('openconfig', function(d){
