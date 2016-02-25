@@ -120,7 +120,7 @@ function update_with_settings_for(domain) {
         typeof session_store.sites[domain] === 'undefined') {
         keys = [];
     } else {
-        keys = Object.keys(session_store.sites[domain]),
+        keys = Object.keys(session_store.sites[domain]);
         site = session_store.sites[domain][keys[0]];
     }
 
