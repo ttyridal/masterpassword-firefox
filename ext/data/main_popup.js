@@ -114,11 +114,15 @@ function recalculate(hide_after_copy, retry) {
 }
 
 function update_with_settings_for(domain) {
-    if (typeof session_store.sites === 'undefined') return;
-    if (typeof session_store.sites[domain] === 'undefined') return;
+    var keys, site;
 
-    var keys = Object.keys(session_store.sites[domain]),
+    if (typeof session_store.sites === 'undefined' ||
+        typeof session_store.sites[domain] === 'undefined') {
+        keys = [];
+    } else {
+        keys = Object.keys(session_store.sites[domain]),
         site = session_store.sites[domain][keys[0]];
+    }
 
     if (keys.length>1)
         $('#storedids_dropdown').show();
