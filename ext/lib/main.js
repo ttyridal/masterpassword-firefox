@@ -34,6 +34,8 @@ var pwmgr = require("./system_password_manager.js").manager;
 
 var system_password_manager = pwmgr(prefs.pass_store);
 
+console.debug("Stored variables:", Object.keys(ss.storage));
+
 
 function fix_session_store_password_type() {
     console.log('updating masterpassword storage');
@@ -59,12 +61,12 @@ function fix_session_store_password_type() {
             }
         }
     }
-    ss.storage.version=2;
 }
 
 if (ss.storage.sites && (!ss.storage.version || ss.storage.version < 2)) {
     fix_session_store_password_type();
 }
+if (ss.storage.version !== 2) ss.storage.version = 2;
 
 var session_store = {
     'username': ss.storage.username || null,
