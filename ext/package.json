@@ -30,6 +30,15 @@
          {"label":"OSX Keychain", "value":"o"},
          {"label":"Windows Vault", "value":"w"}
      ]},
+     { "name":"pass_clear_delay", "title":"Remember password", "type":"menulist", "value":-1, "options": [
+         {"label":"Never", "value":0},
+         {"label":"5 minutes", "value":5},
+         {"label":"15 minutes", "value":15},
+         {"label":"30 minutes", "value":30},
+         {"label":"1 hour", "value":60},
+         {"label":"8 hour", "value":480},
+         {"label":"Until closed", "value":-1}
+     ]},
      { "name":"sdk.console.logLevel", "title":"Log level", "type":"menulist", "value":"error", "options": [
          {"label":"Error", "value":"error"},
          {"label":"Warnings & Errors", "value":"warn"},

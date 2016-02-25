@@ -29,6 +29,7 @@ var isPrivate = require("sdk/private-browsing").isPrivate;
 var pagemod = require("sdk/page-mod");
 var self = require("sdk/self");
 var ss = require("sdk/simple-storage");
+var { setTimeout, clearTimeout } = require("sdk/timers");
 var pwmgr = require("./system_password_manager.js").manager;
 
 var system_password_manager = pwmgr(prefs.pass_store);
@@ -87,6 +88,13 @@ if (system_password_manager) {
     });
 }
 
+function show_window() {
+    var panel = createPanel();
+    panel.show({position: button});
+    session_store.defaulttype = prefs.defaulttype;
+    panel.port.on('loaded' ,function(){ panel.port.emit("popup", session_store,false); });
+}
+
 var button = buttons.ToggleButton({
     id: "com_github_ttyridal_masterpassword",
     label: "Master Password",
@@ -96,23 +104,14 @@ var button = buttons.ToggleButton({
         "64": "./icon64.png"
     },
     onChange: function(state){
-        if (state.checked) {
-            var panel = createPanel();
-            panel.show({position: button});
-            session_store.defaulttype = prefs.defaulttype;
-            panel.port.on('loaded' ,function(){ panel.port.emit("popup", session_store,false); });
-        }
+        if (state.checked)
+            show_window();
     }
 });
 
 var hotPassword = new Hotkey({
   combo: prefs.hotkeycombo,
-  onPress: function() {
-    var panel = createPanel();
-    panel.show({position: button});
-    session_store.defaulttype = prefs.defaulttype;
-    panel.port.on('loaded' ,function(){ panel.port.emit("popup", session_store, true); });
-  }
+  onPress: show_window
 });
 
 
@@ -139,6 +138,23 @@ var pm_config_handler = pagemod.PageMod({
     }
 });
 
+var clear_password_timer;
+function arm_passwd_clear_timer() {
+    if (clear_password_timer !== undefined) {
+        clearTimeout(clear_password_timer);
+        clear_password_timer = undefined;
+    }
+
+    if (prefs.pass_clear_delay > 0) {
+        clear_password_timer = setTimeout(function(){
+            console.log("timeout() for password retention");
+            clear_password_timer = undefined;
+            session_store.masterkey = null;
+        }, prefs.pass_clear_delay * 60000);
+        console.debug("password retention timer armed for " + prefs.pass_clear_delay + " minutes");
+    }
+}
+
 
 function createPanel() {
     var panel = panels.Panel({
@@ -157,7 +173,6 @@ function createPanel() {
             console.log("won't store anything for private windows");
             return;
         }
-        var k;
         if (d.key_id && d.masterkey && (d.masterkey !== session_store.masterkey || d.force_update)  && prefs.pass_store !== 'n') {
             system_password_manager = system_password_manager || pwmgr(prefs.pass_store);
             if (system_password_manager) {
@@ -165,13 +180,15 @@ function createPanel() {
             }
         }
 
-        for (k in d) {
-            if (d.hasOwnProperty(k) && k !== 'force_update')
-                session_store[k] = d[k];
+        if (d.masterkey) {
+            arm_passwd_clear_timer();
+            if (prefs.pass_clear_delay !== 0)
+                session_store.masterkey = d.masterkey;
         }
-        if (d.username) ss.storage.username = d.username;
-        if (d.sites) ss.storage.sites = d.sites;
-        if (d.key_id) ss.storage.key_id = d.key_id;
+        for (let i of ['username', 'sites', 'key_id']) {
+            if (i in d)
+                ss.storage[i] = session_store[i] = d[i];
+        }
     });
     panel.port.on('openconfig', function(d){
         tabs.open({ url: self.data.url("config.html") });
