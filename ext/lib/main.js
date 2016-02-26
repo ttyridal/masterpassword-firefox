@@ -68,9 +68,7 @@ if (ss.storage.sites && (!ss.storage.version || ss.storage.version < 2)) {
 }
 if (ss.storage.version !== 2) ss.storage.version = 2;
 
-var session_store = {
-    'masterkey': null,
-};
+var session_store = { 'masterkey': null };
 
 if (system_password_manager) {
     system_password_manager.then(function(lib){
