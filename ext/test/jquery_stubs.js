@@ -3,5 +3,3 @@ function $() {
         'on': function(){}
     };
 }
-
-$.trim = String.trim;
