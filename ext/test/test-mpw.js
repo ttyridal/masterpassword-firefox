@@ -4,18 +4,13 @@ function loadConfigJs() {
     var self = require("sdk/self");
     const { sandbox, evaluate, load } = require("sdk/loader/sandbox");
     var scope = sandbox();
-    scope.window = {
-        'addEventListener': function(){}
-    };
-    scope.document = {};
+    scope.window = {};
     scope.console = {
         log: function(){},
         warn: function(){},
         error: console.error
     };
-    scope.confirm = function(m){return true;};
-    load(scope, self.data.url('../test/jquery_stubs.js'));
-    load(scope, self.data.url('config.js'));
+    load(scope, self.data.url('mpw-utils.js'));
 
     return scope;
 }
@@ -137,7 +132,7 @@ exports["test mpw utils import"] = function(assert) {
 exports["test mpw utils export"] = function(assert) {
     var scope = loadConfigJs();
 
-    var ret = scope.window.mpw_utils.make_mpsites("0123456",{
+    var ret = scope.window.mpw_utils.make_mpsites("0123456", "mainuser",{
         'testdomain.no': {
             'test.domain': {type:'m', generation:1},
             'user@test.domain': {type:'l', username:'reasonably_short', generation:1},
@@ -146,7 +141,7 @@ exports["test mpw utils export"] = function(assert) {
         'another.domain': {
             'very@long.domain@another_very_very_long_test.domain': {type:'i', username: 'regular', generation:3}
         }
-    }, 1);
+    }, 1, 3);
 
     var sites_parsed = [];
     var re = /^([^ ]+) +(\d+) +(\d+)(:\d+)?(:\d+)? +([^\t]*)\t *([^\t]+)\t(.*)/;
@@ -180,12 +175,12 @@ exports["test mpw utils export"] = function(assert) {
     assert.equal(sites_parsed[3][6], 'very@long.domain@another_very_very_long_test.domain');
 
 
-    ret = scope.window.mpw_utils.make_mpsites("0123456", {
+    ret = scope.window.mpw_utils.make_mpsites("0123456", "mainuser", {
         'testdomain.no': {
             'user@test.domain': {type:'p', generation:1},
             'åuser@test.domain': {type:'b', generation:4}
         }
-    }, 3);
+    }, 3, 3);
 
     sites_parsed = [];
     re = /^([^ ]+) +(\d+) +(\d+)(:\d+)?(:\d+)? +([^\t]*)\t *([^\t]+)\t(.*)/;

@@ -48,6 +48,7 @@ exports["test mpsites upload invalid"] = function(assert) {
     scope.FileReader.prototype.readAsText = function(){
         this.onload({target:{result:"invalid..not.a.mpsites.file"}});
     };
+    load(scope, self.data.url('mpw-utils.js'));
     load(scope, self.data.url('config.js'));
 
     assert.ok(got_alert_not_mpsites);
@@ -87,6 +88,7 @@ exports["test mpsites upload valid"] = function(assert) {
     scope.FileReader.prototype.readAsText = function(){
         this.onload({target:{result:file}});
     };
+    load(scope, self.data.url('mpw-utils.js'));
     load(scope, self.data.url('config.js'));
     assert.ok(version_mismatch_received);
     assert.ok('asite' in event_received.sites);
