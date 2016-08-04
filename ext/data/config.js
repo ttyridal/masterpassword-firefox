@@ -49,24 +49,13 @@ function stored_sites_table_append(domain, site, type, loginname, count, ver) {
         case 'p': type="Phrase"; break;
         default: throw new Error("Unknown password type");
     }
-    $('#stored_sites').append('<tr><td>'+site+'<td><input class="domainvalue" type="text" data-old="'+
+    $('#stored_sites > tbody').append('<tr><td>'+site+'<td><input class="domainvalue" type="text" data-old="'+
         domain+'" value="'+domain+'"><td>'+loginname+'<td>'+count+'<td>'+type+'<td>'+ver+
         '<td><img class="delete" src="delete.png">');
 }
 
-window.addEventListener('masterpassword-configload', function(e){
-    stored_sites = e.detail.sites;
-    username = e.detail.username;
-    key_id = e.detail.key_id;
-    alg_max_version = e.detail.max_alg_version;
-
-    if (!string_is_plain_ascii(username)) {
-        alg_min_version = Math.min(3, alg_max_version);
-        if (alg_min_version > 2)
-            $('#ver3note').show();
-    }
-
-
+function stored_sites_table_update(stored_sites) {
+    $('#stored_sites > tbody').empty();
     Object.keys(stored_sites).forEach(function(domain){
         Object.keys(stored_sites[domain]).forEach(function(site){
             let settings = stored_sites[domain][site],
@@ -84,6 +73,21 @@ window.addEventListener('masterpassword-configload', function(e){
                 ""+alg_version);
         });
     });
+}
+
+window.addEventListener('masterpassword-configload', function(e){
+    stored_sites = e.detail.sites;
+    username = e.detail.username;
+    key_id = e.detail.key_id;
+    alg_max_version = e.detail.max_alg_version;
+
+    if (!string_is_plain_ascii(username)) {
+        alg_min_version = Math.min(3, alg_max_version);
+        if (alg_min_version > 2)
+            $('#ver3note').show();
+    }
+
+    stored_sites_table_update(stored_sites);
 });
 
 $(document).on('dragover dragenter', function(e){
@@ -149,14 +153,6 @@ $(document).on('drop', function(e){
             else
                 site.sitesearch = site.sitename;
 
-            stored_sites_table_append(
-                site.sitesearch,
-                site.sitename,
-                site.passtype,
-                site.loginname,
-                site.passcnt,
-                site.passalgo);
-
             if (site.passalgo < 2 && !string_is_plain_ascii(site.sitename))
                 has_ver1_mb_sites = true;
 
@@ -167,6 +163,7 @@ $(document).on('drop', function(e){
                 'username': site.loginname
             };
         }
+        stored_sites_table_update(stored_sites);
 
         if (has_ver1_mb_sites)
             alert("Version mismatch\n\nYour file contains site names with non ascii characters from "+
