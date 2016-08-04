@@ -49,6 +49,7 @@
       "enforceall": true,
       "camelcase": false,
       "esnext": true,
-      "curly": false
+      "curly": false,
+      "moz": true
   }
 }

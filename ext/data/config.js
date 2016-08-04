@@ -96,13 +96,13 @@ function read_mpsites(d, username, key_id, confirm_fn){
             return undefined;
     }
 
-    $.each(d, function(){
+    for (let line of d) {
         var s,re = /([-0-9T:Z]+)  +([0-9]+)  +([0-9]+):([0-9]+):([0-9]+)  +([^\t]*)\t *([^\t]*)\t(.*)$/g;
-        if (this.length === 0 || this.charAt(0) === '#') return true;
-        s=re.exec(this);
+        if (line.length === 0 || line.charAt(0) === '#') continue;
+        s=re.exec(line);
         if (!s) {
-            console.warn("Unexpected sites input", this);
-            return true;
+            console.warn("Unexpected sites input", line);
+            continue;
         }
         switch(s[3]){
           case '20': s[3]='s'; break;
@@ -126,7 +126,8 @@ function read_mpsites(d, username, key_id, confirm_fn){
             sitepass: s[8]
           };
         ret.push(s);
-    });
+    }
+
     return ret;
 }
 
@@ -142,9 +143,12 @@ window.addEventListener('masterpassword-configload', function(e){
             $('#ver3note').show();
     }
 
-    $.each(stored_sites, function(domain,v){
-        $.each(v, function(site, settings){
-            var alg_version = alg_min_version;
+
+    Object.keys(stored_sites).forEach(function(domain){
+        Object.keys(stored_sites[domain]).forEach(function(site){
+            let settings = stored_sites[domain][site],
+                alg_version = alg_min_version;
+
             if (alg_min_version < 3 && !string_is_plain_ascii(site))
                 alg_version = 2;
             if (settings.username === undefined)
@@ -214,31 +218,32 @@ $(document).on('drop', function(e){
             }
             else throw e;
         }
-        $.each(x, function(){
-            var y = this.sitename.split("@");
+
+        for (let site of x) {
+            let y = site.sitename.split("@");
             if (y.length > 1)
-                this.sitesearch = y[y.length-1];
+                site.sitesearch = y[y.length-1];
             else
-                this.sitesearch = this.sitename;
+                site.sitesearch = site.sitename;
 
             stored_sites_table_append(
-                this.sitesearch,
-                this.sitename,
-                this.passtype,
-                this.loginname,
-                this.passcnt,
-                this.passalgo);
+                site.sitesearch,
+                site.sitename,
+                site.passtype,
+                site.loginname,
+                site.passcnt,
+                site.passalgo);
 
-            if (this.passalgo < 2 && !string_is_plain_ascii(this.sitename))
+            if (site.passalgo < 2 && !string_is_plain_ascii(site.sitename))
                 has_ver1_mb_sites = true;
 
-            if (! (this.sitesearch in stored_sites)) stored_sites[this.sitesearch] = {};
-            stored_sites[this.sitesearch][this.sitename] = {
-                'generation': this.passcnt,
-                'type': this.passtype,
-                'username': this.loginname
+            if (! (site.sitesearch in stored_sites)) stored_sites[site.sitesearch] = {};
+            stored_sites[site.sitesearch][site.sitename] = {
+                'generation': site.passcnt,
+                'type': site.passtype,
+                'username': site.loginname
             };
-        });
+        }
 
         if (has_ver1_mb_sites)
             alert("Version mismatch\n\nYour file contains site names with non ascii characters from "+
@@ -299,11 +304,11 @@ function make_mpsites(key_id, stored_sites, alg_min_version, alg_version) {
         '#               Last     Times  Password                      Login\t                     Site\tSite\n',
         '#               used      used      type                       name\t                     name\tpassword\n'];
 
-    $.each(stored_sites, function(domain,v){
-        $.each(v, function(site, settings){
-            var typecode,
-                alg_version = alg_min_version;
-
+    Object.keys(stored_sites).forEach(function(domain){
+        Object.keys(stored_sites[domain]).forEach(function(site){
+            let settings = stored_sites[domain][site],
+                alg_version = alg_min_version,
+                typecode;
             if (alg_min_version < 3 && !string_is_plain_ascii(site))
                 alg_version = 2;
 

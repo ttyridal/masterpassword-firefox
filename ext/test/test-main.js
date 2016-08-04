@@ -26,12 +26,6 @@ function mpsites_upload_jquery() {
         append: function(){}
     };
 }
-mpsites_upload_jquery.each = function(ar, cb) {
-    for (var x in ar) {
-        if (!ar.hasOwnProperty(x)) continue;
-        cb.apply(ar[x], [x, ar[x]]);
-    }
-};
 
 exports["test mpsites upload invalid"] = function(assert) {
     var self = require("sdk/self");
