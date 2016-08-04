@@ -228,7 +228,7 @@ exports["test mpw algorithm"] = function(assert) {
             throw e;
         }
     }
-    load(scope, self.data.url('scrypt.js'));
+    load(scope, self.data.url('mpw.js'));
     var mpw = scope.window.mpw;
 
     var sitename = ".";

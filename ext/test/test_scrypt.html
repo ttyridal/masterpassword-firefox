@@ -34,7 +34,7 @@ function assert_true(a) {
 }
 
 function wait_loaded() {
-    return Promise.all([ loadScript('../data/js/scrypt-asm.js'), loadScript('../data/scrypt.js')]);
+    return Promise.all([ loadScript('../data/js/scrypt-asm.js'), loadScript('../data/mpw.js')]);
 }
 
 var start = Date.now();
