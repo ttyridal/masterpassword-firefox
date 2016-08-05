@@ -23,7 +23,8 @@ function mpsites_upload_jquery() {
                 });
             }
         },
-        append: function(){}
+        append: function(){},
+        empty: function(){}
     };
 }
 
@@ -54,7 +55,7 @@ exports["test mpsites upload invalid"] = function(assert) {
     assert.ok(got_alert_not_mpsites);
 };
 
-exports["test mpsites upload valid"] = function(assert) {
+exports["test mpsites upload valid"] = function(assert, async_test_done) {
     var self = require("sdk/self");
     const { sandbox, evaluate, load } = require("sdk/loader/sandbox");
 
@@ -71,14 +72,25 @@ exports["test mpsites upload valid"] = function(assert) {
         ].join('\n');
 
     var version_mismatch_received = false;
-    var event_received;
     var scope = sandbox();
     scope.window = {
         'addEventListener': function(){}
     };
     scope.document = {
-        createEvent:function(){return{initCustomEvent:function(){ this.sites = arguments[3];}};},
-        documentElement:{dispatchEvent: function(e){event_received=e;}}
+        createEvent:function(){return{initCustomEvent:function(){this.type = arguments[0]; this.sites = arguments[3];}};},
+        documentElement:{
+            dispatchEvent: function(event_received){
+                assert.equal(event_received.type, "masterpassword-siteupdate");
+                assert.ok(version_mismatch_received);
+                assert.ok('asite' in event_received.sites);
+                assert.ok('åsite' in event_received.sites);
+                assert.equal(event_received.sites.asite.asite.generation, 6);
+                assert.equal(event_received.sites.asite.asite.type, 'x');
+                assert.equal(event_received.sites['åsite']['åsite'].generation, 4);
+                assert.equal(event_received.sites['åsite']['åsite'].type, 'm');
+                async_test_done();
+            }
+        }
     };
     scope.console = console;
     scope.confirm = function(m){return true;};
@@ -90,13 +102,6 @@ exports["test mpsites upload valid"] = function(assert) {
     };
     load(scope, self.data.url('mpw-utils.js'));
     load(scope, self.data.url('config.js'));
-    assert.ok(version_mismatch_received);
-    assert.ok('asite' in event_received.sites);
-    assert.ok('åsite' in event_received.sites);
-    assert.equal(event_received.sites.asite.asite.generation, 6);
-    assert.equal(event_received.sites.asite.asite.type, 'x');
-    assert.equal(event_received.sites['åsite']['åsite'].generation, 4);
-    assert.equal(event_received.sites['åsite']['åsite'].type, 'm');
 };
 
 exports["test main handlers"] = function(assert, async_test_done) {
