@@ -53,13 +53,16 @@ function passtype_to_str(type) {
 
 function stored_sites_table_append(domain, site, type, loginname, count, ver) {
     type = passtype_to_str(type);
-    $('#stored_sites > tbody').append('<tr><td>'+site+'<td><input class="domainvalue" type="text" data-old="'+
+    let tr = document.createElement('tr');
+    tr.innerHTML = '<td>'+site+'<td><input class="domainvalue" type="text" data-old="'+
         domain+'" value="'+domain+'"><td>'+loginname+'<td>'+count+'<td>'+type+'<td>'+ver+
-        '<td><img class="delete" src="delete.png">');
+        '<td><img class="delete" src="delete.png">';
+
+    document.querySelector('#stored_sites > tbody').appendChild(tr);
 }
 
 function stored_sites_table_update(stored_sites) {
-    $('#stored_sites > tbody').empty();
+    document.querySelector('#stored_sites > tbody').innerHTML = '';
     Object.keys(stored_sites).forEach(function(domain){
         Object.keys(stored_sites[domain]).forEach(function(site){
             let settings = stored_sites[domain][site],
@@ -79,7 +82,7 @@ function stored_sites_table_update(stored_sites) {
     });
 }
 
-window.addEventListener('masterpassword-configload', function(e){
+document.addEventListener('masterpassword-configload', function(e){
     stored_sites = e.detail.sites;
     username = e.detail.username;
     key_id = e.detail.key_id;
@@ -87,43 +90,56 @@ window.addEventListener('masterpassword-configload', function(e){
 
     if (!string_is_plain_ascii(username)) {
         alg_min_version = Math.min(3, alg_max_version);
-        if (alg_min_version > 2)
-            $('#ver3note').show();
+        if (alg_min_version > 2) {
+            document.querySelector('#ver3note').style.display = 'inherit';
+        }
     }
 
     stored_sites_table_update(stored_sites);
 });
 
-$(document).on('dragover dragenter', function(e){
+function dragover_enter(e){
     e.preventDefault();
     e.stopPropagation();
-});
+}
+document.addEventListener('dragover', dragover_enter);
+document.addEventListener('dragenter', dragover_enter);
 
-$('#stored_sites').on('change','.domainvalue',function(e){
-    var $t = $(this), domain = $t.attr('data-old'), newdomain = $t.val(), site;
-    $t.attr('data-old', newdomain);
-    $t=this;
-    do {
-        $t = $t.parentNode;
-    } while($t.nodeName !== 'TR');
-    site=$($t).children('td:eq(0)').text();
+function find_parent(name, node) {
+    if (!node) throw new Error("node argument required");
+    if (!node.parentNode) throw new Error("node has no parent");
+    node = node.parentNode;
+    while(node.nodeName !== name) {
+        if (!node.parentNode) throw new Error("No parent node found matching " + name);
+        node = node.parentNode;
+    }
+    return node;
+}
+
+document.querySelector('#stored_sites').addEventListener('change', function(e) {
+    if (!e.target.classList.contains('domainvalue')) return;
+    let t = find_parent('TR', e.target),
+        domain = e.target.getAttribute('data-old'),
+        newdomain = e.target.value,
+        site = t.querySelector('td:nth-child(1)').textContent;
 
     if (! (newdomain in stored_sites)) stored_sites[newdomain] = {};
     stored_sites[newdomain][site] = stored_sites[domain][site];
     delete stored_sites[domain][site];
     save_sites_to_backend();
+    console.debug('Change',t,domain,newdomain);
+    e.target.setAttribute('data-old', newdomain);
 });
 
-$('#stored_sites').on('click','.delete',function(e){
-    var $t, t = this;
-    console.log(t);
-    while (t.parentNode.nodeName !== 'TR') t = t.parentNode;
-    if (t.parentNode.nodeName !== 'TR') throw new Error("logic error - cant find parent node");
-    t=t.parentNode;
-    $t=$(t);
+document.querySelector('#stored_sites').addEventListener('click', function(e) {
+    if (!e.target.classList.contains('delete')) return;
+    let t = find_parent('TR', e.target);
 
-    delete stored_sites[$t.find('td:eq(1) > input').val()][$t.children('td:eq(0)').text()];
-    $(t).remove();
+    let sitesearch = t.querySelector('td:nth-child(2) > input').value,
+        sitename = t.querySelector('td:nth-child(1)').textContent;
+
+    delete stored_sites[sitesearch][sitename];
+    t.parentNode.removeChild(t);
     save_sites_to_backend();
 });
 
@@ -172,12 +188,13 @@ function resolveConflict(site) {
     });
 }
 
-$(document).on('drop', function(e){
-    e.originalEvent.dataTransfer.dropEffect='move';
+document.addEventListener('drop', function(e) {
+    let dt = e.dataTransfer;
+    dt.dropEffect='move';
     e.preventDefault();
     e.stopPropagation();
-    if (e.originalEvent.dataTransfer.files.length !== 1) return;
-    if (! /.*\.mpsites$/gi.test(e.originalEvent.dataTransfer.files[0].name)) {
+    if (dt.files.length !== 1) return;
+    if (! /.*\.mpsites$/gi.test(dt.files[0].name)) {
         alert("need a .mpsites file");
         return;
     }
@@ -249,12 +266,14 @@ $(document).on('drop', function(e){
         });
 
     };
-    fr.readAsText(e.originalEvent.dataTransfer.files[0]);
+    fr.readAsText(dt.files[0]);
 
 });
 
-$('body').on('click','.export_mpsites',function(){
-    start_data_download(window.mpw_utils.make_mpsites(key_id, username, stored_sites, alg_min_version, alg_max_version), 'firefox.mpsites');
+document.querySelector('body').addEventListener('click', function(ev){
+    if (ev.target.classList.contains('export_mpsites')) {
+        start_data_download(window.mpw_utils.make_mpsites(key_id, username, stored_sites, alg_min_version, alg_max_version), 'firefox.mpsites');
+    }
 });
 
 function start_data_download(stringarr,filename) {
