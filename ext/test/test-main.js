@@ -1,5 +1,9 @@
 /* global exports,require,console */
 
+const self = require("sdk/self");
+const { sandbox, evaluate, load } = require("sdk/loader/sandbox");
+// require("sdk/preferences/service").set('extensions.'+self.id+'.sdk.console.logLevel', 'debug');
+
 exports["test main"] = function(assert) {
     var main = require("../lib/main.js");
     assert.pass("main.js loaded successfully");
@@ -10,41 +14,73 @@ exports["test main"] = function(assert) {
 // }
 
 
-function mpsites_upload_jquery() {
-    return {
-        on: function(x, cb){
-            if (x === 'drop') {
-                cb({
-                    originalEvent: {
-                        dataTransfer: {files:[{name:'test.mpsites'}]}
-                    },
-                    preventDefault: function(){},
-                    stopPropagation: function(){}
-                });
+function scope_import_fake_dom(scope) {
+    function dummyEvent(type, base) {
+        if (base !== undefined)
+            Object.assign(this, base);
+        this.type = type;
+        this.propagate = true;
+        this.stopPropagation = function() {this.propagate = false;};
+        this.preventDefault = function() {};
+    }
+
+    function DummyDom(id) {
+        this.id = id;
+        this.childNodes = [];
+        this.eventlisteners = {};
+        this.addEventListener = function(e, cb){
+            let el = this.eventlisteners[e] || [];
+            this.eventlisteners[e] = el;
+            el.push(cb);
+        };
+        this.dispatchEvent = function(ev) {
+            for (let cb of this.eventlisteners[ev.type])
+                try {
+                    cb(ev);
+                } catch (e) {
+                    console.error(e);
+                }
+
+        };
+        this.querySelector = function(q){
+            if (this.id === q) return this;
+            for (let x of this.childNodes) {
+                if (x.id === q) return x;
+                x = x.querySelector(q);
+                if (x !== undefined) return x;
             }
-        },
-        append: function(){},
-        empty: function(){}
-    };
+            return undefined;
+        };
+
+        this.appendChild = function(chld) { this.childNodes.push(chld); return chld;};
+    }
+
+    let document = new DummyDom('document');
+    document.documentElement = document;
+    document.createElement = function(x) {return new DummyDom(x);};
+
+    scope.window = {document: document};
+    scope.document = scope.window.document;
+    scope.CustomEvent = dummyEvent;
+    scope.DragEvent = dummyEvent;
+
+    return DummyDom;
 }
 
+
 exports["test mpsites upload invalid"] = function(assert) {
-    var self = require("sdk/self");
-    const { sandbox, evaluate, load } = require("sdk/loader/sandbox");
     var got_alert_not_mpsites = false;
     var scope = sandbox();
-    scope.window = {
-        'addEventListener': function(){}
-    };
-    scope.document = {};
-    scope.console = {
-        log: function(){},
-        warn: function(){},
-        error: console.error
-    };
+
+    let DummyDom = scope_import_fake_dom(scope);
+    scope.document.appendChild(new DummyDom('body'))
+        .appendChild(new DummyDom('#stored_sites'))
+            .appendChild(new DummyDom('#stored_sites > tbody'));
+
+    scope.console = { warn:function(){}};
+
     scope.confirm = function(m){return true;};
     scope.alert = function(m){if (/Not a mpsites.file/.test(m)) got_alert_not_mpsites = true;};
-    scope.$ = mpsites_upload_jquery;
     scope.FileReader = function() { this.onload = function(){ console.error('test failed, onload should be set!');}; };
     scope.FileReader.prototype.readAsText = function(){
         this.onload({target:{result:"invalid..not.a.mpsites.file"}});
@@ -52,62 +88,77 @@ exports["test mpsites upload invalid"] = function(assert) {
     load(scope, self.data.url('mpw-utils.js'));
     load(scope, self.data.url('config.js'));
 
+
+    scope.document.dispatchEvent(new scope.DragEvent('drop', {dataTransfer: {files:[{name: 'some.mpsites'}]}}));
+
     assert.ok(got_alert_not_mpsites);
 };
 
 exports["test mpsites upload valid"] = function(assert, async_test_done) {
-    var self = require("sdk/self");
-    const { sandbox, evaluate, load } = require("sdk/loader/sandbox");
-
-    var file = [ '# Master Password site export',
-'#     Export of site names and stored passwords (unless device-private) encrypted with the master key.',
-'# ', '##', '# Format: 1', '# Date: 2015-09-30T10:15:25Z', '# User Name: test', '# Full Name: test',
-'# Avatar: 0',
-'# Version: 2.2', '# Algorithm: 3', '# Default Type: 17', '# Passwords: PROTECTED',
-'##', '#',
-'#               Last     Times  Password                      Login\t                     Site\tSite',
-'#               used      used      type                       name\t                     name\tpassword',
-'2015-09-30T10:14:31Z         0    16:1:6                           \t                    asite\t',
-'2015-09-30T10:14:39Z         0    18:1:4                           \t                    åsite\t'
-        ].join('\n');
-
     var version_mismatch_received = false;
     var scope = sandbox();
-    scope.window = {
-        'addEventListener': function(){}
-    };
-    scope.document = {
-        createEvent:function(){return{initCustomEvent:function(){this.type = arguments[0]; this.sites = arguments[3];}};},
-        documentElement:{
-            dispatchEvent: function(event_received){
-                assert.equal(event_received.type, "masterpassword-siteupdate");
-                assert.ok(version_mismatch_received);
-                assert.ok('asite' in event_received.sites);
-                assert.ok('åsite' in event_received.sites);
-                assert.equal(event_received.sites.asite.asite.generation, 6);
-                assert.equal(event_received.sites.asite.asite.type, 'x');
-                assert.equal(event_received.sites['åsite']['åsite'].generation, 4);
-                assert.equal(event_received.sites['åsite']['åsite'].type, 'm');
-                async_test_done();
-            }
-        }
-    };
+
+    function FileReader() {
+        this.onload = function(){ console.error('test failed, onload should be set!');};
+        this.readAsText = function() {
+            this.onload({target:{result: ['# Master Password site export',
+                 '#     Export of site names and stored passwords (unless device-private) encrypted with the master key.',
+                 '# ',
+                 '##',
+                 '# Format: 1',
+                 '# Date: 2015-09-30T10:15:25Z',
+                 '# User Name: test',
+                 '# Full Name: test',
+                 '# Avatar: 0',
+                 '# Version: 2.2', '# Algorithm: 3', '# Default Type: 17', '# Passwords: PROTECTED',
+                 '##',
+                 '#',
+                 '#               Last     Times  Password                      Login\t                     Site\tSite',
+                 '#               used      used      type                       name\t                     name\tpassword',
+                 '2015-09-30T10:14:31Z         0    16:1:6                           \t                    asite\t',
+                 '2015-09-30T10:14:39Z         0    18:1:4                           \t                    åsite\t'
+                ].join('\n')}});
+        };
+    }
     scope.console = console;
+    scope.FileReader = FileReader;
+
+    let DummyDom = scope_import_fake_dom(scope);
+    let document = scope.document;
+
+    document.appendChild(new DummyDom('body'))
+        .appendChild(new DummyDom('#stored_sites'))
+            .appendChild(new DummyDom('#stored_sites > tbody'));
+
+    scope.alert = function(m){ if (/Version mismatch/.test(m)) version_mismatch_received=true; else throw new Error('unexpected alert: '+m);};
     scope.confirm = function(m){return true;};
-    scope.alert = function(m){ if (/Version mismatch/.test(m)) version_mismatch_received=true; } ;
-    scope.$ = mpsites_upload_jquery;
-    scope.FileReader = function() { this.onload = function(){ console.error('test failed, onload should be set!');}; };
-    scope.FileReader.prototype.readAsText = function(){
-        this.onload({target:{result:file}});
-    };
+
     load(scope, self.data.url('mpw-utils.js'));
     load(scope, self.data.url('config.js'));
+
+    document.dispatchEvent(new scope.DragEvent('dragenter'));
+    document.dispatchEvent(new scope.DragEvent('dragover'));
+
+    document.addEventListener('masterpassword-siteupdate', function(ev){
+        assert.equal(ev.type, "masterpassword-siteupdate", "custom event is of wrong type");
+        console.log(ev.detail);
+        let sites_received = ev.detail;
+
+        assert.ok(version_mismatch_received);
+        assert.ok('asite' in sites_received);
+        assert.ok('åsite' in sites_received);
+        assert.equal(sites_received.asite.asite.generation, 6);
+        assert.equal(sites_received.asite.asite.type, 'x');
+        assert.equal(sites_received['åsite']['åsite'].generation, 4);
+        assert.equal(sites_received['åsite']['åsite'].type, 'm');
+
+        async_test_done();
+    });
+
+    document.dispatchEvent(new scope.DragEvent('drop', {dataTransfer: {files:[{name: 'some.mpsites'}]}}));
 };
 
 exports["test main handlers"] = function(assert, async_test_done) {
-    var self = require("sdk/self");
-    const { sandbox, evaluate, load } = require("sdk/loader/sandbox");
-
     var scope = sandbox();
     scope.console = console;
     evaluate(scope, "var window = { setTimeout:function(cb,x){cb();} }; var addon_script_ready = 0; var popup_cb, copy_to_clip;");
