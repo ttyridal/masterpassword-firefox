@@ -32,9 +32,8 @@ function string_is_plain_ascii(s) {
      alg_min_version = 1;
 
 function save_sites_to_backend() {
-    var event = document.createEvent('CustomEvent');
-    event.initCustomEvent("masterpassword-siteupdate", true, true, stored_sites);
-    document.documentElement.dispatchEvent(event);
+    document.documentElement.dispatchEvent(
+        new CustomEvent('masterpassword-siteupdate', {detail:stored_sites, bubbles: true}));
 }
 
 function passtype_to_str(type) {

@@ -23,10 +23,11 @@ window.addEventListener("masterpassword-siteupdate", function(event) {
 }, false);
 
 self.port.on("configload", function (d) {
-    var e = document.createEvent('CustomEvent');
-    var cloned = cloneInto(d, document.defaultView);
-    e.initCustomEvent("masterpassword-configload", true, true, cloned);
-    document.documentElement.dispatchEvent(e);
+    document.documentElement.dispatchEvent(
+        new CustomEvent('masterpassword-configload', {
+            detail: cloneInto(d, document.defaultView),
+            bubbles: true
+        }));
 });
 
 self.port.emit('configload', 'lots of fun');
