@@ -8,13 +8,8 @@ self.port.once("the_password", function (d) {
         document.activeElement.type === "password")
     {
         document.activeElement.value = d;
-        var el;
 
-        if ('angular' in unsafeWindow)
-            el = unsafeWindow.angular.element(document.activeElement);
-        else if ('$' in unsafeWindow)
-            el = unsafeWindow.$(document.activeElement);
-        if (el)
-            el.change();
+        document.activeElement.dispatchEvent(
+            new Event('change', {bubbles: true, cancelable: true}));
     }
 });
