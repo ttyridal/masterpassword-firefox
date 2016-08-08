@@ -69,7 +69,9 @@ function read_mpsites(d, username, key_id, confirm_fn){
         throw new mpsites_import_error(3, "Not a mpsites file");
     }
 
-    while((l = d.shift()) !== '##'){} //jshint ignore:line
+    while((l = d.shift()) !== '##'){
+        if (!d.length) throw new mpsites_import_error(3, "Not a mpsites file");
+    }
 
     while((l = d.shift()) !== '##'){
         l = l.split(":");
