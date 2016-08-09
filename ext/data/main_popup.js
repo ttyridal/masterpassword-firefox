@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with the software.  If not, see <http://www.gnu.org/licenses/>.
 */
-/*jshint jquery:true, browser:true, devel:true */
+/*jshint browser:true, devel:true */
 /* globals addon, mpw */
 
 (function () {
@@ -32,6 +32,84 @@ function parse_uri(sourceUri){
         uri.directoryPath = uri.directoryPath.replace(/\/?$/, "/");
     return uri;
 }
+
+let ui = {
+    hide: function(el) {
+        if (typeof el === 'string')
+            el = document.querySelector(el);
+        el.style.display = 'none';
+    },
+    show: function(el) {
+        if (typeof el === 'string')
+            el = document.querySelector(el);
+        el.style.display = '';
+    },
+    toggle: function(el) {
+        if (typeof el === 'string')
+            el = document.querySelector(el);
+        el = el.style;
+        el.display = el.display === 'none' ? '' : 'none';
+        return el.display === '';
+    },
+
+    user_warn: function(s) {
+        let e = document.querySelector('#usermessage');
+        e.className = 'warning_message';
+        e.textContent = s;
+        return e;
+    },
+
+    user_info: function(s) {
+        let e = document.querySelector('#usermessage');
+        e.className = 'info_message';
+        e.textContent = s;
+    },
+
+    domain: function(v) {
+        return document.querySelector('#domain').value;
+    },
+
+    sitename: function(v) {
+        let e = document.querySelector('#sitename'),
+            r = e.value;
+        if (v !== undefined)
+            e.value = v;
+        return r;
+    },
+
+    siteconfig: function(type, generation, username) {
+        let t = document.querySelector('#passwdtype'),
+            g = document.querySelector('#passwdgeneration'),
+            n = document.querySelector('#loginname');
+        let ret = {type: t.value, generation: g.value, username: n.value};
+        if (type && generation && username !== undefined) {
+            t.value = type;
+            g.value = generation;
+            n.value = username;
+        }
+        return ret;
+    },
+
+    thepassword: function(visible, real) {
+        let e = document.querySelector('#thepassword');
+        if (real)
+            e.setAttribute('data-pass', real);
+        if (e.getAttribute('data-visible') === 'true')
+            e.textContent = real || visible;
+        else {
+            e.innerHTML = '';
+            e = e.appendChild(document.createElement('a'));
+            e.href = '';
+            e.id = 'showpass';
+            e.innerHTML = visible;
+        }
+    },
+
+    verify: function(s) {
+        document.querySelector('#verify_pass_fld').textContent = s;
+    }
+
+};
 
 function get_active_tab_url() {
     var ret = new Promise(function(resolve, fail){
@@ -54,11 +132,11 @@ var mpw_session,
     session_store = {};
 
 function recalculate(hide_after_copy, retry) {
-    $('#thepassword').html('(calculating..)');
-    $('#usermessage').html("Please wait...");
-    if (!$('#sitename').val()) {
-        $('#thepassword').html('(need a sitename!)');
-        $('#usermessage').html("need sitename");
+    ui.thepassword("(calculating..)");
+    ui.user_info("Please wait...");
+    if (!ui.sitename()) {
+        ui.thepassword("(need a sitename!)");
+        ui.user_info("need sitename");
         return;
     }
     var key_id_mismatch = false;
@@ -66,7 +144,8 @@ function recalculate(hide_after_copy, retry) {
     if (!mpw_session) {
         mpw_session = mpw( session_store.username, session_store.masterkey, session_store.max_alg_version );
 
-        $('#verify_pass_fld').html("Verify: " + mpw_session.sitepassword(".", 0, "nx"));
+        ui.verify("Verify: " + mpw_session.sitepassword(".", 0, "nx"));
+
         var key_id = mpw_session.key_id();
         if (session_store.key_id && key_id !== session_store.key_id) {
             warn_keyid_not_matching();
@@ -79,30 +158,23 @@ function recalculate(hide_after_copy, retry) {
         }
     }
 
+    let siteconfig = ui.siteconfig();
+    siteconfig.generation = parseInt(siteconfig.generation, 10);
+
     console.debug("calc password " +
-                $('#sitename').val() +
-                " . " +
-                parseInt($('#passwdgeneration').val(), 10) +
-                " . " +
-                $('#passwdtype').val());
+            ui.sitename() +
+            " . " +
+            siteconfig.generation +
+            " . " +
+            siteconfig.type);
 
     var i,
-        s = "",
-        $t = $('#thepassword'),
         pass = mpw_session.sitepassword(
-                 $('#sitename').val(),
-                 parseInt($('#passwdgeneration').val(), 10),
-                 $('#passwdtype').val());
+                ui.sitename(),
+                siteconfig.generation,
+                siteconfig.type);
 
-        for (i = 0; i < pass.length; i++)
-            s += "&middot;";
-
-
-        if ($t.attr('data-visible') === 'true')
-            $t.html('<span>' + pass + '</span>');
-        else
-            $t.html('<a href="" id="showpass">' + s + '</a>');
-        $t.attr('data-pass', pass);
+        ui.thepassword(Array(pass.length+1).join('&middot;'), pass);
 
         copy_to_clipboard("text/plain", pass);
         update_page_password_input(pass);
@@ -110,7 +182,7 @@ function recalculate(hide_after_copy, retry) {
             addon.port.emit('close');
         }
         if (!key_id_mismatch)
-            $('#usermessage').html("Password for " + $('#sitename').val() + " copied to clipboard");
+            ui.user_info("Password for " + ui.sitename() + " copied to clipboard");
 }
 
 function update_with_settings_for(domain) {
@@ -125,7 +197,7 @@ function update_with_settings_for(domain) {
     }
 
     if (keys.length>1)
-        $('#storedids_dropdown').show();
+        ui.show('#storedids_dropdown');
     else if (keys.length === 0) {
         keys[0] = domain;
         site = { generation: 1,
@@ -134,10 +206,8 @@ function update_with_settings_for(domain) {
         };
     }
 
-    $('#sitename').val(keys[0]);
-    $('#passwdgeneration').val(site.generation);
-    $('#passwdtype').val(site.type);
-    $('#loginname').val(site.username ? site.username : "");
+    ui.sitename(keys[0]);
+    ui.siteconfig(site.type, site.generation, site.username || '');
 }
 
 function popup(session_store_, opened_by_hotkey) {
@@ -145,22 +215,22 @@ function popup(session_store_, opened_by_hotkey) {
 
     session_store = session_store_;
     if (!session_store.username || !session_store.masterkey) {
-        $('#main').hide();
-        $('#sessionsetup').show();
+        ui.hide('#main');
+        ui.show('#sessionsetup');
         mpw_session = undefined;
         if (!session_store.username)
-            window.setTimeout(
-                    function(){$('#username').focus();},
-                    0.1);
+            window.setTimeout(function(){
+                document.querySelector('#username').focus();
+            }, 0.1);
         else {
-            $('#username').val(session_store.username);
-            window.setTimeout(
-                    function(){$('#masterkey').focus();},
-                    0.1);
+            document.querySelector('#username').value = session_store.username;
+            window.setTimeout(function(){
+                document.querySelector('#masterkey').focus();
+            }, 0.1);
         }
     } else {
         recalc = true;
-        $('#main').show();
+        ui.show('#main');
     }
 
     get_active_tab_url()
@@ -172,7 +242,8 @@ function popup(session_store_, opened_by_hotkey) {
         while(domain.length > 1 && domain.length > significant_parts)
             domain.shift();
         domain = domain.join(".");
-        $('.domain').attr('value', domain);
+        for (let d of document.querySelectorAll('.domain'))
+            d.value = domain;
         update_with_settings_for(domain);
         if(recalc) {
             recalculate(opened_by_hotkey);
@@ -184,131 +255,119 @@ function popup(session_store_, opened_by_hotkey) {
 }
 addon.port.on("popup", popup);
 
-$('#sessionsetup > form').on('submit', function(){
-    if ($('#username').val().length < 2) {
-        $('#usermessage').html('<span style="color:red">Please enter a name (>2 chars)</span>');
-        $('#username').focus();
-        return false;
+document.querySelector('#sessionsetup > form').addEventListener('submit', function(ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+
+    let username = document.querySelector('#username'),
+        masterkey= document.querySelector('#masterkey');
+
+    if (username.value.length < 2) {
+        ui.user_warn('Please enter a name (>2 chars)');
+        username.focus();
     }
-    if ($('#masterkey').val().length < 2) {
-        $('#usermessage').html('<span style="color:red">Please enter a master key (>2 chars)</span>');
-        $('#masterkey').focus();
-        return false;
+    else if (masterkey.value.length < 2) {
+        ui.user_warn('Please enter a master key (>2 chars)');
+        masterkey.focus();
     }
-    session_store.username=$('#username').val();
-    session_store.masterkey=$('#masterkey').val();
-    $('#masterkey').val('');
-
-    $('#sessionsetup').hide();
-    $('#main').show();
-    recalculate();
-    return false;
-});
-
-$('#mainPopup').on('click','.btnlogout',function(){
-    session_store.masterkey = null;
-    $('#burgermenu').toggle();
-    addon.port.emit('store_update', {masterkey: null});
-    popup(session_store);
-    $('#usermessage').html("session destroyed");
-});
-
-$('#mainPopup').on('click','.btnburger',function(){
-    $('#burgermenu').toggle();
-});
-
-$('#generatepassword').on('click', function(){});
-
-$('#siteconfig_show').on('click', function(){
-    $('#siteconfig').show();
-    $(this).hide();
-    return false;
-});
-
-$('#thepassword').on('click', '#showpass', function(e){
-    var $t = $(this.parentNode);
-    $t.html( $t.attr('data-pass') );
-    $t.attr('data-visible', "true") ;
-    return false;
-});
-
-$('#storedids_dropdown').on('click', function(e){
-    var sids = $('#storedids'),
-        domain = $('#domain').val();
-
-    if (sids.is(":visible"))
-        sids.hide();
     else {
-        sids.empty();
-        $.each(session_store.sites[domain], function(key, val) {
-            sids.append('<option>' + key);
+        session_store.username = username.value;
+        session_store.masterkey= masterkey.value;
+        masterkey.value = '';
+
+        ui.hide('#sessionsetup');
+        ui.show('#main');
+        recalculate();
+    }
+});
+
+document.querySelector('#storedids_dropdown').addEventListener('click', function(ev){
+    let sids = document.querySelector('#storedids');
+
+    if (ui.toggle(sids)) {
+        sids.innerHTML = '';
+        Object.keys(session_store.sites[ui.domain()]).forEach(function(site){
+            sids.appendChild(document.createElement('option')).textContent = site;
         });
-        sids.show();
         sids.focus();
     }
 });
 
-$('#storedids').on('change', function(){
-    var site = $(this).val(),
-        domain = $('#domain').val(),
-        val = session_store.sites[domain][site];
-
-    $('#sitename').val(site);
-    $('#passwdgeneration').val(val.generation);
-    $('#passwdtype').val(val.type);
-    if (val.username)
-        $('#loginname').val(val.username);
-    else
-        $('#loginname').val("");
-
-    $(this).toggle();
-    recalculate();
-});
-
-function save_site_changes_and_recalc(){
-    var domain = $('#domain').val();
+function save_site_changes(){
+    let domain = ui.domain();
 
     if (typeof session_store.sites === 'undefined')
         session_store.sites = {};
     if (typeof session_store.sites[domain] === 'undefined')
         session_store.sites[domain] = {};
 
-    session_store.sites[domain][$('#sitename').val()] = {
-        generation:$('#passwdgeneration').val(),
-        type:$('#passwdtype').val(),
-        username:$('#loginname').val()
-    };
+    session_store.sites[domain][ui.sitename()] = ui.siteconfig();
+
     addon.port.emit('store_update', {sites: session_store.sites});
     if (Object.keys(session_store.sites[domain]).length>1)
-        $('#storedids_dropdown').show();
-    recalculate();
+        ui.show('#storedids_dropdown');
 }
 
 function warn_keyid_not_matching()
 {
     console.debug("keyids did not match!");
-    $('#usermessage').html("<span style='color:red'>Master password possible mismatch!</span> <button id='change_keyid_ok' title='set as new'>OK</button>");
+    let e = ui.user_warn("Master password possible mismatch! ");
+    e = e.appendChild(document.createElement('button'));
+    e.id = 'change_keyid_ok';
+    e.setAttribute('title', "set as new");
+    e.textContent = "OK";
 }
 
-$('#siteconfig').on('change', 'select,input', save_site_changes_and_recalc);
-$('#sitename').on('change', save_site_changes_and_recalc);
-$('#loginname').on('change', save_site_changes_and_recalc);
+document.querySelector('#main').addEventListener('change', function(ev){
+    if (ev.target.id === 'storedids') {
+        let site = ev.target.value,
+            val = session_store.sites[ui.domain()][site];
 
-
-$('#mainPopup').on('click','.btnconfig',function(){
-    $('#burgermenu').toggle();
-    addon.port.emit('openconfig');
-    addon.port.emit('close');
+        ui.sitename(site);
+        ui.siteconfig(val.type, val.generation, val.username || '');
+        ui.hide(ev.target);
+    } else
+        save_site_changes();
+    recalculate();
 });
 
-$('#mainPopup').on('click','#change_keyid_ok',function(){
-    addon.port.emit('store_update', {
-        username: session_store.username,
-        masterkey: session_store.masterkey,
-        key_id: mpw_session.key_id(),
-        force_update: true
-    });
-    $('#usermessage').html("Password for " + $('#sitename').val() + " copied to clipboard");
+document.querySelector('#thepassword').addEventListener('click', function(ev) {
+    let t = ev.target.parentNode;
+    t.textContent = t.getAttribute('data-pass');
+    t.setAttribute('data-visible', 'true');
+    ev.preventDefault();
+    ev.stopPropagation();
+});
+
+document.querySelector('#mainPopup').addEventListener('click', function(ev) {
+    if (ev.target.classList.contains('btnconfig')) {
+        ui.hide('#burgermenu');
+        addon.port.emit('openconfig');
+        addon.port.emit('close');
+    }
+    else if (ev.target.classList.contains('btnlogout')) {
+        session_store.masterkey = null;
+        ui.hide('#burgermenu');
+        addon.port.emit('store_update', {masterkey: null});
+        popup(session_store);
+        ui.user_info("session destroyed");
+    }
+    else if (ev.target.classList.contains('btnburger')) {
+        ui.toggle('#burgermenu');
+    }
+    else if (ev.target.id === 'change_keyid_ok') {
+        addon.port.emit('store_update', {
+            username: session_store.username,
+            masterkey: session_store.masterkey,
+            key_id: mpw_session.key_id(),
+            force_update: true
+        });
+        ui.user_info("Password for " + ui.sitename() + " copied to clipboard");
+    }
+    else if (ev.target.id === 'siteconfig_show') {
+        ui.hide(ev.target);
+        ui.show('#siteconfig');
+    }
 });
 
 }());

@@ -188,14 +188,23 @@ exports["test main handlers"] = function(assert, async_test_done) {
         };
     };
 
-    scope.$ = function(x){ return {
-        on: function(x){},
-        hide: function(){},
-        show: function(){},
-        html: function(y){},
-        attr: function(y,z){},
-        val: function(y){ if (x==='#sitename') {return "test.domain";} }
-    };};
+    function qrysel(x) {
+        if (x === "#sitename") x = "test.domain";
+        return {
+            value: x,
+            addEventListener:function(){},
+            style: {display:''},
+            getAttribute: function(){},
+            setAttribute: function(){},
+            appendChild: function(x){return x;}
+        };
+    }
+    scope.document = {
+        createElement: qrysel,
+        querySelector: qrysel,
+        querySelectorAll: function(){ return [ qrysel() ]; }
+    };
+
     load(scope, self.data.url('main_popup.js'));
     assert.ok(scope.addon_script_ready === 1, "main_popup.js loaded successfully");
 

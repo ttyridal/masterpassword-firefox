@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with the software.  If not, see <http://www.gnu.org/licenses/>.
 */
-/*jshint browser:true, jquery:true, devel:true, nonstandard:true, -W055 */
+/*jshint browser:true, devel:true, nonstandard:true, -W055 */
 
 (function(){
 function encode_utf8(s) {
