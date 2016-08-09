@@ -356,10 +356,11 @@ document.querySelector('#mainPopup').addEventListener('click', function(ev) {
         ui.toggle('#burgermenu');
     }
     else if (ev.target.id === 'change_keyid_ok') {
+        session_store.key_id = mpw_session.key_id();
         addon.port.emit('store_update', {
             username: session_store.username,
             masterkey: session_store.masterkey,
-            key_id: mpw_session.key_id(),
+            key_id: session_store.key_id,
             force_update: true
         });
         ui.user_info("Password for " + ui.sitename() + " copied to clipboard");
