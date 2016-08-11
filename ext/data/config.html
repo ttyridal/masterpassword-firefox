@@ -26,6 +26,23 @@ tr td:nth-child(3) { text-align:center;}
 tr td:nth-child(4) { text-align:center;}
 tr td:nth-child(5) { text-align:center;}
 td img { width: 15px; height:15px;}
+.backdrop {
+    position:fixed;
+    width:100%;
+    height:100%;
+    top:0;
+    left:0;
+    background:rgba(0,0,0,0.7);
+    z-index:500;
+}
+.dialog {
+    border:2px black inset;
+    position:fixed;
+    top:5em;left:5em;
+    width:50%;
+    background:white;
+    padding: 1em;
+}
 </style>
 <body style="margin:0;padding:0;padding-left:1em;">
 <img src="icon64.png" style="float:left;height:4em;padding-top:0;padding-right:0.5em">
@@ -35,6 +52,17 @@ td img { width: 15px; height:15px;}
 <p>(You can drag-drop a .mpsites file here to import it)</p>
 <table id="stored_sites" style="padding-left:2em">
     <thead><tr><th>sitename<th>(matching)<th>Login<th>count<th>type<th>ver
+    <template id="stored_sites_row">
+    <tr>
+        <td>sitename</td>
+        <td><input class="domainvalue" type="text" data-old="domain" value="domain"></td>
+        <td>loginname</td>
+        <td>count</td>
+        <td>type</td>
+        <td>ver</td>
+        <td><img class="delete" src="delete.png"></td>
+    </tr>
+    </template>
 <tbody>
 </table>
 <button class="export_mpsites">export</button>
@@ -45,6 +73,20 @@ This browser-plugin implements the third revision of MasterPassword. As a conseq
 your password list can not be imported in apps supporting max revision 2 (notably the
 official iOS and osX apps with version 2.1.x and earlier)</p>
 
+<div id="conflict_resolve" class="backdrop" style="display:none">
+    <div class="dialog">
+        <h2>Conflicting <span class="sitename"></span> (<small class="domainvalue"></small>)</h2>
+        <h3>existing</h3>
+        type: <span class="existing_type"></span>
+        count: <span class="existing_count"></span>
+        username: <span class="existing_username"></span>
+        <h3>importing</h3>
+        type: <span class="new_type"></span>
+        count: <span class="new_count"></span>
+        username: <span class="new_username"></span>
+        <div style="padding-top:1em"><button id="existing">Keep existing</button> <button id="imported">Replace with imported</button></div>
+    </div>
+</div>
 
 <script src="mpw-utils.js"></script>
 <script src="config.js"></script>

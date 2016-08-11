@@ -51,11 +51,16 @@ function passtype_to_str(type) {
 }
 
 function stored_sites_table_append(domain, site, type, loginname, count, ver) {
-    type = passtype_to_str(type);
-    let tr = document.createElement('tr');
-    tr.innerHTML = '<td>'+site+'<td><input class="domainvalue" type="text" data-old="'+
-        domain+'" value="'+domain+'"><td>'+loginname+'<td>'+count+'<td>'+type+'<td>'+ver+
-        '<td><img class="delete" src="delete.png">';
+    let tr = document.importNode(document.querySelector('#stored_sites_row').content, true);
+    let x = tr.querySelector('input.domainvalue');
+    x.value = domain;
+    x.setAttribute('data-old', domain);
+    x = tr.querySelectorAll('td');
+    x[0].textContent = site;
+    x[2].textContent = loginname;
+    x[3].textContent = count;
+    x[4].textContent = passtype_to_str(type);
+    x[5].textContent = ver;
 
     document.querySelector('#stored_sites > tbody').appendChild(tr);
 }
@@ -153,23 +158,20 @@ function get_sitesearch(sitename) {
 
 function resolveConflict(site) {
     return new Promise(function(resolve, reject){
-        var div = document.createElement('div');
-        div.style.cssText = "position:fixed;width:100%;height:100%;top:0;left:0;background:rgba(0,0,0,0.7);z-index:500";
-        div.innerHTML = [
-            '<div style="border:2px black inset;position:fixed;top:5em;left:5em;width:50%;background:white;padding: 1em"><h2>Conflicting ',
-            site.sitename,
-            ' (<small>',site.sitesearch,'</small>)',
-            '</h2><h3>existing</h3>',
-            'type: ', passtype_to_str(stored_sites[site.sitesearch][site.sitename].type),
-            ' count: ', stored_sites[site.sitesearch][site.sitename].generation,
-            ' username: ', stored_sites[site.sitesearch][site.sitename].username,
-            '<h3>importing</h3>',
-            'type: ', passtype_to_str(site.passtype),
-            ' count: ', site.passcnt,
-            ' username: ', site.loginname,
-            '<div style="padding-top:1em"><button id="existing">Keep existing</button> <button id="imported">Replace with imported</button></div>',
-            '</div>'].join('');
-        div.addEventListener('click', function(ev){
+        let existing = stored_sites[site.sitesearch][site.sitename],
+            div = document.querySelector('#conflict_resolve');
+
+        div.querySelector('.sitename').textContent = site.sitename;
+        div.querySelector('.domainvalue').textContent = site.sitesearch;
+        div.querySelector('.existing_type').textContent = passtype_to_str(existing.type);
+        div.querySelector('.existing_count').textContent = existing.generation;
+        div.querySelector('.existing_username').textContent = existing.username;
+
+        div.querySelector('.new_type').textContent = passtype_to_str(site.passtype);
+        div.querySelector('.new_count').textContent = site.passcnt;
+        div.querySelector('.new_username').textContent = site.loginname;
+
+        function click_handler(ev) {
             switch (ev.target.id) {
                 case 'existing':
                     resolve(stored_sites[site.sitesearch][site.sitename]);
@@ -179,11 +181,13 @@ function resolveConflict(site) {
                     break;
                 default:
                     return;
-
             }
-            div.parentNode.removeChild(div);
-        });
-        document.querySelector('body').appendChild(div);
+            div.removeEventListener('click', click_handler);
+            div.style.display = 'none';
+        }
+
+        div.addEventListener('click', click_handler);
+        div.style.display = '';
     });
 }
 

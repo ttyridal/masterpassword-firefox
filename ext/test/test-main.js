@@ -125,10 +125,19 @@ exports["test mpsites upload valid"] = function(assert, async_test_done) {
 
     let DummyDom = scope_import_fake_dom(scope);
     let document = scope.document;
+    document.importNode = function() {
+        let x = new DummyDom();
+        x.appendChild(new DummyDom('input.domainvalue')).setAttribute = function(){};
+        x.querySelectorAll = function() {
+            return [{},{},{},{},{},{}];
+        };
+        return x;
+    };
 
     document.appendChild(new DummyDom('body'))
         .appendChild(new DummyDom('#stored_sites'))
-            .appendChild(new DummyDom('#stored_sites > tbody'));
+            .appendChild(new DummyDom('#stored_sites > tbody'))
+                .appendChild(new DummyDom('#stored_sites_row'));
 
     scope.alert = function(m){ if (/Version mismatch/.test(m)) version_mismatch_received=true; else throw new Error('unexpected alert: '+m);};
     scope.confirm = function(m){return true;};

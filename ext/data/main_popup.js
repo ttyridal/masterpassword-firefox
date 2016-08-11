@@ -101,7 +101,7 @@ let ui = {
             e = e.appendChild(document.createElement('a'));
             e.href = '';
             e.id = 'showpass';
-            e.innerHTML = visible;
+            e.textContent = visible;
         }
     },
 
@@ -174,7 +174,7 @@ function recalculate(hide_after_copy, retry) {
                 siteconfig.generation,
                 siteconfig.type);
 
-        ui.thepassword(Array(pass.length+1).join('&middot;'), pass);
+        ui.thepassword(Array(pass.length+1).join("\u00B7"), pass); // &middot;
 
         copy_to_clipboard("text/plain", pass);
         update_page_password_input(pass);
