@@ -135,6 +135,7 @@ function arm_passwd_clear_timer() {
 }
 
 function store_update(d) {
+    console.debug("main: store_update", Object.keys(d));
     if (isPrivate(windows.activeWindow)) {
         console.log("won't store anything for private windows");
         return;
