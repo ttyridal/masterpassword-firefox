@@ -17,10 +17,6 @@
     "persistent": true
   },
   "incognito": "split",
-  "options_ui":     {
-      "page": "src/options/options.html",
-      "chrome_style": true
-  },
   "browser_action": {
     "browser_style": false,
     "default_icon": {
