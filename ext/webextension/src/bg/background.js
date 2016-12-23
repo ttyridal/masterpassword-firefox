@@ -37,7 +37,6 @@ function store_update(d) {
 }
 
 function store_get(keys) {
-    console.debug("store_get",keys);
     return new Promise((resolve, fail) => {
         browser.runtime.sendMessage({name: 'store_get'})
         .then(reply => {

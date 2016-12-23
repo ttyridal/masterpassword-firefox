@@ -30,6 +30,14 @@
     "default_title": "MasterPassword",
     "default_popup": "src/browser_action/browser_action.html"
   },
+  "commands": {
+    "_execute_browser_action": {
+      "suggested_key": {
+         "default": "Ctrl+Shift+P",
+         "mac": "MacCtrl+Shift+P"
+      }
+    }
+  },
   "content_scripts": [
   {"matches":["<all_urls>"], "js": ["src/browser_action/content.js"]}
   ],

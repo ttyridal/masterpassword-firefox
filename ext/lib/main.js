@@ -117,13 +117,6 @@ function store_get() {
     };
 }
 
-/*
-var hotPassword = new Hotkey({
-  combo: prefs.hotkeycombo,
-  onPress: show_window
-});
-*/
-
 var clear_password_timer;
 function arm_passwd_clear_timer() {
     if (clear_password_timer !== undefined) {
