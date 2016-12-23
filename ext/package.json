@@ -2,10 +2,14 @@
   "name": "masterpassword-firefox",
   "title": "masterpassword for Firefox",
   "id": "jid1-pn4AFskf9WBAdA@jetpack",
+  "hasEmbeddedWebExtension": true,
+  "engines": {
+      "firefox": ">= 51"
+  },
   "description": "Masterpassword (see masterpasswordapp.com) as an extension for Firefox",
   "author": "Torbjorn Tyridal (ttyridal)",
   "license": "GPLv3",
-  "version": "2.0.2",
+  "version": "2.0.3b1",
   "icon": "data/icon32.png",
   "icon64": "data/icon64.png",
   "permissions": {"private-browsing": true, "multiprocess": true},
@@ -48,7 +52,10 @@
   "jshintConfig": {
       "enforceall": true,
       "camelcase": false,
-      "esnext": true,
+      "es3": false,
+      "es5": false,
+      "esnext": false,
+      "esversion": 6,
       "curly": false,
       "moz": true
   }

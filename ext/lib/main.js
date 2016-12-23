@@ -37,6 +37,18 @@ var system_password_manager = pwmgr(prefs.pass_store);
 console.debug("Stored variables:", Object.keys(ss.storage));
 
 
+console.debug("Starting webext");
+const webExtension = require("sdk/webextension");
+
+webExtension.startup().then(api => {
+    const {browser} = api;
+    browser.runtime.onMessage.addListener((msg, sender, sendReply) => {
+        console.debug("Message from",sender,msg);
+//         sendReply({ content: "reply from legacy add-on" });
+    });
+});
+
+
 function fix_session_store_password_type() {
     console.log('updating masterpassword storage');
     var s,d;
@@ -105,6 +117,7 @@ function show_window() {
     });
 }
 
+/*
 var button = buttons.ToggleButton({
     id: "com_github_ttyridal_masterpassword",
     label: "Master Password",
@@ -123,6 +136,7 @@ var hotPassword = new Hotkey({
   combo: prefs.hotkeycombo,
   onPress: show_window
 });
+*/
 
 
 var pm_config_handler = pagemod.PageMod({
