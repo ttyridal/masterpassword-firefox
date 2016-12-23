@@ -269,8 +269,11 @@ function popup(session_store_, opened_by_hotkey) {
 
 window.addEventListener('load', function () {
     chrome.extension.getBackgroundPage().store_get(['sites', 'username', 'masterkey', 'key_id', 'max_alg_version', 'defaulttype'])
-    .then(data => {popup(data);})
-    .catch(() => {
+    .then(data => {
+        console.debug("Got data");
+        popup(data);
+    })
+    .catch(err => {
         console.error("Failed loading state from background on popup");
         ui.user_warn("BUG. please check log and report");
     });
