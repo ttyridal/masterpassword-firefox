@@ -33,7 +33,6 @@ var session_store = {
 };
 
 function store_update(d) {
-    console.log("background.js: store_update",d);
     browser.runtime.sendMessage({name: 'store_update', data: d});
 }
 
