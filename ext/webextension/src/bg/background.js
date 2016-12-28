@@ -20,21 +20,27 @@
 (function(){
 "use strict";
 
-
-var session_store = {
-    'username':null,
-    'masterkey':null,
-    'defaulttype':'l',
-    'max_alg_version': 3,
-    'passwdtimeout': -1,
-    'key_id': undefined,
-    'sites':{},
-    'needs_port':true
-};
-
 function store_update(d) {
-    console.debug("bg: store_update", Object.keys(d));
     browser.runtime.sendMessage({name: 'store_update', data: d});
+    let syncset = {};
+
+    Object.keys(d).forEach(k => {
+        switch (k) {
+            case 'username':
+            case 'key_id':
+            case 'sites':
+                if (!chrome.extension.inIncognitoContext)
+                    syncset[k] = d[k];
+                break;
+            case 'masterkey':
+                break;
+            default:
+                console.info("Trying to store unknown key",k);
+                break;
+        }
+    });
+    console.log("chrome storage", Object.keys(syncset));
+    chrome.storage.local.set(syncset);
 }
 
 function store_get(keys) {
@@ -58,7 +64,16 @@ function store_get(keys) {
                         fail("unknown key requested");
                 }
             }
-            resolve(r);
+            chrome.storage.local.get(keys, itms => {
+                if (itms !== undefined) {
+                    for (let k of keys) {
+                        if (itms[k] !== undefined) {
+                            r[k] = itms[k];
+                        }
+                    }
+                }
+                resolve(r);
+            });
         })
         .catch(err => {
             console.error("sendMessage failed",err);
