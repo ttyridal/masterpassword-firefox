@@ -112,7 +112,7 @@ function store_get() {
         'defaulttype': prefs.defaulttype,
         'passwdtimeout': prefs.pass_clear_delay,
         'pass_store': prefs.pass_store,
-        'hotkeycompbo': prefs.hotkeycombo,
+        'hotkeycombo': prefs.hotkeycombo,
         'max_alg_version': global_prefs.get('extensions.' + self.id + '.max_alg_version', 3),
     };
 }

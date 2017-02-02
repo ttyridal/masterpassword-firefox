@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with the software.  If not, see <http://www.gnu.org/licenses/>.
 */
-/* global browser, window, console */
+/* global browser, window, console, chrome */
 
 (function(){
 "use strict";
@@ -51,9 +51,14 @@ function store_get(keys) {
             let r = {};
             for (let k of keys) {
                 switch (k) {
+                    //preferences
+                    case 'defaulttype':
+                    case 'passwdtimeout':
+                    case 'pass_store':
+                    case 'hotkeycombo':
+                    //settings
                     case 'username':
                     case 'masterkey':
-                    case 'defaulttype':
                     case 'max_alg_version':
                     case 'key_id':
                     case 'sites':
@@ -73,6 +78,13 @@ function store_get(keys) {
                     }
                 }
                 resolve(r);
+            });
+            // save any changed preferences
+            chrome.storage.local.set({
+                'defaulttype': reply.defaulttype,
+                'passwdtimeout': reply.passwdtimeout,
+                'pass_store': reply.pass_store,
+                'hotkeycombo': reply.hotkeycombo
             });
         })
         .catch(err => {
