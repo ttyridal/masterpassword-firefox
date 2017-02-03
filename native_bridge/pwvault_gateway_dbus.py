@@ -198,6 +198,10 @@ class DBus(object):
                 typ = ord('s')
                 x = c_char_p(x)
                 self._iter_append_basic(it, typ, x)
+            elif type(x) == bytes:
+                typ = ord('s')
+                x = c_char_p(x)
+                self._iter_append_basic(it, typ, x)
             elif type(x) == DBus.Variant:
                 typ = {Unicode: b's',
                        str: b's',
@@ -248,13 +252,13 @@ class DBus(object):
         err = DBus.Error()
         rep = self._lib.dbus_connection_send_with_reply_and_block(self.bus, m, to, byref(err))
         if rep == 0:
-            if err.name == 'org.freedesktop.DBus.Error.NoReply':
+            if err.name == b'org.freedesktop.DBus.Error.NoReply':
                 raise DBus.NoReplyException(err.message.decode())
-            elif err.name == 'org.freedesktop.DBus.Error.ServiceUnknown':
+            elif err.name == b'org.freedesktop.DBus.Error.ServiceUnknown':
                 raise DBus.ServiceUnknownException(err.message.decode())
-            elif err.name == 'org.freedesktop.DBus.Error.Disconnected':
+            elif err.name == b'org.freedesktop.DBus.Error.Disconnected':
                 raise DBus.DisconnectedException(err.message.decode())
-            elif err.name == 'org.freedesktop.DBus.Error.InvalidArgs':
+            elif err.name == b'org.freedesktop.DBus.Error.InvalidArgs':
                 raise DBus.InvalidArgsException(err.message.decode())
             else:
                 raise DBus.GenericException(err.name.decode() + " " + err.message.decode())
@@ -263,7 +267,7 @@ class DBus(object):
         self._lib.dbus_message_iter_init(rep, byref(it))
         return self._iter_result(byref(it))
 
-    def execute(self, dest, path, iface, method, *args):
+    def execute_timeout(self, time, dest, path, iface, method, *args):
         dest = dest.encode() if hasattr(dest, 'encode') else dest
         path = path.encode() if hasattr(path, 'encode') else path
         iface = iface.encode() if hasattr(iface, 'encode') else iface
@@ -276,7 +280,10 @@ class DBus(object):
         if not self._lib.dbus_message_iter_init_append(m, byref(it)):
             raise DBus.GenericException("Failed executing dbus_message_iter_init_append")
         self._iter_args(byref(it), args)
-        return self._msg_send(m, 1000)
+        return self._msg_send(m, time*1000)
+
+    def execute(self, dest, path, iface, method, *args):
+        return self.execute_timeout(1, dest, path, iface, method, *args)
 
     def get_property(self, dest, path, iface, prop):
         m = self.execute(dest, path, 'org.freedesktop.DBus.Properties', 'Get', iface, prop)
@@ -348,13 +355,77 @@ class SecretServices(object):
         logging.info("Created or updated item %s", newpath[0].decode())
 
 
+class KWallet(object):
+    path = b'/modules/kwalletd'
+    interface = 'org.kde.KWallet'
+    address = 'org.kde.kwalletd'
+    FOLDER = 'Passwords'
+    KEYNAME = APPNAME+'-master'
+
+    def _setup_kf5_kde4(self):
+        try:
+            wallet_name = self.bus.execute(
+                self.address+'5',
+                self.path+b'5',
+                self.interface,
+                'localWallet')
+            KWallet.path += b'5'
+            KWallet.address += b'5'
+            return wallet_name[0]
+        except DBus.ServiceUnknownException:
+            pass  # Ok, let's try kde4 style
+
+        return self.bus.execute(
+                self.address,
+                self.path,
+                self.interface,
+                'localWallet')[0]
+
+    def __init__(self):
+        self.bus = DBus()
+        self.wallet_name = self._setup_kf5_kde4()
+
+        self.handle = self.bus.execute_timeout(
+                10,
+                self.address,
+                self.path,
+                self.interface,
+                'open', self.wallet_name, Long(0), APPNAME)[0]
+
+    def get_password(self):
+        pw = self.bus.execute(
+                self.address,
+                self.path,
+                self.interface,
+                'readPassword',
+                self.handle,
+                self.FOLDER,
+                self.KEYNAME,
+                APPNAME)
+        return pw[0]
+
+    def set_password(self, value):
+        pw = self.bus.execute(
+                self.address,
+                self.path,
+                self.interface,
+                'writePassword',
+                self.handle,
+                self.FOLDER,
+                self.KEYNAME,
+                value,
+                APPNAME)
+
+
 def test_main():
+    s = KWallet()
+
     if sys.argv[2] == 'pwget':
-        p = SecretServices().get_password()
+        p = s.get_password()
         if p is not None:
             sys.stdout.write(b'Password: ' + p + b'\n')
     elif sys.argv[2] == 'pwset':
-        SecretServices().set_password(sys.argv[3].encode())
+        s.set_password(sys.argv[3].encode())
     else:
         sys.stdout.write(b"unknown command\n")
 
