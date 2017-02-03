@@ -25,9 +25,6 @@ var isPrivate = require("sdk/private-browsing").isPrivate;
 var self = require("sdk/self");
 var ss = require("sdk/simple-storage");
 var { setTimeout, clearTimeout } = require("sdk/timers");
-var pwmgr = require("./system_password_manager.js").manager;
-
-var system_password_manager = pwmgr(prefs.pass_store);
 
 console.debug("Stored variables:", Object.keys(ss.storage));
 console.debug("Preferences",
@@ -88,25 +85,9 @@ if (ss.storage.sites && (!ss.storage.version || ss.storage.version < 2)) {
 }
 if (ss.storage.version !== 2) ss.storage.version = 2;
 
-var session_store = { 'masterkey': null };
-
-if (system_password_manager) {
-    system_password_manager.then(function(lib){
-        lib.get_password(function(pwd, err){
-            if (pwd === undefined) {
-                console.log("failed to get master key from os-store", err);
-            }
-            else if (pwd !== '') {
-                session_store.masterkey = pwd;
-            }
-        });
-    });
-}
-
 function store_get() {
     return {
         'username': ss.storage.username || null,
-        'masterkey': session_store.masterkey,
         'key_id': ss.storage.key_id,
         'sites': ss.storage.sites || {},
         'defaulttype': prefs.defaulttype,
@@ -117,41 +98,13 @@ function store_get() {
     };
 }
 
-var clear_password_timer;
-function arm_passwd_clear_timer() {
-    if (clear_password_timer !== undefined) {
-        clearTimeout(clear_password_timer);
-        clear_password_timer = undefined;
-    }
-
-    if (prefs.pass_clear_delay > 0) {
-        clear_password_timer = setTimeout(function(){
-            console.log("timeout() for password retention");
-            clear_password_timer = undefined;
-            session_store.masterkey = null;
-        }, prefs.pass_clear_delay * 60000);
-        console.debug("password retention timer armed for " + prefs.pass_clear_delay + " minutes");
-    }
-}
-
 function store_update(d) {
     console.debug("main: store_update", Object.keys(d));
     if (isPrivate(windows.activeWindow)) {
         console.log("won't store anything for private windows");
         return;
     }
-    if (d.key_id && d.masterkey && (d.masterkey !== session_store.masterkey || d.force_update)  && prefs.pass_store !== 'n') {
-        system_password_manager = system_password_manager || pwmgr(prefs.pass_store);
-        if (system_password_manager) {
-            system_password_manager.then(function(lib){ lib.set_password(d.masterkey); });
-        }
-    }
 
-    if ('masterkey' in d) {
-        arm_passwd_clear_timer();
-        if (prefs.pass_clear_delay !== 0)
-            session_store.masterkey = d.masterkey;
-    }
     for (let i of ['username', 'sites', 'key_id']) {
         if (i in d)
             ss.storage[i] = d[i];

@@ -37,9 +37,17 @@
   "content_scripts": [
   {"matches":["<all_urls>"], "js": ["src/browser_action/content.js"]}
   ],
+  "applications": {
+      "gecko": {
+          "id": "jid1-pn4AFskf9WBAdA@jetpack",
+          "strict_min_version":"51.0"
+      }
+  },
   "permissions": [
     "clipboardWrite",
     "storage",
+    "alarms",
+    "nativeMessaging",
     "tabs"
   ]
 }

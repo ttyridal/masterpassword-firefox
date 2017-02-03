@@ -274,6 +274,7 @@ window.addEventListener('load', function () {
         popup(data);
     })
     .catch(err => {
+        console.error(err);
         console.error("Failed loading state from background on popup");
         ui.user_warn("BUG. please check log and report");
     });

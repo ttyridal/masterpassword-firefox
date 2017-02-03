@@ -20,6 +20,53 @@
 (function(){
 "use strict";
 
+var port;
+function pwvault_gateway(msg) {
+    console.log("pwvault_gw:",msg.type);
+    // Keeping the port open "forever".. seems to be a bug in firefox
+    // not noting that the native-app is gone and it will spinn forever.
+    // Like this, we'll at least not trigger that until firefox closes.
+    var cb = {};
+    if (!port) {
+        port = browser.runtime.connectNative('no.ttyridal.pwvault_gateway');
+        let default_error = (p) => { port = undefined; };
+        port.onMessage.addListener(r=>{
+            cb.fail = default_error;
+            cb.success(r);
+        });
+        port.onDisconnect.addListener(p=>{
+            p = p.error;
+            if (!p) p = "disconnect";
+            cb.fail(p);
+            cb.fail = default_error;
+            port = undefined;
+        });
+    }
+
+    return new Promise((resolv, fail) => {
+        cb.success = resolv;
+        cb.fail = fail;
+        port.postMessage(msg);
+    });
+}
+
+var settings = {};
+
+var _masterkey;
+const pw_retention_timer = 'pw_retention_timer';
+browser.alarms.onAlarm.addListener(a => {
+    if (a.name === pw_retention_timer) {
+        _masterkey = undefined;
+    }
+});
+
+function temp_store_masterkey(k) {
+    if (!settings.passwdtimeout) return;
+    browser.alarms.create(pw_retention_timer, {delayInMinutes: settings.passwdtimeout * 60});
+    _masterkey = k;
+}
+
+
 function store_update(d) {
     browser.runtime.sendMessage({name: 'store_update', data: d});
     let syncset = {};
@@ -33,6 +80,13 @@ function store_update(d) {
                     syncset[k] = d[k];
                 break;
             case 'masterkey':
+                console.log("store masterkey");
+                if (settings.pass_store !== 'n') {
+                    if (d.key_id || d.force_update)
+                        Promise.resolve(pwvault_gateway({'type':'pwset','name':'default', 'value': d[k]}))
+                        .catch(e => { console.error(e); });
+                } else
+                    temp_store_masterkey(d[k]);
                 break;
             default:
                 console.info("Trying to store unknown key",k);
@@ -43,55 +97,65 @@ function store_update(d) {
     chrome.storage.local.set(syncset);
 }
 
-function store_get(keys) {
+function promised_storage_get(keys) {
     return new Promise((resolve, fail) => {
-        browser.runtime.sendMessage({name: 'store_get'})
-        .then(reply => {
-            if (!reply) fail("missing reply from store_get");
-            let r = {};
-            for (let k of keys) {
-                switch (k) {
-                    //preferences
-                    case 'defaulttype':
-                    case 'passwdtimeout':
-                    case 'pass_store':
-                    case 'hotkeycombo':
-                    //settings
-                    case 'username':
-                    case 'masterkey':
-                    case 'max_alg_version':
-                    case 'key_id':
-                    case 'sites':
-                        r[k] = reply[k];
-                        break;
-                        // JSON.parse(JSON.stringify(session_store.sites));
-                    default:
-                        fail("unknown key requested");
-                }
-            }
-            chrome.storage.local.get(keys, itms => {
-                if (itms !== undefined) {
-                    for (let k of keys) {
-                        if (itms[k] !== undefined) {
-                            r[k] = itms[k];
-                        }
-                    }
-                }
-                resolve(r);
-            });
-            // save any changed preferences
-            chrome.storage.local.set({
-                'defaulttype': reply.defaulttype,
-                'passwdtimeout': reply.passwdtimeout,
-                'pass_store': reply.pass_store,
-                'hotkeycombo': reply.hotkeycombo
-            });
-        })
-        .catch(err => {
-            console.error("sendMessage failed",err);
-            fail();
+        chrome.storage.local.get(keys, itms => {
+            if (itms === undefined) resolve({});
+            else resolve(itms);
         });
     });
+}
+
+function store_get(keys) {
+    let p1 = browser.runtime.sendMessage({name: 'store_get'});
+    let p2 = promised_storage_get(keys);
+    return Promise.all([p1,p2])
+    .then(v => {
+        let [xul, webext] = v;
+        settings = {
+            'defaulttype': xul.defaulttype,
+            'passwdtimeout': xul.passwdtimeout,
+            'pass_store': xul.pass_store,
+            'hotkeycombo': xul.hotkeycombo,
+            'max_alg_version': xul.max_alg_version
+        };
+        chrome.storage.local.set(settings);
+
+        let r = {};
+        for (let k of keys) {
+            switch (k) {
+                //preferences
+                case 'defaulttype':
+                case 'passwdtimeout':
+                case 'pass_store':
+                case 'hotkeycombo':
+                case 'max_alg_version':
+                    r[k] = settings[k];
+                    break;
+
+                case 'masterkey':
+                case 'username':
+                case 'key_id':
+                case 'sites':
+                    r[k] = webext[k] !== undefined ? webext[k] : xul[k];
+                    break;
+                default:
+                    fail("unknown key requested: "+k);
+            }
+        }
+        return r;
+    })
+    .then(r => {
+        if (settings.pass_store !== 'n' && keys.indexOf('masterkey') !== -1) {
+            return Promise.all([r, pwvault_gateway({'type':'pwget', 'name':'default'})]);
+        } else
+            return r;
+    })
+    .then(comb => {
+        let [r, mk] = comb;
+        if (mk && mk.success) r.masterkey = mk.value;
+        return r;
+    })
 }
 
 window.store_update = store_update;
