@@ -201,7 +201,7 @@ function recalculate(hide_after_copy, retry) {
 function update_with_settings_for(domain) {
     var keys, site;
 
-    if (typeof session_store.sites === 'undefined' ||
+    if (typeof session_store.sites === 'undefined' || domain === '' ||
         typeof session_store.sites[domain] === 'undefined') {
         keys = [];
     } else {
@@ -248,6 +248,8 @@ function popup(session_store_, opened_by_hotkey) {
 
     get_active_tab_url()
     .then(function(url){
+        if (url.startsWith('about:'))
+            url = '';
         var domain = parse_uri(url).domain.split("."),
             significant_parts = 2;
         if (domain.length > 2 && domain[domain.length-2].toLowerCase() === "co")
@@ -328,7 +330,8 @@ function save_site_changes(){
 
     session_store.sites[domain][ui.sitename()] = ui.siteconfig();
 
-    chrome.extension.getBackgroundPage().store_update({sites: session_store.sites});
+    if (domain !== '')
+        chrome.extension.getBackgroundPage().store_update({sites: session_store.sites});
     if (Object.keys(session_store.sites[domain]).length>1)
         ui.show('#storedids_dropdown');
 }
@@ -358,8 +361,12 @@ document.querySelector('#main').addEventListener('change', function(ev){
 
 document.querySelector('#thepassword').addEventListener('click', function(ev) {
     let t = ev.target.parentNode;
-    t.textContent = t.getAttribute('data-pass');
-    t.setAttribute('data-visible', 'true');
+    let nt = t.getAttribute('data-pass');
+    console.log("set text",nt);
+    if (nt) {
+        t.textContent = nt;
+        t.setAttribute('data-visible', 'true');
+    }
     ev.preventDefault();
     ev.stopPropagation();
 });
