@@ -453,13 +453,16 @@ def main():
                 if 'name' not in receivedMessage:
                     raise InvalidMessage("pwget requires argument 'name'")
                 logging.debug("Get password for %s", receivedMessage['name'])
-                sendMessage({'type': 'pwgetreply', 'value': 'hello', 'success': True})
+                sendMessage({'type': 'pwgetreply',
+                             'value': store.get_password().decode(),
+                             'success': True})
             elif receivedMessage['type'] == 'pwset':
                 if 'name' not in receivedMessage:
                     raise InvalidMessage("pwset requires argument 'name'")
                 if 'value' not in receivedMessage:
                     raise InvalidMessage("pwset requires argument 'value'")
                 logging.debug("Set password for %s", receivedMessage['name'])
+                store.set_password(receivedMessage['value'].encode())
                 sendMessage({'type': 'pwsetreply', 'success': True})
             else:
                 raise InvalidMessage("Unknown message type")
