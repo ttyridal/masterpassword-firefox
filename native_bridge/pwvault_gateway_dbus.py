@@ -323,7 +323,7 @@ class SecretServices(object):
                 {'usage': USAGE, 'appname': APPNAME})[0]
         if len(keys) == 0:
             logging.info("No keys in store")
-            return
+            return ""
         if len(keys) > 1:
             logging.info("More than one key matching query. blindly using first")
         passwd, encoding = self.bus.execute(
@@ -418,14 +418,16 @@ class KWallet(object):
 
 
 def test_main():
-    s = KWallet()
+    if sys.argv[2] == 'kwallet':
+        s = KWallet()
+    elif sys.argv[2] == 'gnome':
+        s = SecretServices()
 
-    if sys.argv[2] == 'pwget':
+    if sys.argv[3] == 'pwget':
         p = s.get_password()
-        if p is not None:
-            sys.stdout.write(b'Password: ' + p + b'\n')
-    elif sys.argv[2] == 'pwset':
-        s.set_password(sys.argv[3].encode())
+        sys.stdout.write(b'Password: "' + p + b'"\n')
+    elif sys.argv[3] == 'pwset':
+        s.set_password(sys.argv[4].encode())
     else:
         sys.stdout.write(b"unknown command\n")
 
@@ -436,6 +438,11 @@ def main():
         raise Quit()
 
     signal.signal(signal.SIGTERM, quit_now)
+
+    if os.path.basename(__file__) == 'pwvault_gateway_kde':
+        store = KWallet()
+    else:
+        store = SecretServices()
 
     try:
         while 1:
@@ -465,9 +472,76 @@ def main():
         logging.exception("")
 
 
+def install():
+    appname = 'no.ttyridal.pwvault_gateway.json'
+    path_ff = ('~/.mozilla/native-messaging-hosts/',
+               '/usr/lib/mozilla/native-messaging-hosts/')
+    path_chrome = ('~/.config/google-chrome/NativeMessagingHosts/',
+                   'etc/opt/chrome/native-messaging-hosts/')
+    path_chromium = ('~/.config/chromium/NativeMessagingHosts/',
+                     '/etc/chromium/native-messaging-hosts/')
+
+    args = sys.argv[2:]
+    paths = []
+    if not any(a in args for a in ('firefox', 'chrome', 'chromium', 'all')) \
+            or not any(a in args for a in ('gnome', 'kwallet')):
+        sys.stdout.write(b'Usage:\n  '
+                         b'pwvault_gateway_dbus.py install [--global] {gnome|kwallet} {firefox|chrome|chromium|all}\n'
+                         b'\n  --global will install system wide, otherwise current user only\n')
+        return
+
+    if 'firefox' in args or 'all' in args:
+        paths.append(path_ff[1 if '--global' in args else 0])
+    if 'chrome' in args or 'all' in args:
+        paths.append(path_chrome[1 if '--global' in args else 0])
+    if 'chromium' in args or 'all' in args:
+        paths.append(path_chromium[1 if '--global' in args else 0])
+
+    dst = os.path.expanduser('/usr/local/bin/' if '--global' in args else '~/bin/')
+    try:
+        os.makedirs(dst)
+    except OSError as e:
+        if e.errno == 17:
+            pass
+        else:
+            raise
+
+    dst = os.path.join(dst, 'pwvault_gateway_gnome' if 'gnome' in args else 'pwvault_gateway_kde')
+    os.system('cp -f "%s" "%s"' % (os.path.realpath(__file__), dst))
+    os.chmod(dst, 0o755)
+    sys.stdout.write(b"Installed " + dst + b"\n")
+
+    for path in paths:
+        try:
+            os.makedirs(os.path.expanduser(path))
+        except OSError as e:
+            if e.errno == 17:
+                pass
+            else:
+                raise
+
+        with open(os.path.join(os.path.expanduser(path), appname), 'w') as f:
+            f.write('{\n')
+            f.write('"name": "no.ttyridal.pwvault_gateway",\n')
+            f.write('"description": "Exposes the OS password vault to masterpassword extension",\n')
+            f.write('"path": "'+dst+'",\n')
+            f.write('"type": "stdio",\n')
+            if 'mozilla' in path:
+                f.write('"allowed_extensions": [ "jid1-pn4AFskf9WBAdA@jetpack" ]\n')
+            else:
+                f.write('"allowed_origins": [ "chrome-extension://hifbblnjfcimjnlhibannjoclibgedmd/" ]\n')
+            f.write('}')
+        sys.stdout.write(b"Created " + os.path.join(os.path.expanduser(path), appname).encode() + b"\n")
+
+
 if len(sys.argv) < 2:
-    pass
+    sys.stdout.write(b"Missing arguments: pwvault_gateway_dbus.py install help for more\n")
 elif sys.argv[1] == 'test':
     test_main()
+elif sys.argv[1] == 'install':
+    try:
+        install()
+    except Exception as e:
+        sys.stdout.write(b"Failed: " + str(e).encode() + b"\n")
 else:  # firefox will start us with path as argument
     main()
