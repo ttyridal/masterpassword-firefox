@@ -21,32 +21,41 @@
 "use strict";
 
 var port;
+function port_default_error(p)  { port = undefined; }
 function pwvault_gateway(msg) {
     console.log("pwvault_gw:",msg.type);
     // Keeping the port open "forever".. seems to be a bug in firefox
     // not noting that the native-app is gone and it will spinn forever.
     // Like this, we'll at least not trigger that until firefox closes.
-    var cb = {};
+
     if (!port) {
         port = browser.runtime.connectNative('no.ttyridal.pwvault_gateway');
-        let default_error = (p) => { port = undefined; };
-        port.onMessage.addListener(r=>{
-            cb.fail = default_error;
-            cb.success(r);
-        });
-        port.onDisconnect.addListener(p=>{
-            p = p.error;
-            if (!p) p = "disconnect";
-            cb.fail(p);
-            cb.fail = default_error;
-            port = undefined;
-        });
+        port.onDisconnect.addListener(port_default_error);
     }
 
     return new Promise((resolv, fail) => {
-        cb.success = resolv;
-        cb.fail = fail;
-        port.postMessage(msg);
+        let error;
+        let success = r => {
+            port.onMessage.removeListener(error);
+            port.onDisconnect.removeListener(success);
+            resolv(r);
+        };
+        error = p => {
+            p = p.error;
+            if (!p) p = "disconnect";
+            port = undefined;
+            fail(p);
+        };
+
+        port.onMessage.addListener(success);
+        port.onDisconnect.addListener(error);
+        try {
+            port.postMessage(msg);
+        } catch (err) {
+            port.onMessage.removeListener(error);
+            port.onDisconnect.removeListener(success);
+            fail(err);
+        }
     });
 }
 
@@ -73,6 +82,8 @@ function store_update(d) {
 
     Object.keys(d).forEach(k => {
         switch (k) {
+            case 'force_update':
+                break;
             case 'username':
             case 'key_id':
             case 'sites':
@@ -140,22 +151,28 @@ function store_get(keys) {
                     r[k] = webext[k] !== undefined ? webext[k] : xul[k];
                     break;
                 default:
-                    fail("unknown key requested: "+k);
+                    throw new Error("unknown key requested: "+k);
             }
         }
         return r;
     })
     .then(r => {
         if (settings.pass_store !== 'n' && keys.indexOf('masterkey') !== -1) {
-            return Promise.all([r, pwvault_gateway({'type':'pwget', 'name':'default'})]);
+            return Promise.all([r,
+                pwvault_gateway({'type':'pwget', 'name':'default'})
+                .catch(err => {
+                    console.error("pwvault_gateway failed " + err);
+                    return undefined;
+                })
+            ]);
         } else
-            return r;
+            return [r, undefined];
     })
     .then(comb => {
-        let [r, mk] = comb;
+        let [r, mk] = comb;
         if (mk && mk.success) r.masterkey = mk.value;
         return r;
-    })
+    });
 }
 
 window.store_update = store_update;
