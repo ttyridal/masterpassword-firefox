@@ -17,14 +17,12 @@
 */
 /* global require, console */
 
-var { Hotkey } = require("sdk/hotkeys");
 var prefs = require("sdk/simple-prefs").prefs;
 var global_prefs  = require("sdk/preferences/service");
 var windows = require("sdk/windows");
 var isPrivate = require("sdk/private-browsing").isPrivate;
 var self = require("sdk/self");
 var ss = require("sdk/simple-storage");
-var { setTimeout, clearTimeout } = require("sdk/timers");
 
 console.debug("Stored variables:", Object.keys(ss.storage));
 console.debug("Preferences",
