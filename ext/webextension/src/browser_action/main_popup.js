@@ -248,7 +248,7 @@ function popup(session_store_, opened_by_hotkey) {
 
     get_active_tab_url()
     .then(function(url){
-        if (url.startsWith('about:'))
+        if (url.startsWith('about:') || url.startsWith('resource:') || url.startsWith('moz-extension:'))
             url = '';
         var domain = parse_uri(url).domain.split("."),
             significant_parts = 2;
