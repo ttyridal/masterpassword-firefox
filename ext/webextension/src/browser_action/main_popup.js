@@ -147,11 +147,6 @@ var mpw_session,
 function recalculate(hide_after_copy, retry) {
     ui.thepassword("(calculating..)");
     ui.user_info("Please wait...");
-    if (!ui.sitename()) {
-        ui.thepassword("(need a sitename!)");
-        ui.user_info("need sitename");
-        return;
-    }
     var key_id_mismatch = false;
 
     if (!mpw_session) {
@@ -169,6 +164,13 @@ function recalculate(hide_after_copy, retry) {
             session_store.key_id = key_id;
             chrome.extension.getBackgroundPage().store_update({username: session_store.username, masterkey: session_store.masterkey, key_id: key_id});
         }
+    }
+
+    if (!ui.sitename()) {
+        ui.thepassword("(need a sitename!)");
+        if (!key_id_mismatch)
+            ui.user_info("need sitename");
+        return;
     }
 
     let siteconfig = ui.siteconfig();
