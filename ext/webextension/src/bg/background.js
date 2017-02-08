@@ -71,7 +71,9 @@ browser.alarms.onAlarm.addListener(a => {
 
 function temp_store_masterkey(k) {
     if (!settings.passwdtimeout) return;
-    browser.alarms.create(pw_retention_timer, {delayInMinutes: settings.passwdtimeout * 60});
+    if (settings.passwdtimeout > 0) {
+        browser.alarms.create(pw_retention_timer, {delayInMinutes: settings.passwdtimeout});
+    }
     _masterkey = k;
 }
 
@@ -130,6 +132,8 @@ function store_get(keys) {
             'hotkeycombo': xul.hotkeycombo,
             'max_alg_version': xul.max_alg_version
         };
+        if (settings.passwdtimeout === 0) // clear now in case it's recently changed
+            _masterkey = undefined;
         chrome.storage.local.set(settings);
 
         let r = {};
@@ -166,7 +170,7 @@ function store_get(keys) {
                 })
             ]);
         } else
-            return [r, undefined];
+            return [r, {success: true, value: _masterkey}];
     })
     .then(comb => {
         let [r, mk] = comb;
