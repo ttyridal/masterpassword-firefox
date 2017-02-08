@@ -287,16 +287,11 @@ document.querySelector('body').addEventListener('click', function(ev){
 });
 
 function start_data_download(stringarr,filename) {
-    var a = window.document.createElement('a');
-    a.href = window.URL.createObjectURL(new Blob(stringarr, {type: 'text/plain'}));
-    a.download = filename;
-
-    // Append anchor to body.
-    document.body.appendChild(a);
-    a.click();
-
-    // Remove anchor from body
-    document.body.removeChild(a);
+    let url = URL.createObjectURL(new Blob(stringarr, {type: 'text/plain'}));
+    let p = browser.downloads.download({url: url, filename: filename, saveAs: true});
+    p.catch(e=>{
+        console.error('browser.download failed',e);
+    });
 }
 
 }());

@@ -47,6 +47,7 @@
     "clipboardWrite",
     "storage",
     "alarms",
+    "downloads",
     "nativeMessaging",
     "tabs"
   ]
