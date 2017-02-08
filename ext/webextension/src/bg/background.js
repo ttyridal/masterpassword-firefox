@@ -166,7 +166,7 @@ function store_get(keys) {
                 pwvault_gateway({'type':'pwget', 'name':'default'})
                 .catch(err => {
                     console.error("pwvault_gateway failed " + err);
-                    return undefined;
+                    return {success:false, reason:err};
                 })
             ]);
         } else
@@ -175,6 +175,7 @@ function store_get(keys) {
     .then(comb => {
         let [r, mk] = comb;
         if (mk && mk.success) r.masterkey = mk.value;
+        else r.pwgw_failure = mk.reason;
         return r;
     });
 }

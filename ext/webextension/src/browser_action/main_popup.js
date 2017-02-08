@@ -274,7 +274,7 @@ function popup(session_store_, opened_by_hotkey) {
 window.addEventListener('load', function () {
     chrome.extension.getBackgroundPage().store_get(['sites', 'username', 'masterkey', 'key_id', 'max_alg_version', 'defaulttype'])
     .then(data => {
-        console.debug("Got data");
+        document.getElementById('pwgw_fail_msg').style.display = (data.pwgw_failure ? 'inherit' : 'none');
         popup(data);
     })
     .catch(err => {
