@@ -1,5 +1,5 @@
 #!/bin/sh
-for sizes in 16 19 48; do
+for sizes in 16 19 32 48 64; do
     convert -background transparent icon.svg -resize ${sizes}x${sizes} ../ext/webextension/icons/icon${sizes}.png
 done
 
