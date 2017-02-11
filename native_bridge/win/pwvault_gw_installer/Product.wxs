@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <?if $(var.Platform) = x64 ?>
+    <?define bitness = "(64 bit)" ?>
+    <?define builddir = "..\Release\x64\" ?>
+    <?define Win64 = "yes" ?>
+    <?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
+    <?else ?>
+    <?define bitness = "(32 bit)" ?>
+    <?define builddir = "..\Release\Win32\" ?>
+    <?define Win64 = "no" ?>
+    <?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
+    <?endif ?>
+
+  <Product
+    Id="3EB0B71E-0FEE-49B5-BA10-3B00F9D32E38"
+    Name="pwvault-gateway for MasterPassword $(var.bitness)"
+    Language="1033"
+    Version="1.0.0.0"
+    Manufacturer="Torbjorn Tyridal"
+    UpgradeCode="1f6f0957-46fc-4f78-81fe-0f8efe8ac0ed">
+    <Package
+      Id='*'
+      Keywords='Installer'
+      Description="pwvault-gateway for MasterPassword browser addon"
+      Comments='Bridge between Credential Store and MasterPassword browser addon'
+      Manufacturer='Torbjorn Tyridal'
+      InstallerVersion='200'
+      Languages='1033'
+      Compressed='yes'
+      SummaryCodepage='1252' />
+    <MajorUpgrade DowngradeErrorMessage="A newer version of pwvault-gw is already installed." />
+
+    <Media Id='1' Cabinet='install.cab' EmbedCab='yes' DiskPrompt='install'/>
+    <Property Id='DiskPrompt' Value="pwvault-gateway"/>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="$(var.PlatformProgramFilesFolder)">
+        <Directory Id="ttyridal" Name="ttyridal">
+          <Directory Id="INSTALLFOLDER" Name="pwvault_gw">
+            <Component Id="MainExecutable" Win64="$(var.Win64)">
+              <File Id='exe' Name='pwvault_gw.exe' DiskId='1' Source='$(var.builddir)pwvault_gw.exe' KeyPath='yes'/>
+                <RemoveFile Id="PurgeAppFolder" Name="*.*" On="uninstall" />
+                <RemoveRegistryKey Action="removeOnUninstall" Root="HKLM" Key="SOFTWARE\Google\Chrome\NativeMessagingHosts\no.ttyridal.pwvault_gateway" />
+                <RemoveRegistryKey Action="removeOnUninstall" Root="HKLM" Key="SOFTWARE\Mozilla\NativeMessagingHosts\no.ttyridal.pwvault_gateway" />
+            </Component>
+          </Directory>
+        </Directory>
+      </Directory>
+    </Directory>
+    <Feature Id='Complete' Level='1'>
+      <ComponentRef Id='MainExecutable' />
+    </Feature>
+
+    <CustomAction
+      Id='comReg'
+      FileKey='exe'
+      Execute='deferred'
+      Impersonate='no'
+      ExeCommand='install global'
+      Return='ignore' />
+
+    <InstallExecuteSequence>
+      <Custom Action='comReg' Before='InstallFinalize'/>
+    </InstallExecuteSequence>
+  </Product>
+</Wix>
