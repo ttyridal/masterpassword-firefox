@@ -497,6 +497,8 @@ def install():
 
     if 'firefox' in args or 'all' in args:
         paths.append(path_ff[1 if '--global' in args else 0])
+        if '--global' in args and os.path.isdir('/usr/lib64/mozilla'):
+            paths.append(path_ff[1].replace('/lib/', '/lib64/'))
     if 'chrome' in args or 'all' in args:
         paths.append(path_chrome[1 if '--global' in args else 0])
     if 'chromium' in args or 'all' in args:
