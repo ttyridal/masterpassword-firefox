@@ -90,6 +90,16 @@ class DBus(object):
     class DisconnectedException(GenericException):
         pass
 
+    class DBUSMessage(Structure):
+        pass
+
+    PDBUSMessage = POINTER(DBUSMessage)
+
+    class DBUSConnection(Structure):
+        pass
+
+    PDBUSConnection = POINTER(DBUSConnection)
+
     class Error(Structure):
         _fields_ = [("name", c_char_p),
                     ("message", c_char_p),
@@ -113,6 +123,9 @@ class DBus(object):
     def __init__(self):
         err = DBus.Error()
         self._lib = CDLL('libdbus-1.so.3')
+        self._lib.dbus_message_new_method_call.restype = self.PDBUSMessage
+        self._lib.dbus_bus_get.restype = self.PDBUSConnection
+        self._lib.dbus_connection_send_with_reply_and_block.restype = self.PDBUSConnection
         c = self._lib.dbus_bus_get(0, byref(err))
         if c == 0:
             raise DBus.GenericException("failed to get bus " + err.name + " " + err.message)
