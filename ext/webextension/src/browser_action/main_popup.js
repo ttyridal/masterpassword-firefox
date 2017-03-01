@@ -191,13 +191,18 @@ function recalculate(hide_after_copy, retry) {
 
         ui.thepassword(Array(pass.length+1).join("\u00B7"), pass); // &middot;
 
-        copy_to_clipboard("text/plain", pass);
+        if (session_store.pass_to_clipboard)
+            copy_to_clipboard("text/plain", pass);
         update_page_password_input(pass);
         if (hide_after_copy) {
             addon.port.emit('close');
         }
-        if (!key_id_mismatch)
-            ui.user_info("Password for " + ui.sitename() + " copied to clipboard");
+        if (!key_id_mismatch) {
+            if (session_store.pass_to_clipboard)
+                ui.user_info("Password for " + ui.sitename() + " copied to clipboard");
+            else
+                ui.user_info("Password for " + ui.sitename() + " ready");
+        }
 }
 
 function update_with_settings_for(domain) {
@@ -272,9 +277,10 @@ function popup(session_store_, opened_by_hotkey) {
 }
 
 window.addEventListener('load', function () {
-    chrome.extension.getBackgroundPage().store_get(['sites', 'username', 'masterkey', 'key_id', 'max_alg_version', 'defaulttype'])
+    chrome.extension.getBackgroundPage().store_get(
+            ['sites', 'username', 'masterkey', 'key_id', 'max_alg_version', 'defaulttype', 'pass_to_clipboard'])
     .then(data => {
-        document.getElementById('pwgw_fail_msg').style.display = (data.pwgw_failure ? 'inherit' : 'none');
+        document.getElementById('pwgw_fail_msg').style.display = data.pwgw_failure ? 'inherit' : 'none';
         popup(data);
     })
     .catch(err => {
@@ -373,6 +379,13 @@ document.querySelector('#thepassword').addEventListener('click', function(ev) {
     ev.stopPropagation();
 });
 
+document.querySelector('#copypass').addEventListener('click', function(ev) {
+    let pass = document.querySelector('#thepassword').getAttribute('data-pass');
+    copy_to_clipboard("text/plain", pass);
+    if (pass && pass !== '')
+        ui.user_info("Password for " + ui.sitename() + " copied to clipboard");
+});
+
 document.querySelector('#mainPopup').addEventListener('click', function(ev) {
     if (ev.target.classList.contains('btnconfig')) {
         ui.hide('#burgermenu');
@@ -396,7 +409,7 @@ document.querySelector('#mainPopup').addEventListener('click', function(ev) {
             key_id: session_store.key_id,
             force_update: true
         });
-        ui.user_info("Password for " + ui.sitename() + " copied to clipboard");
+        ui.user_info("ready");
     }
     else if (ev.target.id === 'siteconfig_show') {
         ui.hide(ev.target);

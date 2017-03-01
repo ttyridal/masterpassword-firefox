@@ -129,6 +129,7 @@ function store_get(keys) {
             'defaulttype': xul.defaulttype,
             'passwdtimeout': xul.passwdtimeout,
             'pass_store': xul.pass_store,
+            'pass_to_clipboard': xul.pass_to_clipboard,
             'hotkeycombo': xul.hotkeycombo,
             'max_alg_version': xul.max_alg_version
         };
@@ -143,6 +144,7 @@ function store_get(keys) {
                 case 'defaulttype':
                 case 'passwdtimeout':
                 case 'pass_store':
+                case 'pass_to_clipboard':
                 case 'hotkeycombo':
                 case 'max_alg_version':
                     r[k] = settings[k];

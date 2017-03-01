@@ -42,6 +42,9 @@
          {"label":"8 hour", "value":480},
          {"label":"Until closed", "value":-1}
      ]},
+     {
+       "name":"pass_to_clipboard", "title":"Copy password to clipboard", "type": "bool", "value": true
+     },
      { "name":"sdk.console.logLevel", "title":"Log level", "type":"menulist", "value":"error", "options": [
          {"label":"Error", "value":"error"},
          {"label":"Warnings & Errors", "value":"warn"},

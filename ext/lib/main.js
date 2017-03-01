@@ -29,6 +29,7 @@ console.debug("Preferences",
     'pass_store', prefs.pass_store,
     'defaulttype', prefs.defaulttype,
     'pass_clear_delay', prefs.pass_clear_delay,
+    'pass_to_clipboard', prefs.pass_to_clipboard,
     'hotkeycompbo', prefs.hotkeycombo
 );
 
@@ -91,6 +92,7 @@ function store_get() {
         'defaulttype': prefs.defaulttype,
         'passwdtimeout': prefs.pass_clear_delay,
         'pass_store': prefs.pass_store,
+        'pass_to_clipboard': false, //prefs.pass_to_clipboard,
         'hotkeycombo': prefs.hotkeycombo,
         'max_alg_version': global_prefs.get('extensions.' + self.id + '.max_alg_version', 3),
     };
