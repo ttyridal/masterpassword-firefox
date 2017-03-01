@@ -370,7 +370,6 @@ document.querySelector('#main').addEventListener('change', function(ev){
 document.querySelector('#thepassword').addEventListener('click', function(ev) {
     let t = ev.target.parentNode;
     let nt = t.getAttribute('data-pass');
-    console.log("set text",nt);
     if (nt) {
         t.textContent = nt;
         t.setAttribute('data-visible', 'true');

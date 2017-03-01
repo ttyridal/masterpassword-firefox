@@ -93,7 +93,6 @@ function store_update(d) {
                     syncset[k] = d[k];
                 break;
             case 'masterkey':
-                console.log("store masterkey");
                 if (settings.pass_store !== 'n') {
                     if (d.key_id || d.force_update)
                         Promise.resolve(pwvault_gateway({'type':'pwset','name':'default', 'value': d[k]}))
@@ -106,7 +105,6 @@ function store_update(d) {
                 break;
         }
     });
-    console.log("chrome storage", Object.keys(syncset));
     chrome.storage.local.set(syncset);
 }
 
