@@ -16,7 +16,7 @@
     along with the software.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*jshint browser:true, devel:true */
-/* globals addon, mpw */
+/* globals chrome, mpw */
 
 (function () {
     "use strict";
@@ -113,19 +113,32 @@ let ui = {
 
 function get_active_tab_url() {
     var ret = new Promise(function(resolve, fail){
-        addon.port.once("get_tab_url_resp", function (d) {
-            resolve(d);
+        chrome.tabs.query({active:true,windowType:"normal",currentWindow:true}, function(tabres){
+        if (tabres.length !== 1) {
+            ui.user_warn("Error: bug in tab selector");
+            console.log(tabres);
+            throw new Error("plugin bug");
+        } else
+            resolve(tabres[0].url);
         });
-        addon.port.emit('get_tab_url');
     });
     return ret;
 }
 
 function copy_to_clipboard(mimetype, data) {
-    addon.port.emit('to_clipboard', data);
+    document.oncopy = function(event) {
+        event.clipboardData.setData(mimetype, data);
+        event.preventDefault();
+    };
+    document.execCommand("Copy", false, null);
+    document.oncopy=null;
 }
-function update_page_password_input(data) {
-    addon.port.emit('update_page_password_input', data);
+function update_page_password_input(pass) {
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      chrome.tabs.sendMessage(tabs[0].id, {sender: "no.tyridal.masterpassword", password:pass}, function(response) {
+       // response should contain pasted:true on success. don't care currently
+    });
+    });
 }
 
 var mpw_session,
@@ -134,11 +147,6 @@ var mpw_session,
 function recalculate(hide_after_copy, retry) {
     ui.thepassword("(calculating..)");
     ui.user_info("Please wait...");
-    if (!ui.sitename()) {
-        ui.thepassword("(need a sitename!)");
-        ui.user_info("need sitename");
-        return;
-    }
     var key_id_mismatch = false;
 
     if (!mpw_session) {
@@ -150,12 +158,19 @@ function recalculate(hide_after_copy, retry) {
         if (session_store.key_id && key_id !== session_store.key_id) {
             warn_keyid_not_matching();
             key_id_mismatch = true;
-            addon.port.emit('store_update', {username: session_store.username, masterkey: session_store.masterkey});
+            chrome.extension.getBackgroundPage().store_update({username: session_store.username, masterkey: session_store.masterkey});
         }
         else {
             session_store.key_id = key_id;
-            addon.port.emit('store_update', {username: session_store.username, masterkey: session_store.masterkey, key_id: key_id});
+            chrome.extension.getBackgroundPage().store_update({username: session_store.username, masterkey: session_store.masterkey, key_id: key_id});
         }
+    }
+
+    if (!ui.sitename()) {
+        ui.thepassword("(need a sitename!)");
+        if (!key_id_mismatch)
+            ui.user_info("need sitename");
+        return;
     }
 
     let siteconfig = ui.siteconfig();
@@ -188,7 +203,7 @@ function recalculate(hide_after_copy, retry) {
 function update_with_settings_for(domain) {
     var keys, site;
 
-    if (typeof session_store.sites === 'undefined' ||
+    if (typeof session_store.sites === 'undefined' || domain === '' ||
         typeof session_store.sites[domain] === 'undefined') {
         keys = [];
     } else {
@@ -235,6 +250,8 @@ function popup(session_store_, opened_by_hotkey) {
 
     get_active_tab_url()
     .then(function(url){
+        if (url.startsWith('about:') || url.startsWith('resource:') || url.startsWith('moz-extension:'))
+            url = '';
         var domain = parse_uri(url).domain.split("."),
             significant_parts = 2;
         if (domain.length > 2 && domain[domain.length-2].toLowerCase() === "co")
@@ -253,7 +270,19 @@ function popup(session_store_, opened_by_hotkey) {
         console.error('get_active_tab_url failed',x);
     });
 }
-addon.port.on("popup", popup);
+
+window.addEventListener('load', function () {
+    chrome.extension.getBackgroundPage().store_get(['sites', 'username', 'masterkey', 'key_id', 'max_alg_version', 'defaulttype'])
+    .then(data => {
+        document.getElementById('pwgw_fail_msg').style.display = (data.pwgw_failure ? 'inherit' : 'none');
+        popup(data);
+    })
+    .catch(err => {
+        console.error(err);
+        console.error("Failed loading state from background on popup");
+        ui.user_warn("BUG. please check log and report");
+    });
+},false);
 
 document.querySelector('#sessionsetup > form').addEventListener('submit', function(ev) {
     ev.preventDefault();
@@ -303,7 +332,8 @@ function save_site_changes(){
 
     session_store.sites[domain][ui.sitename()] = ui.siteconfig();
 
-    addon.port.emit('store_update', {sites: session_store.sites});
+    if (domain !== '')
+        chrome.extension.getBackgroundPage().store_update({sites: session_store.sites});
     if (Object.keys(session_store.sites[domain]).length>1)
         ui.show('#storedids_dropdown');
 }
@@ -333,8 +363,12 @@ document.querySelector('#main').addEventListener('change', function(ev){
 
 document.querySelector('#thepassword').addEventListener('click', function(ev) {
     let t = ev.target.parentNode;
-    t.textContent = t.getAttribute('data-pass');
-    t.setAttribute('data-visible', 'true');
+    let nt = t.getAttribute('data-pass');
+    console.log("set text",nt);
+    if (nt) {
+        t.textContent = nt;
+        t.setAttribute('data-visible', 'true');
+    }
     ev.preventDefault();
     ev.stopPropagation();
 });
@@ -342,13 +376,12 @@ document.querySelector('#thepassword').addEventListener('click', function(ev) {
 document.querySelector('#mainPopup').addEventListener('click', function(ev) {
     if (ev.target.classList.contains('btnconfig')) {
         ui.hide('#burgermenu');
-        addon.port.emit('openconfig');
-        addon.port.emit('close');
+        chrome.tabs.create({'url': '../options/index.html'}, function(tab) { });
     }
     else if (ev.target.classList.contains('btnlogout')) {
         session_store.masterkey = null;
         ui.hide('#burgermenu');
-        addon.port.emit('store_update', {masterkey: null});
+        chrome.extension.getBackgroundPage().store_update({masterkey: null});
         popup(session_store);
         ui.user_info("session destroyed");
     }
@@ -357,7 +390,7 @@ document.querySelector('#mainPopup').addEventListener('click', function(ev) {
     }
     else if (ev.target.id === 'change_keyid_ok') {
         session_store.key_id = mpw_session.key_id();
-        addon.port.emit('store_update', {
+        chrome.extension.getBackgroundPage().store_update({
             username: session_store.username,
             masterkey: session_store.masterkey,
             key_id: session_store.key_id,
@@ -372,4 +405,3 @@ document.querySelector('#mainPopup').addEventListener('click', function(ev) {
 });
 
 }());
-addon.port.emit('loaded');

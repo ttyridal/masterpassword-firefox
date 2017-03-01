@@ -17,24 +17,39 @@
 */
 /* global require, console */
 
-var buttons = require('sdk/ui/button/toggle');
-var clipboard = require("sdk/clipboard");
-var panels = require("sdk/panel");
-var tabs = require("sdk/tabs");
-var { Hotkey } = require("sdk/hotkeys");
 var prefs = require("sdk/simple-prefs").prefs;
 var global_prefs  = require("sdk/preferences/service");
 var windows = require("sdk/windows");
 var isPrivate = require("sdk/private-browsing").isPrivate;
-var pagemod = require("sdk/page-mod");
 var self = require("sdk/self");
 var ss = require("sdk/simple-storage");
-var { setTimeout, clearTimeout } = require("sdk/timers");
-var pwmgr = require("./system_password_manager.js").manager;
-
-var system_password_manager = pwmgr(prefs.pass_store);
 
 console.debug("Stored variables:", Object.keys(ss.storage));
+console.debug("Preferences",
+    'pass_store', prefs.pass_store,
+    'defaulttype', prefs.defaulttype,
+    'pass_clear_delay', prefs.pass_clear_delay,
+    'hotkeycompbo', prefs.hotkeycombo
+);
+
+
+const webExtension = require("sdk/webextension");
+webExtension.startup().then(api => {
+    const {browser} = api;
+    browser.runtime.onMessage.addListener((msg, sender, sendReply) => {
+        if (typeof msg.name === 'undefined') return;
+        switch(msg.name) {
+            case 'store_get':
+                sendReply(store_get());
+                break;
+            case 'store_update':
+                sendReply(store_update(msg.data));
+                break;
+            default:
+                console.warn("sdkcom: unhandled message");
+        }
+    });
+});
 
 
 function fix_session_store_password_type() {
@@ -68,168 +83,28 @@ if (ss.storage.sites && (!ss.storage.version || ss.storage.version < 2)) {
 }
 if (ss.storage.version !== 2) ss.storage.version = 2;
 
-var session_store = { 'masterkey': null };
-
-if (system_password_manager) {
-    system_password_manager.then(function(lib){
-        lib.get_password(function(pwd, err){
-            if (pwd === undefined) {
-                console.log("failed to get master key from os-store", err);
-            }
-            else if (pwd !== '') {
-                session_store.masterkey = pwd;
-            }
-        });
-    });
+function store_get() {
+    return {
+        'username': ss.storage.username || null,
+        'key_id': ss.storage.key_id,
+        'sites': ss.storage.sites || {},
+        'defaulttype': prefs.defaulttype,
+        'passwdtimeout': prefs.pass_clear_delay,
+        'pass_store': prefs.pass_store,
+        'hotkeycombo': prefs.hotkeycombo,
+        'max_alg_version': global_prefs.get('extensions.' + self.id + '.max_alg_version', 3),
+    };
 }
 
-function get_max_alg_version() {
-    return global_prefs.get('extensions.' + self.id + '.max_alg_version', 3);
-}
-
-function show_window() {
-    var panel = createPanel();
-    panel.show({position: button});
-    panel.port.on('loaded' ,function(){
-        panel.port.emit(
-            "popup",
-            {
-                'username': ss.storage.username || null,
-                'masterkey': session_store.masterkey,
-                'sites': ss.storage.sites || {},
-                'defaulttype': prefs.defaulttype,
-                'max_alg_version': get_max_alg_version(),
-                'key_id': ss.storage.key_id
-            },
-            false);
-    });
-}
-
-var button = buttons.ToggleButton({
-    id: "com_github_ttyridal_masterpassword",
-    label: "Master Password",
-    icon: {
-        "16": "./icon16.png",
-        "32": "./icon32.png",
-        "64": "./icon64.png"
-    },
-    onChange: function(state){
-        if (state.checked)
-            show_window();
-    }
-});
-
-var hotPassword = new Hotkey({
-  combo: prefs.hotkeycombo,
-  onPress: show_window
-});
-
-
-var pm_config_handler = pagemod.PageMod({
-    include: self.data.url("config.html"),
-    contentScriptFile: self.data.url('config-cs.js'),
-    attachTo: ['top'],
-    onAttach: function(worker) {
-        if (!worker.tab || worker.tab.id !== tabs.activeTab.id) {
-            worker.destroy();
-        }
-        worker.port.on('configload', function(m) {
-            worker.port.emit('configload', {
-                'username': ss.storage.username,
-                'sites': ss.storage.sites || {},
-                'key_id': ss.storage.key_id,
-                'max_alg_version': get_max_alg_version()
-            });
-        });
-        worker.port.on('configstore', function(d) {
-            ss.storage.sites = d;
-        });
-    }
-});
-
-var clear_password_timer;
-function arm_passwd_clear_timer() {
-    if (clear_password_timer !== undefined) {
-        clearTimeout(clear_password_timer);
-        clear_password_timer = undefined;
+function store_update(d) {
+    console.debug("main: store_update", Object.keys(d));
+    if (isPrivate(windows.activeWindow)) {
+        console.log("won't store anything for private windows");
+        return;
     }
 
-    if (prefs.pass_clear_delay > 0) {
-        clear_password_timer = setTimeout(function(){
-            console.log("timeout() for password retention");
-            clear_password_timer = undefined;
-            session_store.masterkey = null;
-        }, prefs.pass_clear_delay * 60000);
-        console.debug("password retention timer armed for " + prefs.pass_clear_delay + " minutes");
+    for (let i of ['username', 'sites', 'key_id']) {
+        if (i in d)
+            ss.storage[i] = d[i];
     }
-}
-
-
-function createPanel() {
-    var panel = panels.Panel({
-        width:360,
-        height:310,
-        contentURL: self.data.url("main_popup.html"),
-        onHide: function(){
-            button.state('window', {checked: false});
-            panel.destroy();
-        }
-    });
-    panel.port.on('close', function() { panel.hide(); });
-
-    panel.port.on('store_update', function(d){
-        if (isPrivate(windows.activeWindow)) {
-            console.log("won't store anything for private windows");
-            return;
-        }
-        if (d.key_id && d.masterkey && (d.masterkey !== session_store.masterkey || d.force_update)  && prefs.pass_store !== 'n') {
-            system_password_manager = system_password_manager || pwmgr(prefs.pass_store);
-            if (system_password_manager) {
-                system_password_manager.then(function(lib){ lib.set_password(d.masterkey); });
-            }
-        }
-
-        if (d.masterkey) {
-            arm_passwd_clear_timer();
-            if (prefs.pass_clear_delay !== 0)
-                session_store.masterkey = d.masterkey;
-        }
-        for (let i of ['username', 'sites', 'key_id']) {
-            if (i in d)
-                ss.storage[i] = d[i];
-        }
-    });
-    panel.port.on('openconfig', function(d){
-        tabs.open({ url: self.data.url("config.html") });
-    });
-
-    panel.port.on('to_clipboard', function(d){
-        clipboard.set(d, 'text');
-    });
-    panel.port.on('get_tab_url', function(d){
-        panel.port.emit('get_tab_url_resp', tabs.activeTab.url);
-    });
-    panel.port.on('update_page_password_input', function(d){
-        console.debug("emit to active tab");
-
-        // tab.attach doesn't work with e10s on 43a nightly. :(
-        //var worker = tabs.activeTab.attach({ contentScriptFile: self.data.url('password-fill-cs.js') });
-        //worker.port.emit('the_password', d);
-        var pm = pagemod.PageMod({
-            include: tabs.activeTab.url,
-            contentScriptFile: self.data.url('password-fill-cs.js'),
-            attachTo: ['existing','top'],
-            onAttach: function(worker) {
-                if (!worker.tab || worker.tab.id !== tabs.activeTab.id) {
-                    worker.destroy();
-                }
-                else {
-                    worker.port.emit('the_password', d);
-                }
-                worker.destroy();
-                pm.destroy();
-            }
-        });
-    });
-    return panel;
 }

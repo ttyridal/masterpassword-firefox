@@ -2,17 +2,20 @@
   "name": "masterpassword-firefox",
   "title": "masterpassword for Firefox",
   "id": "jid1-pn4AFskf9WBAdA@jetpack",
+  "hasEmbeddedWebExtension": true,
+  "engines": {
+      "firefox": ">= 51"
+  },
   "description": "Masterpassword (see masterpasswordapp.com) as an extension for Firefox",
   "author": "Torbjorn Tyridal (ttyridal)",
   "license": "GPLv3",
-  "version": "2.0.2",
-  "icon": "data/icon32.png",
-  "icon64": "data/icon64.png",
+  "version": "2.1.0b2",
+  "icon": "webextension/icons/icon32.png",
+  "icon64": "webextension/icons/icon64.png",
   "permissions": {"private-browsing": true, "multiprocess": true},
   "homepage": "https://github.com/ttyridal/masterpassword-firefox",
   "main": "lib/main.js",
   "preferences": [
-     { "name":"hotkeycombo","title":"shortcut","description":"hotkey combination","type":"string","value":"accel-alt-p" },
      { "name":"defaulttype", "title":"Default password type", "type":"menulist", "value":"l", "options": [
          {"label":"Maximum", "value":"x"},
          {"label":"Long", "value":"l"},
@@ -48,7 +51,10 @@
   "jshintConfig": {
       "enforceall": true,
       "camelcase": false,
-      "esnext": true,
+      "es3": false,
+      "es5": false,
+      "esnext": false,
+      "esversion": 6,
       "curly": false,
       "moz": true
   }

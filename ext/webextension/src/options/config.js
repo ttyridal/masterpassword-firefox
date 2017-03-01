@@ -16,6 +16,7 @@
     along with the software.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*jshint browser:true, devel:true, nonstandard:true, -W055 */
+/* globals chrome */
 
 (function(){
 function encode_utf8(s) {
@@ -32,8 +33,8 @@ function string_is_plain_ascii(s) {
      alg_min_version = 1;
 
 function save_sites_to_backend() {
-    document.documentElement.dispatchEvent(
-        new CustomEvent('masterpassword-siteupdate', {detail:stored_sites, bubbles: true}));
+    chrome.extension.getBackgroundPage().store_update({sites: stored_sites});
+
 }
 
 function passtype_to_str(type) {
@@ -86,20 +87,26 @@ function stored_sites_table_update(stored_sites) {
     });
 }
 
-document.addEventListener('masterpassword-configload', function(e){
-    stored_sites = e.detail.sites;
-    username = e.detail.username;
-    key_id = e.detail.key_id;
-    alg_max_version = e.detail.max_alg_version;
+window.addEventListener('load', function() {
+    chrome.extension.getBackgroundPage().store_get(['sites', 'username', 'max_alg_version', 'key_id'])
+    .then(data => {
+        stored_sites = data.sites;
+        username = data.username;
+        key_id = data.key_id;
+        alg_max_version = data.max_alg_version;
 
-    if (!string_is_plain_ascii(username)) {
-        alg_min_version = Math.min(3, alg_max_version);
-        if (alg_min_version > 2) {
-            document.querySelector('#ver3note').style.display = 'inherit';
+        if (!string_is_plain_ascii(username)) {
+            alg_min_version = Math.min(3, alg_max_version);
+            if (alg_min_version > 2) {
+                document.querySelector('#ver3note').style.display = 'inherit';
+            }
         }
-    }
 
-    stored_sites_table_update(stored_sites);
+        stored_sites_table_update(stored_sites);
+    })
+    .catch(() => {
+        console.error("Failed loading state from background on popup");
+    });
 });
 
 function dragover_enter(e){
@@ -280,16 +287,11 @@ document.querySelector('body').addEventListener('click', function(ev){
 });
 
 function start_data_download(stringarr,filename) {
-    var a = window.document.createElement('a');
-    a.href = window.URL.createObjectURL(new Blob(stringarr, {type: 'text/plain'}));
-    a.download = filename;
-
-    // Append anchor to body.
-    document.body.appendChild(a);
-    a.click();
-
-    // Remove anchor from body
-    document.body.removeChild(a);
+    let url = URL.createObjectURL(new Blob(stringarr, {type: 'text/plain'}));
+    let p = browser.downloads.download({url: url, filename: filename, saveAs: true});
+    p.catch(e=>{
+        console.error('browser.download failed',e);
+    });
 }
 
 }());

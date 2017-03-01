@@ -23,9 +23,12 @@
 <meta charset="UTF-8"> 
 <style type="text/css">
     html,body,h1,h2,input,select,button { margin:0;padding:0;border:none; }
-    html {
+    html,body {
 		height: 300px;
 		width: 350px;
+        overflow: hidden;
+    }
+    html {
         font-family: Helvetica, Ubuntu, Arial, sans-serif;
         background:         radial-gradient(black 15%, transparent 16%) 0 0,
                             radial-gradient(black 15%, transparent 16%) 8px 8px,
@@ -35,7 +38,8 @@
         background-size:    16px 16px;
         text-align:center;
         cursor:default;
-        user-select: none;
+        -moz-user-select: none;
+        -webkit-user-select: none;
     }
     label {
         margin-left: 2em;
@@ -45,7 +49,7 @@
     label::after { content: ":" }
     td {
         border: none;
-        vertical-align: center;
+        vertical-align: middle;
     }
     button { color: gray;}
     body { font-size:10pt; padding-top:4px;color:silver;}
@@ -56,10 +60,10 @@
     }
     .btntool:hover{ border:1px outset silver; }
     .btntool { width:32px;height:32px;cursor:pointer;background-size:cover;display:inline-block;}
-    .btnconfig { background-image:url(wrench.png); }
-    .btnlogout { background-image:url(exit.png); }
-    .btnburger { background-image:url(burger.png); }
-    .btnproperties { background-image:url(gear.png); }
+    .btnconfig { background-image:url(/icons/wrench.png); }
+    .btnlogout { background-image:url(/icons/exit.png); }
+    .btnburger { background-image:url(/icons/burger.png); }
+    .btnproperties { background-image:url(/icons/gear.png); }
 	#usermessage {
         text-align:left;
         position:absolute;bottom:0.1em;
@@ -90,7 +94,7 @@
 </style>
 <body>
 <div id="mainPopup">
-    <img src="./icon64.png" width="48" height="48" style="position:absolute;top:-2px;left:10px">
+    <img src="/icons/icon48.png" width="48" height="48" style="position:absolute;top:-2px;left:10px">
     <span style="position:relative;">
     <h1 style="display:inline-block;margin-bottom:0.8em;color:white">MasterPassword</h1>
     <span style="position:absolute;top:1.8em;right:0;font-size:0.5em;color:silver">for&nbsp;Firefox</span>
@@ -101,6 +105,7 @@
     <form>
         <label for="username">Your (full) name</label><br><input id="username" placeholder="Your Name"/><br>
         <label for="masterkey">Master password</label><br><input id="masterkey" type="password" placeholder="password" autocomplete="off"/><br>
+        <div id="pwgw_fail_msg" style="display:none"><span style="color:red">System password vault failed</span> <a href="https://github.com/ttyridal/masterpassword-firefox/wiki/Key-vault-troubleshooting" target="_blank">Help?</a></div>
         <input type="submit" value="OK" style="margin-top:1em;padding:0.1em 3em;"/>
     </form>
 </div>
@@ -148,6 +153,6 @@
 
 <div id="usermessage"></div>
 </div>
-<script src="./js/scrypt-asm.js"></script>
-<script src="./mpw.js"></script>
+<script src="../lib/scrypt-asm.js"></script>
+<script src="../lib/mpw.js"></script>
 <script src="./main_popup.js"></script>

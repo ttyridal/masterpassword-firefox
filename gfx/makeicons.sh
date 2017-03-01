@@ -1,9 +1,9 @@
 #!/bin/sh
-for sizes in 16 32 64; do 
-    convert -background transparent icon.svg -resize ${sizes}x${sizes} ../ext/data/icon${sizes}.png
+for sizes in 16 19 32 48 64; do
+    convert -background transparent icon.svg -resize ${sizes}x${sizes} ../ext/webextension/icons/icon${sizes}.png
 done
 
 sizes=32
 for files in "exit" "wrench" "delete" "gear" "burger"; do
-    convert -background transparent ${files}.svg -resize ${sizes}x${sizes} ../ext/data/${files}.png
+    convert -background transparent ${files}.svg -resize ${sizes}x${sizes} ../ext/webextension/icons/${files}.png
 done
