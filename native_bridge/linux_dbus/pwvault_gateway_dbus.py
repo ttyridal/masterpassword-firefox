@@ -15,7 +15,7 @@ import struct
 import sys
 
 __author__ = "Torbjorn Tyridal"
-__copyright__ = "Copyright 2007, Torbjorn Tyridal"
+__copyright__ = "Copyright 2017, Torbjorn Tyridal"
 __license__ = "GPL"
 __version__ = "1.0.0"
 __maintainer__ = "Torbjorn Tyridal"
