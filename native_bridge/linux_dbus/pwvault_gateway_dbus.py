@@ -478,7 +478,7 @@ def main():
                 store.set_password(receivedMessage['value'].encode())
                 sendMessage({'type': 'pwsetreply', 'success': True})
             elif receivedMessage['type'] == 'comcheck':
-                sendMessage({'type': 'comcheckreply', 'success': True})
+                sendMessage({'type': 'comcheckreply', 'success': True, 'os': 'linux', 'version': __version__})
             else:
                 raise InvalidMessage("Unknown message type")
 
