@@ -21,7 +21,7 @@
 "use strict";
 
 var port;
-function port_default_error(p)  { port = undefined; }
+function port_default_error(p) { port = undefined; }
 function pwvault_gateway(msg) {
     console.log("pwvault_gw:",msg.type);
     // Keeping the port open "forever".. seems to be a bug in firefox
@@ -180,8 +180,75 @@ function store_get(keys) {
     });
 }
 
+function current_tab() {
+    return new Promise((r,f)=>{
+        chrome.tabs.query({active:true, currentWindow:true}, function(tabs) {
+            r(tabs[0]);
+        });
+    });
+}
+
+function find_active_input(tab) {
+    const TIMEOUT = 100;
+
+    return new Promise((r,f) => {
+        let to = window.setTimeout(()=>{
+            chrome.runtime.onMessage.removeListener(msgrecv);
+            f({name: 'update_pass_failed', message:"No password field found"});
+        }, TIMEOUT);
+        function msgrecv(msg, sender /*, sendResponse*/) {
+            if (!msg || msg.id !== chrome.runtime.id)
+                return;
+            if (msg.action === 'IamActive') {
+                window.clearTimeout(to);
+                chrome.runtime.onMessage.removeListener(msgrecv);
+                r({tab:sender.tab, frameId:sender.frameId, tgt: msg.tgt});
+            }
+        }
+        chrome.runtime.onMessage.addListener(msgrecv);
+
+        chrome.tabs.executeScript(tab && tab.id, {
+            file: '/src/cs/findinput.js',
+            allFrames: true,
+            matchAboutBlank: true,
+            runAt: 'document_end'
+        });
+    });
+}
+
+function Update_pass_failed() {
+    let t = Error.apply(this, arguments);
+    t.name = this.name = 'Update_pass_failed';
+    this.message = t.message;
+    Object.defineProperty(this, 'stack', {
+        get: function() { return t.stack; }
+    });
+}
+var IntermediateInheritor = function () {};
+IntermediateInheritor.prototype = Error.prototype;
+Update_pass_failed.prototype = new IntermediateInheritor();
+
+
+function update_page_password(pass, allow_subframe) {
+    return current_tab()
+           .then(find_active_input)
+           .then(r=>{
+               if (r.tgt.type !== 'password')
+                   throw new Update_pass_failed("no password field selected");
+               if (!allow_subframe && r.frameId)
+                   throw new Update_pass_failed("Not pasting to subframe");
+
+               return chrome.tabs.executeScript(r.tab.id, {
+                   code: 'document.activeElement.value = ' + JSON.stringify(pass),
+                   frameId: r.frameId,
+                   matchAboutBlank: true
+               });
+           });
+}
+
 window.store_update = store_update;
 window.store_get = store_get;
+window.update_page_password = update_page_password;
 
 Promise.all([browser.management.getSelf(), promised_storage_get(['releasenote_version'])])
 .then(c => {

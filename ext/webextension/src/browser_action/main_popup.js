@@ -134,10 +134,11 @@ function copy_to_clipboard(mimetype, data) {
     document.oncopy=null;
 }
 function update_page_password_input(pass) {
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-      chrome.tabs.sendMessage(tabs[0].id, {sender: "no.tyridal.masterpassword", password:pass}, function(response) {
-       // response should contain pasted:true on success. don't care currently
-    });
+    chrome.extension.getBackgroundPage().update_page_password(pass, true)
+    .then(()=>{
+    })
+    .catch(e=>{
+        console.error(e);
     });
 }
 
