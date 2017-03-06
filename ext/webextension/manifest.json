@@ -1,6 +1,6 @@
 {
   "name": "MasterPassword for Firefox",
-  "version": "2.1.0b2",
+  "version": "2.1.0b3",
   "manifest_version": 2,
   "description": "Remember your MasterPassword, and this app will generate unique passwords for every other site you visit",
   "author": "Torbjorn Tyridal (ttyridal)",
