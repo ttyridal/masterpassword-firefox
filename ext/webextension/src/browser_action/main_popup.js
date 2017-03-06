@@ -242,12 +242,12 @@ function popup(session_store_, opened_by_hotkey) {
         if (!session_store.username)
             window.setTimeout(function(){
                 document.querySelector('#username').focus();
-            }, 0.1);
+            }, 15);
         else {
             document.querySelector('#username').value = session_store.username;
             window.setTimeout(function(){
                 document.querySelector('#masterkey').focus();
-            }, 0.1);
+            }, 15);
         }
     } else {
         recalc = true;
@@ -281,7 +281,15 @@ window.addEventListener('load', function () {
     chrome.extension.getBackgroundPage().store_get(
             ['sites', 'username', 'masterkey', 'key_id', 'max_alg_version', 'defaulttype', 'pass_to_clipboard'])
     .then(data => {
-        document.getElementById('pwgw_fail_msg').style.display = data.pwgw_failure ? 'inherit' : 'none';
+        if (data.pwgw_failure) {
+            let e = ui.user_warn("System password vault failed! ");
+            e = e.appendChild(document.createElement('a'));
+            e.href = "https://github.com/ttyridal/masterpassword-firefox/wiki/Key-vault-troubleshooting";
+            e.target = "_blank";
+            e.textContent = "Help?";
+            data.masterkey=undefined;
+        } else
+            ui.user_info("");
         popup(data);
     })
     .catch(err => {
@@ -323,11 +331,30 @@ document.querySelector('#storedids_dropdown').addEventListener('click', function
     if (ui.toggle(sids)) {
         sids.innerHTML = '';
         Object.keys(session_store.sites[ui.domain()]).forEach(function(site){
-            sids.appendChild(document.createElement('option')).textContent = site;
+            sids.appendChild(document.createElement('li')).textContent = site;
         });
+        ui.show(sids);
         sids.focus();
     }
 });
+
+document.querySelector('#storedids').addEventListener('click', function(ev) {
+    let site = ev.target.textContent,
+        val = session_store.sites[ui.domain()][site];
+    ui.sitename(site);
+    ui.siteconfig(val.type, val.generation, val.username || '');
+    ui.hide(ev.target.parentNode);
+    ev.target.parentNode.blur();
+    window.setTimeout(recalculate, 1);
+});
+
+document.querySelector('#storedids').addEventListener('blur', e=>{
+    window.setTimeout(()=>{
+        ui.hide(document.querySelector('#storedids'));
+    },1);
+});
+
+
 
 function save_site_changes(){
     let domain = ui.domain();
@@ -356,23 +383,15 @@ function warn_keyid_not_matching()
 }
 
 document.querySelector('#main').addEventListener('change', function(ev){
-    if (ev.target.id === 'storedids') {
-        let site = ev.target.value,
-            val = session_store.sites[ui.domain()][site];
-
-        ui.sitename(site);
-        ui.siteconfig(val.type, val.generation, val.username || '');
-        ui.hide(ev.target);
-    } else
         save_site_changes();
     recalculate();
 });
 
 document.querySelector('#thepassword').addEventListener('click', function(ev) {
     let t = ev.target.parentNode;
-    let nt = t.getAttribute('data-pass');
-    if (nt) {
-        t.textContent = nt;
+    let dp = t.getAttribute('data-pass');
+    if (dp) {
+        t.textContent = dp;
         t.setAttribute('data-visible', 'true');
     }
     ev.preventDefault();
@@ -386,20 +405,15 @@ document.querySelector('#copypass').addEventListener('click', function(ev) {
         ui.user_info("Password for " + ui.sitename() + " copied to clipboard");
 });
 
-document.querySelector('#mainPopup').addEventListener('click', function(ev) {
+document.querySelector('body').addEventListener('click', function(ev) {
     if (ev.target.classList.contains('btnconfig')) {
-        ui.hide('#burgermenu');
         chrome.tabs.create({'url': '../options/index.html'}, function(tab) { });
     }
     else if (ev.target.classList.contains('btnlogout')) {
         session_store.masterkey = null;
-        ui.hide('#burgermenu');
         chrome.extension.getBackgroundPage().store_update({masterkey: null});
         popup(session_store);
-        ui.user_info("session destroyed");
-    }
-    else if (ev.target.classList.contains('btnburger')) {
-        ui.toggle('#burgermenu');
+        ui.user_info("Session destroyed");
     }
     else if (ev.target.id === 'change_keyid_ok') {
         session_store.key_id = mpw_session.key_id();
@@ -411,10 +425,19 @@ document.querySelector('#mainPopup').addEventListener('click', function(ev) {
         });
         ui.user_info("ready");
     }
-    else if (ev.target.id === 'siteconfig_show') {
-        ui.hide(ev.target);
-        ui.show('#siteconfig');
-    }
+});
+
+document.querySelector('#siteconfig_show').addEventListener('click', function(ev) {
+    let sc = document.querySelector('#siteconfig');
+    sc.style.transform = 'scale(0,0)';
+    sc.style.transformOrigin = '0 0';
+    sc.style.transition = 'none';
+    window.setTimeout(()=>{
+        sc.style.transition = '0.2s ease-out';
+        sc.style.transform = 'scale(1,1)';
+    }, 1);
+    ui.show(sc);
+    ui.hide('#siteconfig_show');
 });
 
 }());

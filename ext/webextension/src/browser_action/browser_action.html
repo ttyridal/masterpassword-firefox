@@ -18,145 +18,82 @@
     along with the software.  If not, see <http://www.gnu.org/licenses/>.
 
 -->
-
 <head>
 <meta charset="UTF-8"> 
-<style type="text/css">
-    html,body,h1,h2,input,select,button { margin:0;padding:0;border:none; }
-    html,body {
-		height: 300px;
-		width: 350px;
-        overflow: hidden;
-    }
-    html {
-        font-family: Helvetica, Ubuntu, Arial, sans-serif;
-        background:         radial-gradient(black 15%, transparent 16%) 0 0,
-                            radial-gradient(black 15%, transparent 16%) 8px 8px,
-                            radial-gradient(rgba(255,255,255,.05) 15%, transparent 20%) 0 1px,
-                            radial-gradient(rgba(255,255,255,.05) 15%, transparent 20%) 8px 9px;
-        background-color:   #161616;
-        background-size:    16px 16px;
-        text-align:center;
-        cursor:default;
-        -moz-user-select: none;
-        -webkit-user-select: none;
-    }
-    label {
-        margin-left: 2em;
-        margin-right: 1em;
-        color:silver;
-    }
-    label::after { content: ":" }
-    td {
-        border: none;
-        vertical-align: middle;
-    }
-    button { color: gray;}
-    body { font-size:10pt; padding-top:4px;color:silver;}
-    input#username, input#masterkey { margin-bottom:0.8em;}
-    .highlight {
-       color: white;
-       background-color: rgba(180, 180, 180, 0.05);
-    }
-    .btntool:hover{ border:1px outset silver; }
-    .btntool { width:32px;height:32px;cursor:pointer;background-size:cover;display:inline-block;}
-    .btnconfig { background-image:url(/icons/wrench.png); }
-    .btnlogout { background-image:url(/icons/exit.png); }
-    .btnburger { background-image:url(/icons/burger.png); }
-    .btncopy { background-image:url(/icons/copy.png); }
-    .btnproperties { background-image:url(/icons/gear.png); }
-	#usermessage {
-        text-align:left;
-        position:absolute;bottom:0.1em;
-        color:#a0a0a0;
-        height:1em;
-        overflow:hidden;
-        text-overflow: ellipsis;
-	}
-    #usermessage > button {
-        height:9pt;
-        font-size:8pt;
-    }
-    #usermessage.warning_message {
-        color: red;
-    }
-    #usermessage.info_message {
-        color: inherit;
-    }
-    #main {
-        position:absolute;
-        top:50px;
-        width:100%;
-        bottom:1.1em;
-    }
-
-    a, a:visited, a:hover { color: #a0a0a0; text-decoration: none;}
-    a:hover { text-decoration: underline;}
-</style>
+<link href="../css/mpwd.css" rel="stylesheet" />
+<link href="../css/mpwd_popup.css" rel="stylesheet" />
+<link href="../css/font-awesome.min.css" rel="stylesheet"/>
+</head>
 <body>
-<div id="mainPopup">
-    <img src="/icons/icon48.png" width="48" height="48" style="position:absolute;top:-2px;left:10px">
-    <span style="position:relative;">
-    <h1 style="display:inline-block;margin-bottom:0.8em;color:white">MasterPassword</h1>
-    <span style="position:absolute;top:1.8em;right:0;font-size:0.5em;color:silver">for&nbsp;Firefox</span>
-    </span>
+    <header class="banner valign_mid container">
+        <div class="valign_mid"><img src="/icons/icon48.png"><h1>MasterPassword</h1></div>
 
+        <div class="spacer"></div>
+    </header>
 
-<div id="sessionsetup" style="display:none">
-    <form>
-        <label for="username">Your (full) name</label><br><input id="username" placeholder="Your Name"/><br>
-        <label for="masterkey">Master password</label><br><input id="masterkey" type="password" placeholder="password" autocomplete="off"/><br>
-        <div id="pwgw_fail_msg" style="display:none"><span style="color:red">System password vault failed</span> <a href="https://github.com/ttyridal/masterpassword-firefox/wiki/Key-vault-troubleshooting" target="_blank">Help?</a></div>
-        <input type="submit" value="OK" style="margin-top:1em;padding:0.1em 3em;"/>
-    </form>
-</div>
-
-<div id="main" style="display:none">
-    <div id="burgermenu" style="background:black;right:1px;top:1px;padding-top:2px;width:100px;height:37px;display:none;text-align:left;position:fixed;">
-        <div class="btntool btnlogout" style="position:absolute;left:1px;top:2px"></div>
-        <div class="btntool btnconfig" style="position:absolute;left:37px;top:2px"></div>
+    <div id="sessionsetup" class="container" style="display: none">
+        <form><label for="username" class="text-big">Your (full) name:</label>
+        <input id="username" type="text" placeholder="[name]"/>
+        <input id="masterkey" type="password" placeholder="[password]" autocomplete="off"/>
+        <input type="submit" value="OK"/>
+        </form>
     </div>
-    <div class="btntool btnburger" style="position:absolute;right:1px;top:-47px;"></div>
-    <select id="storedids" size="4" style="display:none;position:absolute;font-size:1.5em;width:99%;z-index:99"></select>
-    <input id="sitename" class="domain highlight" type="text" style="width:100%;text-align:center;font-size:2em;" placeholder="site"/>
-    <button id="storedids_dropdown" style="display:none;position:absolute;height:2em;right:1em;top:1px;z-index:98;background-color:rgba(0,0,0,0)">&#9660;</button>
+    <input autofocus="true" style="width:0;height:0;line-height:0;border:0;bottom:-10px;right:-10px;position:fixed" class="stealfocus"/>
 
-    <div style="margin-top:.5em;margin-bottom:.5em">
-    <label for="thepassword">Password</label>
-    <div style="position:relative">
-    <div id="copypass" class="btntool btncopy" style="position:absolute;right:2px"></div>
-    <div id="thepassword" style="font-size:2em;margin-top:.1em;">(calculating)</div>
-    </div>
-    </div>
+    <div id="main" class="container" style="display: none">
+        <div class="configbuttons" id="config">
+            <div class="fa fa-cog fa-2 btntool btnconfig"></div>
+            <div class="fa fa-sign-out fa-2 btntool btnlogout"></div>
+        </div>
 
-    <div style="margin-top:.2em;margin-bottom:.1em">
-    <input id="loginname" class="highlight" type="text" style="position:relative;width:100%;text-align:center;font-size:1.5em;color:silver" placeholder="[user name]"/>
-    </div>
-
-    <div id="siteconfig_show" class="btntool btnproperties" style="clear:both;margin-top:1em;"></div>
-    <form id="siteconfig" class="highlight" style="display:none;padding:1em 0;">
         <input id="domain" class="domain" type="hidden"/>
-        <label for="passwdtype">type</label><select id="passwdtype" style="background-color:rgba(0,0,0,0.0);color:white;height:1.5em;">
-            <option value="x">Maximum
-            <option value="l" selected>Long
-            <option value="m">Medium
-            <option value="b">Basic
-            <option value="s">Short
-            <option value="i">Pin
-            <option value="n">Name
-            <option value="p">Phrase
-            <option value="nx">Name [v]
-            <option value="px">Phrase [v]
-        </select>
-        <label for="passwdgeneration">generation</label><input id="passwdgeneration" type="number" min="1" step="1" value="1" style="width:2.5em; background-color:rgba(0,0,0,0.0);color:white;height:1.5em;"/>
-    </form>
+        <div class="content valign_mid">
+            <div class="dropdown" style="flex:1">
+                <input id="sitename" class="dropdown" type="text" placeholder="site"/>
+                <ul id="storedids" style="display:none"></ul>
+            </div>
+            <button id="storedids_dropdown" style="display: none;"><i class="fa fa-chevron-down fa-2" aria-hidden="true"></i></button>
+        </div>
 
+        <div class="content line-heigh valign_mid" id="passwd">
+            <div class="line-heigh" id="thepassword">(calculating)</div>
+            <div class="spacer"></div>
+            <div class="text-big"><div id="copypass" class="fa fa-copy fa-2 btntool btncopy"></div></div>
+        </div>
 
-    <div style="position:absolute;bottom:0" id="verify_pass_fld"></div>
-</div>
+        <div class="content">
+            <input id="loginname" class="w3-input w3-border-0 w3-small" type="text" placeholder="[user name]"/>
+        </div>
 
-<div id="usermessage"></div>
-</div>
+        <div class="container content">
+            <div class="text-bigger" id="siteconfig_show"><div class="fa fa-sliders fa-2 btntool btnprops"></div></div>
+            <div id="siteconfig" style="display:none">
+                <label for="passwdtype">Type: </label>
+                <select id="passwdtype">
+                    <option value="x">Maximum
+                    <option value="l" selected>Long
+                    <option value="m">Medium
+                    <option value="b">Basic
+                    <option value="s">Short
+                    <option value="i">Pin
+                    <option value="n">Name
+                    <option value="p">Phrase
+                    <option value="nx">Name [v]
+                    <option value="px">Phrase [v]
+                </select>
+                <div class="spacer-fixed-small"></div>
+                <label for="passwdgeneration">Generation: </label>
+                <input id="passwdgeneration" type="number" min="1" step="1" value="1"/>
+            </div>
+        </div>
+
+        <div class="content verify_pass" id="verify_pass_fld"></div>
+    </div>
+
+    <div class="container content" id="usermessage">loading...</div>
+
 <script src="../lib/scrypt-asm.js"></script>
 <script src="../lib/mpw.js"></script>
 <script src="./main_popup.js"></script>
+</body>
+</html>

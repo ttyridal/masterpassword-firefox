@@ -1,0 +1,10 @@
+html,body {
+  height: 20em;
+  width: 20em;
+  overflow: hidden;
+}
+
+body {
+    height:100%;
+}
+

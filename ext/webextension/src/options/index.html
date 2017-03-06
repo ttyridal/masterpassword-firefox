@@ -19,59 +19,71 @@
 -->
 
 <html>
-<head style="margin:0;padding:0">
+<head>
+<title></title>
 <meta charset="UTF-8">
-<style>
-tr td:nth-child(3) { text-align:center;}
-tr td:nth-child(4) { text-align:center;}
-tr td:nth-child(5) { text-align:center;}
-td img { width: 15px; height:15px;}
-.backdrop {
-    position:fixed;
-    width:100%;
-    height:100%;
-    top:0;
-    left:0;
-    background:rgba(0,0,0,0.7);
-    z-index:500;
-}
-.dialog {
-    border:2px black inset;
-    position:fixed;
-    top:5em;left:5em;
-    width:50%;
-    background:white;
-    padding: 1em;
-}
-</style>
-<body style="margin:0;padding:0;padding-left:1em;">
-<img src="icon64.png" style="float:left;height:4em;padding-top:0;padding-right:0.5em">
-<h1 style="padding-top:0.5em;">MasterPassword config</h1>
-<a href="releasenote.html">Release note</a>
-<h2>Stored sites:</h2>
-<p>(You can drag-drop a .mpsites file here to import it)</p>
-<table id="stored_sites" style="padding-left:2em">
-    <thead><tr><th>sitename<th>(matching)<th>Login<th>count<th>type<th>ver
-    <template id="stored_sites_row">
-    <tr>
-        <td>sitename</td>
-        <td><input class="domainvalue" type="text" data-old="domain" value="domain"></td>
-        <td>loginname</td>
-        <td>count</td>
-        <td>type</td>
-        <td>ver</td>
-        <td><img class="delete" src="/icons/delete.png"></td>
-    </tr>
-    </template>
-<tbody>
-</table>
-<button class="export_mpsites">export</button>
-<p id="ver3note" style="display:none">
-Your username contains characters outside the
-plain <a href="https://en.wikipedia.org/wiki/ASCII" target="_blank">ASCII</a> range.<br>
-This browser-plugin implements the third revision of MasterPassword. As a consequence,
-your password list can not be imported in apps supporting max revision 2 (notably the
-official iOS and osX apps with version 2.1.x and earlier)</p>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="../css/mpwd.css" rel="stylesheet" />
+<link href="../css/font-awesome.min.css" rel="stylesheet"/>
+</head>
+<body>
+    <header class="banner valign_mid container">
+        <div class="valign_mid"><img src="/icons/icon48.png"><h1>MasterPassword config</h1></div>
+    </header>
+
+
+    <div class="container accordion">
+        <h2 class="accordion_toggle">Stored sites</h2>
+        <div>
+            <p class="warning_message" id="ver3note" style="display:none">
+            Your username contains characters outside the
+            plain <a href="https://en.wikipedia.org/wiki/ASCII" target="_blank">ASCII</a> range.<br>
+            This browser-plugin implements the third revision of MasterPassword. As a consequence,
+            your password list can not be imported in apps supporting max revision 2 (notably the
+            official iOS and osX apps with version 2.1.x and earlier)</p>
+            <button class="export_mpsites">export</button>
+            <p class="">(You can drag-drop a .mpsites file here to import it)</p>
+            <table class="" id="stored_sites">
+                <thead><tr><th>sitename<th>(matching)<th>Login<th>count<th>type<th>ver
+                <template id="stored_sites_row">
+                <tr>
+                    <td>sitename</td>
+                    <td><input class="domainvalue" type="text" data-old="domain" value="domain"></td>
+                    <td>loginname</td>
+                    <td>count</td>
+                    <td>type</td>
+                    <td>ver</td>
+                    <td><div class="fa fa-times-circle delete" aria-hidden="true"></div></td>
+                </tr>
+                </template>
+            <tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="container accordion">
+        <h2 class="accordion_toggle">Acknowledgements &amp; licenses</h2>
+        <div class="hightlight-links">
+            <a href="releasenote.html">Release note</a>
+            <div class=".spacer-fixed-small"></div>
+            <h3>License</h3>
+            <ul class="list-clean">
+            <li>This browser plugin is licensed under the <a href="https://www.gnu.org/licenses/gpl-3.0.en.html">GPL v3</a>.
+            You are free to copy and modify this software as you see fit. You can find the source code on <a href="https://github.com/ttyridal/masterpassword-chrome">GitHub</a>
+            <li>Icons from Font Awesome are licensed under <a href="http://scripts.sil.org/OFL">SIL OFL 1.1</a>
+            </ul>
+            <h3>Major contributors</h3>
+            <ul class="list-clean">
+                <li><a href="http://masterpasswordapp.com">MasterPassword</a> algorithm - <a href="http://www.lhunath.com/">Maarten Billemont</a>
+                <li>Primary author and maintainer - <a href="https://torbjorn.tyridal.no">T.Tyridal</a>
+                <li>Font Awesome by Dave Gandy - <a href="http://fontawesome.io">http://fontawesome.io</a>
+                <li>UI design - Sami Vänttinen / T.Tyridal
+            </ul>
+            <div class=".spacer-fixed-small"></div>
+            Copyright 2017 <a href="https://torbjorn.tyridal.no">Torbjørn Tyridal</a><br>
+        </div>
+    </div>
+
 
 <div id="conflict_resolve" class="backdrop" style="display:none">
     <div class="dialog">
