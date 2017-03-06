@@ -239,7 +239,7 @@ function update_page_password(pass, allow_subframe) {
                    throw new Update_pass_failed("Not pasting to subframe");
 
                return chrome.tabs.executeScript(r.tab.id, {
-                   code: 'document.activeElement.value = ' + JSON.stringify(pass),
+                   code: 'document.activeElement.value = ' + JSON.stringify(pass) + '; document.activeElement.dispatchEvent(new Event("change", {bubbles: true, cancelable: true}));',
                    frameId: r.frameId,
                    matchAboutBlank: true
                });
