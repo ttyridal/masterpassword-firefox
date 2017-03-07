@@ -45,6 +45,9 @@
      {
        "name":"pass_to_clipboard", "title":"Copy password to clipboard", "type": "bool", "value": true
      },
+     {
+       "name":"auto_submit_pass", "title":"Submit after password inject", "type": "bool", "value": false
+     },
      { "name":"sdk.console.logLevel", "title":"Log level", "type":"menulist", "value":"error", "options": [
          {"label":"Error", "value":"error"},
          {"label":"Warnings & Errors", "value":"warn"},
