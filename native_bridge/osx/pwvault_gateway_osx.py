@@ -395,7 +395,7 @@ def install():
             f.write('"description": "Exposes the OS password vault to masterpassword extension",\n')
             f.write('"path": "'+dst+'",\n')
             f.write('"type": "stdio",\n')
-            if 'mozilla' in path:
+            if 'Mozilla' in path:
                 f.write('"allowed_extensions": [ "jid1-pn4AFskf9WBAdA@jetpack" ]\n')
             else:
                 f.write('"allowed_origins": [ "chrome-extension://hifbblnjfcimjnlhibannjoclibgedmd/" ]\n')
