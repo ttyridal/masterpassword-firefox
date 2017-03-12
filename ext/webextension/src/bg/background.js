@@ -236,12 +236,16 @@ Update_pass_failed.prototype = new IntermediateInheritor();
 
 
 function _insert_password(args) {
-    document.activeElement.value = args.pass;
-    document.activeElement.dispatchEvent(new Event('change', {bubbles: true, cancelable: true}));
-    if (args.autosubmit && document.activeElement.form)
-        window.setTimeout(()=>{
-            document.activeElement.form.dispatchEvent(new Event('submit', {bubbles: true, cancelable: true}));
-        },20);
+    document.activeElement.dispatchEvent(new Event('focus', {bubbles: false, cancelable: true}));
+    document.activeElement.dispatchEvent(new Event('focusin', {bubbles: true, cancelable: true}));
+    window.setTimeout(()=>{
+        document.activeElement.value = args.pass;
+        document.activeElement.dispatchEvent(new Event('change', {bubbles: true, cancelable: true}));
+        if (args.autosubmit && document.activeElement.form)
+            window.setTimeout(()=>{
+                document.activeElement.form.dispatchEvent(new Event('submit', {bubbles: true, cancelable: true}));
+            },20);
+    },20);
 }
 
 
