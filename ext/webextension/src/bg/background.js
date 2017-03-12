@@ -194,15 +194,14 @@ function find_active_input(tab) {
     const TIMEOUT = 100;
 
     return new Promise((r,f) => {
-        let to = window.setTimeout(()=>{
-            chrome.runtime.onMessage.removeListener(msgrecv);
-            f({name: 'update_pass_failed', message:"No password field found (timeout)"});
-        }, TIMEOUT);
+        let to, good_response;
         function msgrecv(msg, sender /*, sendResponse*/) {
             if (!msg || msg.id !== chrome.runtime.id)
                 return;
             if (msg.action === 'IamActive') {
-                window.clearTimeout(to);
+                good_response = true;
+                if (to)
+                    window.clearTimeout(to);
                 chrome.runtime.onMessage.removeListener(msgrecv);
                 r({tab:sender.tab, frameId:sender.frameId, tgt: msg.tgt});
             }
@@ -212,8 +211,13 @@ function find_active_input(tab) {
         chrome.tabs.executeScript(tab && tab.id, {
             file: '/src/cs/findinput.js',
             allFrames: true,
-            matchAboutBlank: true,
-            runAt: 'document_end'
+            matchAboutBlank: true
+        }, ()=>{
+            if (good_response) return;
+            let to = window.setTimeout(()=>{
+                chrome.runtime.onMessage.removeListener(msgrecv);
+                f({name: 'update_pass_failed', message:"No password field found (timeout)"});
+            }, TIMEOUT);
         });
     });
 }
