@@ -94,6 +94,7 @@ function store_get() {
         'pass_store': prefs.pass_store,
         'pass_to_clipboard': prefs.pass_to_clipboard,
         'auto_submit_pass': prefs.auto_submit_pass,
+        'auto_submit_username': prefs.auto_submit_username,
         'hotkeycombo': prefs.hotkeycombo,
         'max_alg_version': global_prefs.get('extensions.' + self.id + '.max_alg_version', 3),
     };

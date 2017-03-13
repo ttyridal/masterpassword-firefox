@@ -48,6 +48,9 @@
      {
        "name":"auto_submit_pass", "title":"Submit after password inject", "type": "bool", "value": false
      },
+     {
+       "name":"auto_submit_username", "title":"Inject username", "type": "bool", "value": false
+     },
      { "name":"sdk.console.logLevel", "title":"Log level", "type":"menulist", "value":"error", "options": [
          {"label":"Error", "value":"error"},
          {"label":"Warnings & Errors", "value":"warn"},

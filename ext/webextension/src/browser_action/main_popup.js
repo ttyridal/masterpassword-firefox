@@ -133,8 +133,8 @@ function copy_to_clipboard(mimetype, data) {
     document.execCommand("Copy", false, null);
     document.oncopy=null;
 }
-function update_page_password_input(pass) {
-    chrome.extension.getBackgroundPage().update_page_password(pass, true)
+function update_page_password_input(pass, username) {
+    chrome.extension.getBackgroundPage().update_page_password(pass, username, true)
     .then(()=>{
     })
     .catch(e=>{
@@ -194,7 +194,7 @@ function recalculate(hide_after_copy, retry) {
 
         if (session_store.pass_to_clipboard)
             copy_to_clipboard("text/plain", pass);
-        update_page_password_input(pass);
+        update_page_password_input(pass, siteconfig.username);
         if (hide_after_copy) {
             addon.port.emit('close');
         }
