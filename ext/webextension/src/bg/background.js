@@ -214,7 +214,7 @@ function find_active_input(tab) {
             matchAboutBlank: true
         }, ()=>{
             if (good_response) return;
-            let to = window.setTimeout(()=>{
+            to = window.setTimeout(()=>{
                 chrome.runtime.onMessage.removeListener(msgrecv);
                 f({name: 'update_pass_failed', message:"No password field found (timeout)"});
             }, TIMEOUT);
