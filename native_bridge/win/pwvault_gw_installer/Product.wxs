@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-    <?if $(var.Platform) = x64 ?>
+  <?if $(var.Platform) = x64 ?>
     <?define bitness = "(64 bit)" ?>
     <?define builddir = "..\Release\x64\" ?>
     <?define Win64 = "yes" ?>
@@ -18,7 +18,7 @@
     Id="3EB0B71E-0FEE-49B5-BA10-3B00F9D32E38"
     Name="pwvault-gateway for MasterPassword $(var.bitness)"
     Language="1033"
-    Version="1.0.1.0"
+    Version="!(bind.FileVersion.exe)"
     Manufacturer="Torbjorn Tyridal"
     UpgradeCode="1f6f0957-46fc-4f78-81fe-0f8efe8ac0ed">
     <Package
