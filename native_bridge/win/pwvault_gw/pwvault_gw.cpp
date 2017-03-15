@@ -25,6 +25,8 @@ wchar_t const password[] = L"Password";
 wstring utf8_to_wstring(const string & s) {
 	UINT cp = CP_UTF8;
 	DWORD flags = 0;
+    if (!s.length())
+        return wstring(L"");
 	auto sz = MultiByteToWideChar(cp, flags, s.c_str(), (int)s.size(), nullptr, 0);
 	if (!sz) {
 		throw wstring(L"Convert UTF8 to wide failed");
@@ -42,6 +44,8 @@ wstring utf8_to_wstring(const string & s) {
 string wstring_to_utf8(const wstring & s) {
 	UINT cp = CP_UTF8;
 	DWORD flags = 0;
+    if (!s.length())
+        return string("");
 	auto sz = WideCharToMultiByte(cp, flags, s.c_str(), (int)s.size(), nullptr, 0, nullptr, nullptr);
 	if (!sz) {
 		throw wstring(L"Convertion to UTF8 failed");
@@ -77,7 +81,11 @@ auto password_get() {
 	PCREDENTIALW creds;
 	if (!CredRead(target, 1, 0, &creds)) {
         wstring error(L"CredRead failed ");
-        error += GetFormattedMessage(GetLastError());
+        DWORD lasterr = GetLastError();
+        error += GetFormattedMessage(lasterr);
+        if (lasterr == ERROR_NOT_FOUND) {
+            return wstring(L"");
+        }
         throw error;
     }
 	auto const * const passwordOut = (wchar_t const * const)creds->CredentialBlob;
