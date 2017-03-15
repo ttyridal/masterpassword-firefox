@@ -109,7 +109,7 @@ void native_bridge() {
 		uint32_t msg_sz;
 		cin.read((char*)&msg_sz, sizeof msg_sz);
 		if (msg_sz > 1024)
-			throw 0;
+			throw string("Message too long");
 		if (cin.eof())
 			return;
 
@@ -320,7 +320,20 @@ int wmain(int argc, wchar_t * argv[])
 			cerr << "'" << wstring_to_utf8(argv[i]).c_str() << "'";
 		cerr << endl;
 		set_binary_io();
-		native_bridge();
+        try {
+            native_bridge();
+        }
+        catch (string err) {
+            cerr << "FatalError: " << err.c_str() << endl;
+            return -1;
+        }
+        catch (wstring err) {
+            cerr << "FatalError: " << wstring_to_utf8(err).c_str() << endl;
+            return -1;
+        }
+        catch (int) {
+            return -1;
+        }
 	}
 
 	return 0;
