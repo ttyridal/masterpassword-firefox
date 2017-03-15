@@ -34,7 +34,6 @@ void initExeVersion(wchar_t * szVersionFile) {
     UINT   size = 0;
     LPBYTE lpBuffer = NULL;
     DWORD  verSize = GetFileVersionInfoSize(szVersionFile, &verHandle);
-    wcerr << L"versize " << to_wstring(verSize) << endl;
     if (verSize != NULL) {
         LPSTR verData = new char[verSize];
 
