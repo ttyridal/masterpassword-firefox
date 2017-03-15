@@ -6,8 +6,12 @@
 #include <fcntl.h>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <stdint.h>
 #include "jsmn.h"
+
+typedef NTSTATUS(NTAPI* fnRtlGetVersion)(PRTL_OSVERSIONINFOW lpVersionInformation);
+typedef BOOL(WINAPI *LPFN_ISWOW64PROCESS) (HANDLE, PBOOL);
 
 using namespace std;
 
@@ -21,6 +25,71 @@ void set_binary_io()
 
 wchar_t const target[] = L"masterpassword-for-firefox";
 wchar_t const password[] = L"Password";
+
+wstring exeversionw;
+string exeversion;
+
+void initExeVersion(wchar_t * szVersionFile) {
+    DWORD  verHandle = 0;
+    UINT   size = 0;
+    LPBYTE lpBuffer = NULL;
+    DWORD  verSize = GetFileVersionInfoSize(szVersionFile, &verHandle);
+    wcerr << L"versize " << to_wstring(verSize) << endl;
+    if (verSize != NULL) {
+        LPSTR verData = new char[verSize];
+
+        if (GetFileVersionInfo(szVersionFile, verHandle, verSize, verData)) {
+            if (VerQueryValue(verData, L"\\", (VOID FAR* FAR*)&lpBuffer, &size)) {
+                if (size) {
+                    VS_FIXEDFILEINFO *verInfo = (VS_FIXEDFILEINFO *)lpBuffer;
+                    if (verInfo->dwSignature == 0xfeef04bd) {
+
+                        exeversion =
+                            to_string((verInfo->dwFileVersionMS >> 16) & 0xffff) + '.' +
+                            to_string((verInfo->dwFileVersionMS >> 0) & 0xffff) + '.' +
+                            to_string((verInfo->dwFileVersionLS >> 16) & 0xffff) + '.' +
+                            to_string((verInfo->dwFileVersionLS >> 0) & 0xffff);
+                        exeversionw =
+                            to_wstring((verInfo->dwFileVersionMS >> 16) & 0xffff) + L'.' +
+                            to_wstring((verInfo->dwFileVersionMS >> 0) & 0xffff) + L'.' +
+                            to_wstring((verInfo->dwFileVersionLS >> 16) & 0xffff) + L'.' +
+                            to_wstring((verInfo->dwFileVersionLS >> 0) & 0xffff);
+                    }
+                }
+            }
+        }
+        delete[] verData;
+    }
+}
+
+BOOL IsWow64() {
+    BOOL bIsWow64 = FALSE;
+    auto fnIsWow64Process = (LPFN_ISWOW64PROCESS)GetProcAddress(
+        GetModuleHandle(TEXT("kernel32")), "IsWow64Process");
+
+    if (NULL != fnIsWow64Process) {
+        if (!fnIsWow64Process(GetCurrentProcess(), &bIsWow64)) {
+        // ignore errors
+        }
+    }
+    return bIsWow64;
+}
+
+string winVer() {
+    RTL_OSVERSIONINFOW osinfo = {0};
+    osinfo.dwOSVersionInfoSize = sizeof osinfo;
+    static auto RtlGetVersion = (fnRtlGetVersion)GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "RtlGetVersion");
+    RtlGetVersion(&osinfo);
+    return "win-" + to_string(osinfo.dwMajorVersion) + '.' +
+        to_string(osinfo.dwMinorVersion) + '.' +
+        to_string(osinfo.dwBuildNumber) + " " +
+#ifdef _WIN64
+        "x64"
+#else
+        "x86" + (IsWow64() ? " wow64" : "")
+#endif
+        ;
+}
 
 wstring utf8_to_wstring(const string & s) {
 	UINT cp = CP_UTF8;
@@ -169,9 +238,24 @@ void native_bridge() {
             }
             catch (wstring err) {
                 wcerr << L"pwget ERROR: " << err.c_str() << endl;
-                cout << "{\"type\": \"pwsetreply\", \"success\": false}";
+                string s("{\"type\": \"pwsetreply\", \"success\": false}");
+                uint32_t sz = (uint32_t)s.size();
+                cout.write((char*)&sz, sizeof sz);
+                cout.write(s.c_str(), sz);
             }
 		}
+        else if (type == string("comcheck")) {
+            stringstream ss;
+            ss << "{\"type\":\"comcheckreply\",\"success\":true," <<
+                "\"os\": \"" << winVer() << "\"," <<
+                "\"version\":\"" << exeversion <<
+                "\"}";
+
+            uint32_t sz = (uint32_t)ss.tellp();
+            cout.write((char*)&sz, sizeof sz);
+            cout.write(ss.str().c_str(), sz);
+
+        }
 		else
 			throw wstring(L"Illegal message");
 	}
@@ -291,13 +375,15 @@ void install_chrome(bool installAllUsers, wstring & binpath) {
 int wmain(int argc, wchar_t * argv[])
 {
 	argv = CommandLineToArgvW(GetCommandLine(), &argc);
+    initExeVersion(argv[0]);
 
 	if (argc > 1 && (wstring(argv[1]) == wstring(L"test"))) {
 		_setmode(_fileno(stderr), _O_U16TEXT);
+        wcerr << "NativeBridge " << exeversionw << ' ' << utf8_to_wstring(winVer()) << endl;
 
         try {
             if (argc > 2 && (wstring(argv[2]) == wstring(L"pwget"))) {
-                wcerr << L"otuput: " << password_get().c_str() << endl;
+                wcerr << L"output: " << password_get().c_str() << endl;
             } else if (argc > 3 && (wstring(argv[2]) == wstring(L"pwset"))) {
                 password_set(wstring(argv[3]));
             } else
@@ -315,7 +401,7 @@ int wmain(int argc, wchar_t * argv[])
 		install_chrome(installAllUsers, fname);
 	}
 	else {
-		cerr << "Native bridge: ";
+		cerr << "Native bridge: " << exeversion << endl;
 		for (auto i = 0; i < argc; i++)
 			cerr << "'" << wstring_to_utf8(argv[i]).c_str() << "'";
 		cerr << endl;
