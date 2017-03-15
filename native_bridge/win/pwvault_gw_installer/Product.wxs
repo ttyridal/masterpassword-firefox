@@ -31,7 +31,19 @@
       Languages='1033'
       Compressed='yes'
       SummaryCodepage='1252' />
-    <MajorUpgrade DowngradeErrorMessage="A newer version of pwvault-gw is already installed." />
+
+  <Upgrade Id="1f6f0957-46fc-4f78-81fe-0f8efe8ac0ed">
+  <UpgradeVersion
+      Minimum="1.0.0.0" Maximum="99.0.0.0"
+      Property="PREVIOUSVERSIONSINSTALLED"
+      IncludeMinimum="yes" IncludeMaximum="no" />
+  </Upgrade>
+  <MajorUpgrade
+      AllowDowngrades="no"
+      AllowSameVersionUpgrades="no"
+      IgnoreRemoveFailure="no"
+      DowngradeErrorMessage="loc.NewerVersionInstalled"
+      Schedule="afterInstallInitialize"/>
 
     <Media Id='1' Cabinet='install.cab' EmbedCab='yes' DiskPrompt='install'/>
     <Property Id='DiskPrompt' Value="pwvault-gateway"/>
