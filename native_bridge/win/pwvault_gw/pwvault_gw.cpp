@@ -11,6 +11,8 @@
 
 using namespace std;
 
+wstring GetFormattedMessage(LONG errCode);
+
 void set_binary_io()
 {
 	_setmode(_fileno(stdin), _O_BINARY);
@@ -25,12 +27,12 @@ wstring utf8_to_wstring(const string & s) {
 	DWORD flags = 0;
 	auto sz = MultiByteToWideChar(cp, flags, s.c_str(), (int)s.size(), nullptr, 0);
 	if (!sz) {
-		throw string("Convert UTF8 to wide failed");
+		throw wstring(L"Convert UTF8 to wide failed");
 	}
 	auto * dst = new wchar_t[sz * sizeof(wchar_t)];
 	auto sz2 = MultiByteToWideChar(cp, flags, s.c_str(), (int)s.size(), dst, sz);
 	if (sz2 != sz)
-		throw string("Convert UTF8 to wide failed 2");
+		throw wstring(L"Convert UTF8 to wide failed 2");
 
 	auto ret = wstring(dst, dst + sz);
 	delete[] dst;
@@ -42,12 +44,12 @@ string wstring_to_utf8(const wstring & s) {
 	DWORD flags = 0;
 	auto sz = WideCharToMultiByte(cp, flags, s.c_str(), (int)s.size(), nullptr, 0, nullptr, nullptr);
 	if (!sz) {
-		throw string("Convertion to UTF8 failed");
+		throw wstring(L"Convertion to UTF8 failed");
 	}
 	auto * buf = new char[sz];
 	auto sz2 = WideCharToMultiByte(cp, flags, s.c_str(), (int)s.size(), buf, sz, nullptr, nullptr);
 	if (sz2 != sz) 
-		throw string("Convertion to UTF8 failed 2");
+		throw wstring(L"Convertion to UTF8 failed 2");
 
 	auto ret = string(buf, buf + sz);
 	delete[] buf;
@@ -65,15 +67,19 @@ void password_set(const wstring & s) {
 	credsToAdd.UserName = L"masterkey";
 
 	if (!CredWrite(&credsToAdd, 0)) {
-		throw string("CredWrite failed");
+        wstring error(L"CredWrite failed ");
+        error += GetFormattedMessage(GetLastError());
+        throw error;
 	}
 }
 
 auto password_get() {
 	PCREDENTIALW creds;
 	if (!CredRead(target, 1, 0, &creds)) {
-		throw string("CredRead failed");
-	}
+        wstring error(L"CredRead failed ");
+        error += GetFormattedMessage(GetLastError());
+        throw error;
+    }
 	auto const * const passwordOut = (wchar_t const * const)creds->CredentialBlob;
 	auto ret = wstring(passwordOut, passwordOut + creds->CredentialBlobSize / sizeof(wchar_t));
 	CredFree(creds);
@@ -129,25 +135,37 @@ void native_bridge() {
 		}
 		if (type == string("pwget")) {
 			cerr << "GET PASSWORD\n";
-			string s("{\"type\": \"pwgetreply\", \"success\": true, \"value\": \"");
-			wstring pw = password_get();
-			string pwc = wstring_to_utf8(pw);
+            try {
+                string s("{\"type\": \"pwgetreply\", \"success\": true, \"value\": \"");
+                wstring pw = password_get();
+                string pwc = wstring_to_utf8(pw);
 
-			s += wstring_to_utf8(pw) + "\"}";
+                s += wstring_to_utf8(pw) + "\"}";
 
-			uint32_t sz = (uint32_t)s.size();
-			cout.write((char*)&sz, sizeof sz);
-			cout.write(s.c_str(), sz);
+                uint32_t sz = (uint32_t)s.size();
+                cout.write((char*)&sz, sizeof sz);
+                cout.write(s.c_str(), sz);
+            }
+            catch (wstring err) {
+                wcerr << L"pwget ERROR: " << err.c_str() << endl;
+                cout << "{\"type\": \"pwgetreply\", \"success\": false}";
+            }
 		}
 		else if (type == string("pwset") && !value.empty()) {
-			password_set(utf8_to_wstring(value));
-			string s("{\"type\": \"pwsetreply\", \"success\": true}");
-			uint32_t sz = (uint32_t)s.size();
-			cout.write((char*)&sz, sizeof sz);
-			cout.write(s.c_str(), sz);
+            try {
+                password_set(utf8_to_wstring(value));
+                string s("{\"type\": \"pwsetreply\", \"success\": true}");
+                uint32_t sz = (uint32_t)s.size();
+                cout.write((char*)&sz, sizeof sz);
+                cout.write(s.c_str(), sz);
+            }
+            catch (wstring err) {
+                wcerr << L"pwget ERROR: " << err.c_str() << endl;
+                cout << "{\"type\": \"pwsetreply\", \"success\": false}";
+            }
 		}
 		else
-			throw string("Illegal message");
+			throw wstring(L"Illegal message");
 	}
 }
 
@@ -269,14 +287,17 @@ int wmain(int argc, wchar_t * argv[])
 	if (argc > 1 && (wstring(argv[1]) == wstring(L"test"))) {
 		_setmode(_fileno(stderr), _O_U16TEXT);
 
-		if (argc > 2 && (wstring(argv[2]) == wstring(L"pwget"))) {
-			wcerr << L"otuput: " << password_get().c_str() << endl;
-		}
-		else if (argc > 3 && (wstring(argv[2]) == wstring(L"pwset"))) {
-			password_set(wstring(argv[3]));
-		}
-		else
-			wcerr << L"Invalid arguments\n";
+        try {
+            if (argc > 2 && (wstring(argv[2]) == wstring(L"pwget"))) {
+                wcerr << L"otuput: " << password_get().c_str() << endl;
+            } else if (argc > 3 && (wstring(argv[2]) == wstring(L"pwset"))) {
+                password_set(wstring(argv[3]));
+            } else
+                wcerr << L"Invalid arguments\n";
+        }
+        catch (wstring e) {
+            wcerr << L"ERROR: " << e.c_str() << endl;
+        }
 	}
 	else if (argc > 1 && (wstring(argv[1]) == wstring(L"install"))) {
 		_setmode(_fileno(stderr), _O_U16TEXT);
