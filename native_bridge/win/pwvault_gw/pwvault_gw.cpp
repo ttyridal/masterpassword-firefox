@@ -391,20 +391,21 @@ int wmain(int argc, wchar_t * argv[])
         catch (wstring e) {
             wcerr << L"ERROR: " << e.c_str() << endl;
         }
-	}
-	else if (argc > 1 && (wstring(argv[1]) == wstring(L"install"))) {
-		_setmode(_fileno(stderr), _O_U16TEXT);
-		wstring fname(argv[0]);
-		bool installAllUsers = argc > 2 && wstring(argv[2]) == wstring(L"global");
-		install_firefox(installAllUsers, fname);
-		install_chrome(installAllUsers, fname);
-	}
-	else {
-		cerr << "Native bridge: " << exeversion << endl;
-		for (auto i = 0; i < argc; i++)
-			cerr << "'" << wstring_to_utf8(argv[i]).c_str() << "'";
-		cerr << endl;
-		set_binary_io();
+    }
+    else if (argc > 1 && (wstring(argv[1]) == wstring(L"install"))) {
+        _setmode(_fileno(stderr), _O_U16TEXT);
+
+        wchar_t buffer[MAX_PATH];
+        GetModuleFileName(NULL, buffer, MAX_PATH);
+        wstring fname(buffer);
+
+        bool installAllUsers = argc > 2 && wstring(argv[2]) == wstring(L"global");
+        install_firefox(installAllUsers, fname);
+        install_chrome(installAllUsers, fname);
+    }
+    else {
+        cerr << "Native bridge: " << exeversion << endl;
+        set_binary_io();
         try {
             native_bridge();
         }
