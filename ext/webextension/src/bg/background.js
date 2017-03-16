@@ -287,7 +287,7 @@ function update_page_password(pass, username, allow_subframe) {
            .then(find_active_input)
            .then(r=>{
                if (r.tgt.type.toLowerCase() === 'password') {}
-               else if ((r.tgt.type === '' || r.tgt.type.toLowerCase() === 'text') &&
+               else if ((r.tgt.type === '' || r.tgt.type.match(/(text|email|num|tel)/ig)) &&
                     r.tgt.name.match(/.*(user|name|email|login).*/ig)) {}
                else
                    throw new Update_pass_failed("no password field selected");
