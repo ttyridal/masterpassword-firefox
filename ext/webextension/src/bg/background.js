@@ -273,6 +273,9 @@ function _insert_password(args) {
         pwinput.dispatchEvent(new Event('change', {bubbles: true, cancelable: true}));
         if (args.autosubmit && pwinput.form)
             window.setTimeout(()=>{
+                let btn = pwinput.form.querySelector('input[type=submit], button[type=submit]');
+                let cancelled = !btn.dispatchEvent(new Event('click', {bubbles: true, cancelable: true}));
+                if (!cancelled)
                 pwinput.form.dispatchEvent(new Event('submit', {bubbles: true, cancelable: true}));
             },20);
     },20);
