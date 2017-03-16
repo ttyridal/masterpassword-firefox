@@ -44,6 +44,14 @@ let ui = {
             el = document.querySelector(el);
         el.style.display = '';
     },
+
+    is_visible: function(el) {
+        if (typeof el === 'string')
+            el = document.querySelector(el);
+        el = el.style;
+        return el.display !== 'none';
+    },
+
     toggle: function(el) {
         if (typeof el === 'string')
             el = document.querySelector(el);
@@ -134,7 +142,7 @@ function copy_to_clipboard(mimetype, data) {
     document.oncopy=null;
 }
 function update_page_password_input(pass, username) {
-    chrome.extension.getBackgroundPage().update_page_password(pass, username, true)
+    chrome.extension.getBackgroundPage().update_page_password(pass, username, true, !ui.is_visible('#storedids_dropdown'))
     .then(()=>{
     })
     .catch(e=>{

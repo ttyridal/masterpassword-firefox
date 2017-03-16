@@ -271,7 +271,7 @@ function _insert_password(args) {
     window.setTimeout(()=>{
         pwinput.value = args.pass;
         pwinput.dispatchEvent(new Event('change', {bubbles: true, cancelable: true}));
-        if (args.autosubmit && pwinput.form)
+        if (args.allow_submit && args.autosubmit && pwinput.form)
             window.setTimeout(()=>{
                 let btn = pwinput.form.querySelector('input[type=submit], button[type=submit]');
                 let cancelled = !btn.dispatchEvent(new Event('click', {bubbles: true, cancelable: true}));
@@ -282,7 +282,7 @@ function _insert_password(args) {
 }
 
 
-function update_page_password(pass, username, allow_subframe) {
+function update_page_password(pass, username, allow_subframe, allow_submit) {
     return current_tab()
            .then(find_active_input)
            .then(r=>{
@@ -294,7 +294,7 @@ function update_page_password(pass, username, allow_subframe) {
                if (!allow_subframe && r.frameId)
                    throw new Update_pass_failed("Not pasting to subframe");
                username = (settings.auto_submit_username && username);
-               let args = { pass: pass, username: username, autosubmit: settings.auto_submit_pass };
+               let args = { pass: pass, username: username, autosubmit: settings.auto_submit_pass, allow_submit: allow_submit };
                return chrome.tabs.executeScript(r.tab.id, {
                    code: ';('+_insert_password+'('+JSON.stringify(args)+'));',
                    frameId: r.frameId,
