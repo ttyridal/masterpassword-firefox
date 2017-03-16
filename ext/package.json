@@ -9,7 +9,7 @@
   "description": "Masterpassword (see masterpasswordapp.com) as an extension for Firefox",
   "author": "Torbjorn Tyridal (ttyridal)",
   "license": "GPLv3",
-  "version": "2.1.0b6",
+  "version": "2.1.0",
   "icon": "webextension/icons/icon32.png",
   "icon64": "webextension/icons/icon64.png",
   "permissions": {"private-browsing": true, "multiprocess": true},
