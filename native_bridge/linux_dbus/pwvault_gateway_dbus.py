@@ -495,7 +495,7 @@ def install():
     path_ff = ('~/.mozilla/native-messaging-hosts/',
                '/usr/lib/mozilla/native-messaging-hosts/')
     path_chrome = ('~/.config/google-chrome/NativeMessagingHosts/',
-                   'etc/opt/chrome/native-messaging-hosts/')
+                   '/etc/opt/chrome/native-messaging-hosts/')
     path_chromium = ('~/.config/chromium/NativeMessagingHosts/',
                      '/etc/chromium/native-messaging-hosts/')
 
