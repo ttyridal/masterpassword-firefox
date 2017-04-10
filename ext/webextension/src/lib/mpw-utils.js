@@ -140,7 +140,7 @@ function make_mpsites(key_id, username, stored_sites, alg_min_version, alg_versi
         '# User Name: '+username+'\n',
         '# Full Name: '+username+'\n',
         '# Avatar: 0\n',
-        '# Key ID: '+key_id+'\n',
+        '# Key ID: '+key_id.toUpperCase()+'\n',
         '# Version: 2.2\n',
         '# Algorithm: '+alg_version+'\n',
         '# Default Type: 17\n',
