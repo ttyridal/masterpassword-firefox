@@ -87,7 +87,7 @@ function read_mpsites(d, username, key_id, confirm_fn){
         if (!confirm_fn("Username mismatch!\n\nYou may still import this file, "+
                 "but passwords will be different from where you exported the file"))
             return undefined;
-    } else if (key_id && fheader.key_id && fheader.key_id !== key_id) {
+    } else if (key_id && fheader.key_id && fheader.key_id.toLowerCase() !== key_id.toLowerCase()) {
         if (!confirm_fn("Key ID mismatch!\n\nYou may still import this file, "+
                 "but passwords will be different from where you exported the file"))
             return undefined;
