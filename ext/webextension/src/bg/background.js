@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with the software.  If not, see <http://www.gnu.org/licenses/>.
 */
-/* global browser, window, console, chrome */
+/* global browser, window, console, chrome, Event, document */
 
 (function(){
 "use strict";
@@ -117,25 +117,27 @@ function promised_storage_get(keys) {
     });
 }
 
+const setting_keys = [
+            'defaulttype',
+            'passwdtimeout',
+            'pass_store',
+            'pass_to_clipboard',
+            'auto_submit_pass',
+            'auto_submit_username',
+            'hotkeycombo',
+            'max_alg_version'];
+console.log("Load settings");
+promised_storage_get(setting_keys).then(v=>{
+    for (let k of setting_keys)
+        settings[k] = v[k];
+    console.log("settings loaded");
+});
+
 function store_get(keys) {
-    let p1 = browser.runtime.sendMessage({name: 'store_get'});
-    let p2 = promised_storage_get(keys);
-    return Promise.all([p1,p2])
-    .then(v => {
-        let [xul, webext] = v;
-        settings = {
-            'defaulttype': xul.defaulttype,
-            'passwdtimeout': xul.passwdtimeout,
-            'pass_store': xul.pass_store,
-            'pass_to_clipboard': xul.pass_to_clipboard,
-            'auto_submit_pass': xul.auto_submit_pass,
-            'auto_submit_username': xul.auto_submit_username,
-            'hotkeycombo': xul.hotkeycombo,
-            'max_alg_version': xul.max_alg_version
-        };
+    return promised_storage_get(keys)
+    .then(webext => {
         if (settings.passwdtimeout === 0) // clear now in case it's recently changed
             _masterkey = undefined;
-        chrome.storage.local.set(settings);
 
         let r = {};
         for (let k of keys) {
@@ -149,14 +151,14 @@ function store_get(keys) {
                 case 'auto_submit_username':
                 case 'hotkeycombo':
                 case 'max_alg_version':
-                    r[k] = settings[k];
+                    r[k] = settings[k] = webext[k];
                     break;
 
                 case 'masterkey':
                 case 'username':
                 case 'key_id':
                 case 'sites':
-                    r[k] = webext[k] !== undefined ? webext[k] : xul[k];
+                    r[k] = webext[k];
                     break;
                 default:
                     throw new Error("unknown key requested: "+k);
@@ -238,10 +240,10 @@ Update_pass_failed.prototype = new IntermediateInheritor();
 
 
 function _insert_password(args) {
-    let inputf = (document.activeElement &&
+    let inputf = document.activeElement &&
             document.activeElement.matches('input') &&
-            document.activeElement);
-    let pwinput = (inputf && inputf.type.toLowerCase() === 'password' && inputf);
+            document.activeElement;
+    let pwinput = inputf && inputf.type.toLowerCase() === 'password' && inputf;
 
     if (!inputf) {
         console.warn("inject - but not an active input");
@@ -251,10 +253,11 @@ function _insert_password(args) {
     if (!pwinput) {
         let inputs = document.querySelectorAll('input');
         let idx = 0;
-        for (; inputs[idx] && inputs[idx] != inputf; idx++){};
+        for (; inputs[idx] && inputs[idx] !== inputf; idx++)
+            ;
         let sib = inputs[idx+1];
 
-        if (args.username && sib && sib.type.toLowerCase() === 'password' && inputf.form == sib.form) {
+        if (args.username && sib && sib.type.toLowerCase() === 'password' && inputf.form === sib.form) {
             pwinput = sib;
             if (!inputf.value) {
                 inputf.value = args.username;
@@ -293,7 +296,7 @@ function update_page_password(pass, username, allow_subframe, allow_submit) {
                    throw new Update_pass_failed("no password field selected");
                if (!allow_subframe && r.frameId)
                    throw new Update_pass_failed("Not pasting to subframe");
-               username = (settings.auto_submit_username && username);
+               username = settings.auto_submit_username && username;
                let args = { pass: pass, username: username, autosubmit: settings.auto_submit_pass, allow_submit: allow_submit };
                return chrome.tabs.executeScript(r.tab.id, {
                    code: ';('+_insert_password+'('+JSON.stringify(args)+'));',
