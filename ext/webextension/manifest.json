@@ -16,7 +16,7 @@
     ],
     "persistent": true
   },
-  "incognito": "split",
+  "incognito": "spanning",
   "browser_action": {
     "browser_style": false,
     "default_icon": {
