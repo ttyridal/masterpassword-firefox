@@ -93,12 +93,24 @@ function store_update(d) {
                     syncset[k] = d[k];
                 break;
             case 'masterkey':
-                if (settings.pass_store !== 'n') {
+                if (settings.pass_store) {
                     if (d.key_id || d.force_update)
                         Promise.resolve(pwvault_gateway({'type':'pwset','name':'default', 'value': d[k]}))
                         .catch(e => { console.error(e); });
                 } else
                     temp_store_masterkey(d[k]);
+                break;
+            // settings:
+            case 'passwdtimeout':
+                if (d[k] === 0)
+                    _masterkey = undefined;
+                /* falls through */
+            case 'defaulttype':
+            case 'pass_store':
+            case 'pass_to_clipboard':
+            case 'auto_submit_pass':
+            case 'auto_submit_username':
+                syncset[k] = settings[k] = d[k];
                 break;
             default:
                 console.info("Trying to store unknown key",k);
@@ -128,8 +140,11 @@ const setting_keys = [
             'max_alg_version'];
 console.log("Load settings");
 promised_storage_get(setting_keys).then(v=>{
-    for (let k of setting_keys)
+    for (let k of setting_keys) {
+        if (k === 'pass_store')
+            v[k] = !(!v[k] || v[k] === 'n');
         settings[k] = v[k];
+    }
     console.log("settings loaded");
 });
 
@@ -143,9 +158,12 @@ function store_get(keys) {
         for (let k of keys) {
             switch (k) {
                 //preferences
+                case 'pass_store':
+                    // upgrade pass_store to bool
+                    webext[k] = !(!webext[k] || webext[k] === 'n');
+                    /* falls through */
                 case 'defaulttype':
                 case 'passwdtimeout':
-                case 'pass_store':
                 case 'pass_to_clipboard':
                 case 'auto_submit_pass':
                 case 'auto_submit_username':
@@ -167,7 +185,7 @@ function store_get(keys) {
         return r;
     })
     .then(r => {
-        if (settings.pass_store !== 'n' && keys.indexOf('masterkey') !== -1) {
+        if (settings.pass_store && keys.indexOf('masterkey') !== -1) {
             return Promise.all([r,
                 pwvault_gateway({'type':'pwget', 'name':'default'})
                 .catch(err => {

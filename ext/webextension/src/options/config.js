@@ -293,10 +293,10 @@ document.querySelector('body').addEventListener('click', function(ev){
         else
             d.style.height = new_height + 'px';
         d.classList.toggle('in');
-        function reset_height() {
+        let reset_height = function () {
             d.style.height = '';
             d.removeEventListener('transitionend', reset_height);
-        }
+        };
         d.addEventListener('transitionend', reset_height);
     }
 });

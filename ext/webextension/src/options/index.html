@@ -30,7 +30,54 @@
     <header class="banner valign_mid container">
         <div class="valign_mid"><img src="/icons/icon48.png"><h1>MasterPassword config</h1></div>
     </header>
-
+    <div class="container accordion">
+        <h2 class="accordion_toggle">Global settings</h2>
+        <div>
+            <div class="configitem">
+                <label class="w3-label w3-small w3-text-white" for="passwdtype">Default password type:</label>
+                 <select class="w3-select w3-small w3-border" id="passwdtype">
+                    <option value="x">Maximum
+                    <option value="l" selected>Long
+                    <option value="m">Medium
+                    <option value="b">Basic
+                    <option value="s">Short
+                    <option value="i">Pin
+                    <option value="n">Name
+                    <option value="p">Phrase
+                    <option value="nx">Name [V]
+                    <option value="px">Phrase [V]
+                </select>
+            </div>
+            <div class="configitem">
+                <label class="w3-label w3-small w3-text-white" for="passwdtimeout">Remember password:</label>
+                <select class="w3-select w3-small w3-border" id="passwdtimeout">
+                    <option value="0">Never
+                    <option value="5">5 minutes
+                    <option value="15">15 minutes
+                    <option value="30">30 minutes
+                    <option value="60">1 hour
+                    <option value="480">8 hours
+                    <option value="-1" selected>Until closed
+                </select>
+            </div>
+            <div class="configitem">
+                <label for="pass_to_clipboard">Copy password to clipboard</label>
+                <input id="pass_to_clipboard" type="checkbox"/>
+            </div>
+            <div class="configitem">
+                <label for="auto_submit_pass">Submit after password inject</label>
+                <input id="auto_submit_pass" type="checkbox"/>
+            </div>
+            <div class="configitem">
+                <label for="auto_submit_username">Inject username</label>
+                <input id="auto_submit_username" type="checkbox"/>
+            </div>
+            <div class="configitem">
+                <label for="pass_store">Use OS' password store</label>
+                <input id="pass_store" type="checkbox"/>
+            </div>
+        </div>
+    </div>
 
     <div class="container accordion">
         <h2 class="accordion_toggle">Stored sites</h2>
@@ -101,4 +148,5 @@
 </div>
 
 <script src="../lib/mpw-utils.js"></script>
+<script src="globaloptions.js"></script>
 <script src="config.js"></script>
