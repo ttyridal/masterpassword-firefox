@@ -1,0 +1,10 @@
+{
+    "enforceall": true,
+    "camelcase": false,
+    "es3": false,
+    "es5": false,
+    "esnext": false,
+    "esversion": 6,
+    "curly": false,
+    "moz": true
+}

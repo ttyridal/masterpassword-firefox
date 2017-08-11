@@ -8,18 +8,25 @@
     </head>
     <body>
         <header class="banner valign_mid container">
-            <div class="valign_mid"><img src="/icons/icon48.png"><h1>MasterPassword Release 2.3.0</h1></div>
+            <div class="valign_mid"><img src="/icons/icon48.png"><h1>MasterPassword Release 2.2.1b1</h1></div>
         </header>
         <main>
         <p>Thank you for using MasterPassword for Firefox! The easiest way to handle site-unique password on the web.
         If you want to understand what this is all about, please see <a href="http://masterpasswordapp.com/">here</a>.
-        <p>If you have any issues with with addon, please report them on the <a href="https://github.com/ttyridal/masterpassword-firefox/issues" target="_blank">issue tracker</a>.
+
+         <p>
+         You've chosen to install a beta release of this addon. Thank you for beeing an early adopter! If you find
+         any bugs or missing features, please report them on the <a href="https://github.com/ttyridal/masterpassword-firefox/issues" target="_blank">issue tracker</a>.
+         <p style="display:none">
+         If you have any issues with with addon, please report them on the <a href="https://github.com/ttyridal/masterpassword-firefox/issues" target="_blank">issue tracker</a>.
+
         <h3>Users of OS' key-vault</h3>
         <p>If you're using GNOME Keyring, KWallet, OSX Keychain or Windows Password Vault to store your master key, you'll need to
         download a separate helper app. Please refer to <a href="https://github.com/ttyridal/masterpassword-firefox/wiki/Webextensions" target="_blank">the wiki</a> for further information.
-        <h3>Changes since v2.2</h3>
+        <h3>Changes since v2.2.0</h3>
         <ul>
-        <li>This release is the same as v2.2, but built purely for the webextensions api and thus supporting Firefox 57 and beyond.
+        <li>Pure webextension: built without legacy sdk shim and thus supporting Firefox 57 and beyond.
+        <li>fix hash mismatch warning when importing from other implementations
         </ul>
 
         <h3>Review</h3>
