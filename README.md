@@ -8,6 +8,8 @@ This is a firefox addon implementing the masterpassword algorithm invented by Ma
 # Installation
 Firefox nightly (v57 and greater) users are encouraged to download the beta, as it is built without the lagacy plugin api, no longer supported in these versions of Firefox.
 
+Support for Firefox version before v51 was dropped with the 2.1 release of masterpassword for firefox.
+
 Download from the Mozilla addon store: 
 * [Latest beta](https://addons.mozilla.org/firefox/downloads/latest-beta/583040/addon-583040-latest.xpi)
 * [Latest stable](https://addons.mozilla.org/firefox/downloads/latest/583040/addon-583040-latest.xpi)
