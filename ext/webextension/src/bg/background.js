@@ -59,7 +59,15 @@ function pwvault_gateway(msg) {
     });
 }
 
-var settings = {};
+var settings = {
+    // default settings:
+    passwdtimeout: -1,
+    defaulttype: 'l',
+    pass_store: false,
+    pass_to_clipboard: false,
+    auto_submit_pass: false,
+    auto_submit_username: false
+};
 
 var _masterkey;
 const pw_retention_timer = 'pw_retention_timer';
@@ -143,7 +151,8 @@ promised_storage_get(setting_keys).then(v=>{
     for (let k of setting_keys) {
         if (k === 'pass_store')
             v[k] = !(!v[k] || v[k] === 'n');
-        settings[k] = v[k];
+        if (typeof v[k] !== 'undefined')
+            settings[k] = v[k];
     }
     console.log("settings loaded");
 });
@@ -169,7 +178,9 @@ function store_get(keys) {
                 case 'auto_submit_username':
                 case 'hotkeycombo':
                 case 'max_alg_version':
-                    r[k] = settings[k] = webext[k];
+                    if (typeof webext[k] !== 'undefined')
+                        settings[k] = webext[k];
+                    r[k] = settings[k];
                     break;
 
                 case 'masterkey':
