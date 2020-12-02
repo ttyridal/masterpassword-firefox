@@ -33,8 +33,8 @@ function string_is_plain_ascii(s) {
      alg_min_version = 1;
 
 function save_sites_to_backend() {
-    chrome.extension.getBackgroundPage().store_update({sites: stored_sites});
-
+    browser.runtime.sendMessage({action: 'store_update', data: {sites: stored_sites} })
+    .catch(err=>{ console.log("BUG!",err); });
 }
 
 function passtype_to_str(type) {
@@ -88,7 +88,8 @@ function stored_sites_table_update(stored_sites) {
 }
 
 window.addEventListener('load', function() {
-    chrome.extension.getBackgroundPage().store_get(['sites', 'username', 'max_alg_version', 'key_id'])
+    browser.runtime.sendMessage({action: 'store_get', keys:
+      ['sites', 'username', 'max_alg_version', 'key_id']})
     .then(data => {
         if (data.sites)
             stored_sites = data.sites;

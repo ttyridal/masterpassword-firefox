@@ -21,6 +21,11 @@
 (function () {
     "use strict";
 
+    function store_update(data) {
+        browser.runtime.sendMessage({action: 'store_update', data: data })
+        .catch(err=>{ console.log("BUG!",err); });
+    }
+
 function parse_uri(sourceUri){
     // stolen with pride: http://blog.stevenlevithan.com/archives/parseuri-split-url
     var uriPartNames = ["source","protocol","authority","domain","port","path","directoryPath","fileName","query","anchor"],
@@ -142,9 +147,11 @@ function copy_to_clipboard(mimetype, data) {
     document.oncopy=null;
 }
 function update_page_password_input(pass, username) {
-    chrome.extension.getBackgroundPage().update_page_password(pass, username, true, !ui.is_visible('#storedids_dropdown'))
-    .then(()=>{
-    })
+    browser.runtime.sendMessage({action: 'update_page_password',
+        pass: pass,
+        username: username,
+        allow_subframe: true,
+        allow_submit: !ui.is_visible('#storedids_dropdown')})
     .catch(e=>{
         console.error(e);
     });
@@ -167,11 +174,16 @@ function recalculate(hide_after_copy, retry) {
         if (session_store.key_id && key_id !== session_store.key_id) {
             warn_keyid_not_matching();
             key_id_mismatch = true;
-            chrome.extension.getBackgroundPage().store_update({username: session_store.username, masterkey: session_store.masterkey});
+            store_update({
+                username: session_store.username,
+                masterkey: session_store.masterkey});
         }
         else {
             session_store.key_id = key_id;
-            chrome.extension.getBackgroundPage().store_update({username: session_store.username, masterkey: session_store.masterkey, key_id: key_id});
+            store_update({
+                username: session_store.username,
+                masterkey: session_store.masterkey,
+                key_id: key_id});
         }
     }
 
@@ -286,8 +298,8 @@ function popup(session_store_, opened_by_hotkey) {
 }
 
 window.addEventListener('load', function () {
-    chrome.extension.getBackgroundPage().store_get(
-            ['sites', 'username', 'masterkey', 'key_id', 'max_alg_version', 'defaulttype', 'pass_to_clipboard'])
+    browser.runtime.sendMessage({action: 'store_get', keys:
+        ['sites', 'username', 'masterkey', 'key_id', 'max_alg_version', 'defaulttype', 'pass_to_clipboard']})
     .then(data => {
         if (data.pwgw_failure) {
             let e = ui.user_warn("System password vault failed! ");
@@ -375,7 +387,8 @@ function save_site_changes(){
     session_store.sites[domain][ui.sitename()] = ui.siteconfig();
 
     if (domain !== '')
-        chrome.extension.getBackgroundPage().store_update({sites: session_store.sites});
+        store_update({sites: session_store.sites});
+
     if (Object.keys(session_store.sites[domain]).length>1)
         ui.show('#storedids_dropdown');
 }
@@ -419,13 +432,13 @@ document.querySelector('body').addEventListener('click', function(ev) {
     }
     else if (ev.target.classList.contains('btnlogout')) {
         session_store.masterkey = null;
-        chrome.extension.getBackgroundPage().store_update({masterkey: null});
+        store_update({masterkey: null});
         popup(session_store);
         ui.user_info("Session destroyed");
     }
     else if (ev.target.id === 'change_keyid_ok') {
         session_store.key_id = mpw_session.key_id();
-        chrome.extension.getBackgroundPage().store_update({
+        store_update({
             username: session_store.username,
             masterkey: session_store.masterkey,
             key_id: session_store.key_id,

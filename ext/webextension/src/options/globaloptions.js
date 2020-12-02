@@ -4,35 +4,39 @@
 (function(){
 "use strict";
 
+function store_update(data) {
+    browser.runtime.sendMessage({action: 'store_update', data: data })
+    .catch(err=>{ console.log("BUG!",err); });
+}
 
 document.querySelector('#passwdtype').addEventListener('change', function() {
-    chrome.extension.getBackgroundPage().store_update({defaulttype: this.value});
+    store_update({defaulttype: this.value});
 });
 document.querySelector('#passwdtimeout').addEventListener('change', function() {
     let v = parseInt(this.value);
-    chrome.extension.getBackgroundPage().store_update({passwdtimeout: v});
+    store_update({passwdtimeout: v});
 });
 document.querySelector('#pass_to_clipboard').addEventListener('change', function() {
-    chrome.extension.getBackgroundPage().store_update({pass_to_clipboard: this.checked});
+    store_update({pass_to_clipboard: this.checked});
 });
 document.querySelector('#auto_submit_pass').addEventListener('change', function() {
-    chrome.extension.getBackgroundPage().store_update({auto_submit_pass: this.checked});
+    store_update({auto_submit_pass: this.checked});
 });
 document.querySelector('#auto_submit_username').addEventListener('change', function() {
-    chrome.extension.getBackgroundPage().store_update({auto_submit_username: this.checked});
+    store_update({auto_submit_username: this.checked});
 });
 document.querySelector('#pass_store').addEventListener('change', function() {
-    chrome.extension.getBackgroundPage().store_update({pass_store: this.checked});
+    store_update({pass_store: this.checked});
 });
 
 window.addEventListener('load', function() {
-    chrome.extension.getBackgroundPage().store_get(
+    browser.runtime.sendMessage({action: 'store_get', keys:
         ['defaulttype',
          'passwdtimeout',
          'pass_to_clipboard',
          'auto_submit_pass',
          'auto_submit_username',
-         'pass_store'])
+         'pass_store']})
     .then(data => {
         document.querySelector('#passwdtype').value = data.defaulttype;
         document.querySelector('#passwdtimeout').value = data.passwdtimeout;

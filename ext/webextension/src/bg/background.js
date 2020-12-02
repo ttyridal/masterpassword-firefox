@@ -85,9 +85,7 @@ function temp_store_masterkey(k) {
     _masterkey = k;
 }
 
-
-function store_update(d) {
-    browser.runtime.sendMessage({name: 'store_update', data: d});
+function store_update_impl(d) {
     let syncset = {};
 
     Object.keys(d).forEach(k => {
@@ -157,7 +155,7 @@ promised_storage_get(setting_keys).then(v=>{
     console.log("settings loaded");
 });
 
-function store_get(keys) {
+function store_get_impl(keys) {
     return promised_storage_get(keys)
     .then(webext => {
         if (settings.passwdtimeout === 0) // clear now in case it's recently changed
@@ -320,7 +318,7 @@ function _insert_password(args) {
 }
 
 
-function update_page_password(pass, username, allow_subframe, allow_submit) {
+function update_page_password_impl(pass, username, allow_subframe, allow_submit) {
     return current_tab()
            .then(find_active_input)
            .then(r=>{
@@ -341,9 +339,34 @@ function update_page_password(pass, username, allow_subframe, allow_submit) {
            });
 }
 
-window.store_update = store_update;
-window.store_get = store_get;
-window.update_page_password = update_page_password;
+chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
+    // not really necessary according to the docs, but rather safe than sorry.
+    if (!sender || !sender.id || sender.id !== chrome.runtime.id) {
+        console.log("invalid sender", sender);
+        return;
+    }
+    if (!req || !req.action) {
+        console.log("missing request action");
+        return;
+    }
+
+    switch(req.action) {
+        case 'store_update':
+            store_update_impl(req.data);
+            return Promise.resolve();
+        case 'store_get':
+            return store_get_impl(req.keys)
+        case 'update_page_password':
+            return update_page_password_impl(
+                        req.pass,
+                        req.username,
+                        req.allow_subframe,
+                        req.allow_submit);
+        default:
+            console.log("unknown action", req);
+    }
+
+});
 
 Promise.all([browser.management.getSelf(), promised_storage_get(['releasenote_version'])])
 .then(c => {
