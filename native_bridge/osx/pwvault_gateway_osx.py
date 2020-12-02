@@ -378,7 +378,7 @@ def install():
     dst = os.path.join(dst, 'pwvault_gateway_osx')
     os.system('cp -f "%s" "%s"' % (os.path.realpath(__file__), dst))
     os.chmod(dst, 0o755)
-    sys.stdout.write(b"Installed " + dst + b"\n")
+    sys.stdout.write(("Installed {}\n".format(dst)).encode())
 
     for path in paths:
         try:
