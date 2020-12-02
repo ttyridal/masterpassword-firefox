@@ -5,9 +5,12 @@ This is a firefox addon implementing the masterpassword algorithm invented by Ma
 
 **Please note that this plugin is not affiliated with Mr Billemont**
 
-# Installation
-Firefox nightly (v57 and greater) users are encouraged to download the beta, as it is built without the lagacy plugin api, no longer supported in these versions of Firefox.
+Unfortunately I have had very little time for this project in the last few years. It works pretty good, so I'll probably just fix ciritical issues for the
+forseable future. With that said, there are a lot of good suggestions in the issues list and you'll probably get far even without mad javascript skills. I will appreciate any and all pull requests and would be happy to assist, answer questions etc.
 
+Regardings adoptions for Firefox on Android: Personally I have no interest for it, but again pull requests will be accepted as long as they don't deteriorate the experence on desktop versions.
+
+# Installation
 Support for Firefox version before v51 was dropped with the 2.1 release of masterpassword for firefox.
 
 Download from the Mozilla addon store: 
