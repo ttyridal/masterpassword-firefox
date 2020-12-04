@@ -370,18 +370,18 @@ class SecretServices(object):
 
 class KWallet(object):
     path = b'/modules/kwalletd'
-    interface = 'org.kde.KWallet'
-    address = 'org.kde.kwalletd'
-    FOLDER = 'Passwords'
+    interface = b'org.kde.KWallet'
+    address = b'org.kde.kwalletd'
+    FOLDER = b'Passwords'
     KEYNAME = APPNAME+'-master'
 
     def _setup_kf5_kde4(self):
         try:
             wallet_name = self.bus.execute(
-                self.address+'5',
+                self.address+b'5',
                 self.path+b'5',
                 self.interface,
-                'localWallet')
+                b'localWallet')
             KWallet.path += b'5'
             KWallet.address += b'5'
             return wallet_name[0]
