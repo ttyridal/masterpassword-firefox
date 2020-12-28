@@ -8,7 +8,7 @@
     </head>
     <body>
         <header class="banner valign_mid container">
-            <div class="valign_mid"><img src="/icons/icon48.png"><h1>MasterPassword Release 2.3.0</h1></div>
+            <div class="valign_mid"><img src="/icons/icon48.png"><h1>MasterPassword Release 2.3.1b1</h1></div>
         </header>
         <main>
         <p>Thank you for using MasterPassword for Firefox! The easiest way to handle site-unique password on the web.
@@ -23,10 +23,11 @@
         <h3>Users of OS' key-vault</h3>
         <p>If you're using GNOME Keyring, KWallet, OSX Keychain or Windows Password Vault to store your master key, you'll need to
         download a separate helper app. Please refer to <a href="https://github.com/ttyridal/masterpassword-firefox/wiki/Webextensions" target="_blank">the wiki</a> for further information.
-        <h3>Changes since v2.2.0</h3>
+        <h3>Changes since v2.3.0</h3>
+        This is a bugfix release
         <ul>
-        <li>Pure webextension: built without legacy sdk shim and thus supporting Firefox 57 and beyond.
-        <li>fix hash mismatch warning when importing from other implementations
+        <li>Fixed not working in privacy mode on newer versions of Firefox
+        <li>Fixed python3 issues in os-key-vault helper (linux)
         </ul>
 
         <h3>Review</h3>
