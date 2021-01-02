@@ -1,7 +1,7 @@
-FROM gcc:4.8.4
+FROM gcc:6.5.0
 
-ARG EMCC_VER=1.29.0
-ARG NODE_VER=v0.10.40
+ARG EMCC_VER=1.35.10
+ARG NODE_VER=v10.23.0
 ARG NODE_DIST=linux-x64
 
 RUN set -ex; \
@@ -10,7 +10,7 @@ RUN set -ex; \
     curl -L -o emscripten.zip https://github.com/emscripten-core/emscripten/archive/${EMCC_VER}.zip; \
     curl -L -o llvm.zip https://github.com/emscripten-core/emscripten-fastcomp/archive/${EMCC_VER}.zip; \
     curl -L -o clang.zip https://github.com/emscripten-core/emscripten-fastcomp-clang/archive/${EMCC_VER}.zip; \
-    curl -L -o node.tar.gz https://nodejs.org/download/release/v0.10.40/node-${NODE_VER}-${NODE_DIST}.tar.gz; \
+    curl -L -o node.tar.gz https://nodejs.org/download/release/${NODE_VER}/node-${NODE_VER}-${NODE_DIST}.tar.gz; \
     \
     dpkg -i unzip.dpkg; \
     \
