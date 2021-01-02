@@ -1,0 +1,7 @@
+build docker container in libscrypt/docker
+
+(in /libscrypt)
+docker run --rm -v $(pwd):/src -u $(id -u):$(id -g) emcc make
+
+copy resulting scrypt.js to /ext/webextension/src/lib/scrypt-asm.js
+
