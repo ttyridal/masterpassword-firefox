@@ -295,6 +295,7 @@ function _insert_password(args) {
             if (!inputf.value) {
                 inputf.value = args.username;
                 inputf.dispatchEvent(new Event('change', {bubbles: true, cancelable: true}));
+                inputf.dispatchEvent(new Event('input', {bubbles: true, cancelable: true}));
             }
         } else {
             console.warn("inject - but nextSibling input is not password");
@@ -307,6 +308,7 @@ function _insert_password(args) {
     window.setTimeout(()=>{
         pwinput.value = args.pass;
         pwinput.dispatchEvent(new Event('change', {bubbles: true, cancelable: true}));
+        pwinput.dispatchEvent(new Event('input', {bubbles: true, cancelable: true}));
         if (args.allow_submit && args.autosubmit && pwinput.form)
             window.setTimeout(()=>{
                 let btn = pwinput.form.querySelector('input[type=submit], button[type=submit]');
