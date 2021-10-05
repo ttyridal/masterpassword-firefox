@@ -17,6 +17,7 @@
 */
 /*jshint browser:true, devel:true */
 /* globals chrome, mpw */
+import {defer} from "../lib/utils.js";
 
 (function () {
     "use strict";
@@ -50,6 +51,11 @@ let ui = {
         el.style.display = '';
     },
 
+    focus: function(selector) {
+        let el = document.querySelector(selector);
+        window.setTimeout(() => {el.focus();}, 15);
+    },
+
     is_visible: function(el) {
         if (typeof el === 'string')
             el = document.querySelector(el);
@@ -78,6 +84,19 @@ let ui = {
             return;  // warnings have priority
         e.className = 'info_message';
         e.textContent = s;
+    },
+
+    clear_warning: function() {
+        let e = document.querySelector('#usermessage');
+        e.classList.remove('warning_message');
+    },
+
+    username: function(v) {
+        let e = document.querySelector('#username');
+        let r = e.value;
+        if (v !== undefined)
+            e.value = v;
+        return r;
     },
 
     domain: function(v) {
@@ -159,23 +178,21 @@ function update_page_password_input(pass, username) {
     });
 }
 
-var mpw_session,
+var mpw_promise = defer(),
     session_store = {};
 
-function recalculate(hide_after_copy, retry) {
-    ui.thepassword("(calculating..)");
-    ui.user_info("Please wait...");
-    var key_id_mismatch = false;
-
-    if (!mpw_session) {
-        mpw_session = mpw( session_store.username, session_store.masterkey, session_store.max_alg_version );
-
+function resolve_mpw() {
+    mpw_promise.resolve(
+        mpw(
+            session_store.username,
+            session_store.masterkey,
+            session_store.max_alg_version));
+    mpw_promise.then(mpw_session => {
         ui.verify("Verify: " + mpw_session.sitepassword(".", 0, "nx"));
 
         var key_id = mpw_session.key_id();
         if (session_store.key_id && key_id !== session_store.key_id) {
             warn_keyid_not_matching();
-            key_id_mismatch = true;
             store_update({
                 username: session_store.username,
                 masterkey: session_store.masterkey});
@@ -187,25 +204,32 @@ function recalculate(hide_after_copy, retry) {
                 masterkey: session_store.masterkey,
                 key_id: key_id});
         }
-    }
+    });
+}
 
-    if (!ui.sitename()) {
-        ui.thepassword("(need a sitename!)");
-        ui.user_info("need sitename");
-    }
-
+function recalculate() {
     let siteconfig = ui.siteconfig();
     siteconfig.generation = parseInt(siteconfig.generation, 10);
 
-    console.debug("calc password " +
-            ui.sitename() +
-            " . " +
-            siteconfig.generation +
-            " . " +
-            siteconfig.type);
+    mpw_promise.then(mpw_session => {
+        if (!ui.sitename()) {
+            ui.thepassword("(need a sitename!)");
+            ui.user_info("need sitename");
+            return;
+        } else {
+            ui.thepassword("(calculating..)");
+            ui.user_info("Please wait...");
+        }
 
-    var i,
-        pass = mpw_session.sitepassword(
+        console.debug("calc password " +
+                ui.sitename() +
+                " . " +
+                siteconfig.generation +
+                " . " +
+                siteconfig.type, ui.sitename(), !!ui.sitename());
+
+
+        let pass = mpw_session.sitepassword(
                 ui.sitename(),
                 siteconfig.generation,
                 siteconfig.type);
@@ -215,9 +239,9 @@ function recalculate(hide_after_copy, retry) {
         if (session_store.pass_to_clipboard)
             copy_to_clipboard("text/plain", pass);
         update_page_password_input(pass, siteconfig.username);
-        if (hide_after_copy) {
-            addon.port.emit('close');
-        }
+        //if (hide_after_copy) {
+        //    addon.port.emit('close');
+        //}
         if (session_store.pass_to_clipboard)
             ui.user_info("Password for " + ui.sitename() + " copied to clipboard");
         else
@@ -225,8 +249,9 @@ function recalculate(hide_after_copy, retry) {
     });
 }
 
-function update_with_settings_for(domain) {
+function loadSettingsForDomain(domain) {
     var keys, site;
+    console.log("Load settings for", domain);
 
     if (typeof session_store.sites === 'undefined' || domain === '' ||
         typeof session_store.sites[domain] === 'undefined') {
@@ -235,6 +260,13 @@ function update_with_settings_for(domain) {
         keys = Object.keys(session_store.sites[domain]);
         site = session_store.sites[domain][keys[0]];
     }
+    return [domain, keys, site];
+}
+
+function updateUIForDomainSettings(r)
+{
+    let [domain, keys, site] = r;
+    console.log("update ui", keys, site);
 
     if (keys.length>1)
         ui.show('#storedids_dropdown');
@@ -248,52 +280,64 @@ function update_with_settings_for(domain) {
 
     ui.sitename(keys[0]);
     ui.siteconfig(site.type, site.generation, site.username || '');
+
+    for (let d of document.querySelectorAll('.domain'))
+        d.value = domain;
+}
+
+function extractDomainFromUrl(url) {
+    if (url.startsWith('about:') || url.startsWith('resource:') || url.startsWith('moz-extension:'))
+        url = '';
+    var domain = parse_uri(url).domain.split("."),
+        significant_parts = 2;
+    if (domain.length > 2 && domain[domain.length-2].toLowerCase() === "co")
+        significant_parts = 3;
+    while(domain.length > 1 && domain.length > significant_parts)
+        domain.shift();
+    domain = domain.join(".");
+    return domain;
+}
+
+function showSessionSetup() {
+    ui.hide('#main');
+    ui.show('#sessionsetup');
+
+    if (!session_store.username) {
+        ui.focus('#username');
+    } else {
+        ui.username(session_store.username);
+        ui.focus('#masterkey');
+    }
+}
+
+function showMain() {
+    ui.hide('#sessionsetup');
+    ui.show('#main');
 }
 
 function popup(session_store_, opened_by_hotkey) {
-    var recalc = false;
-
     session_store = session_store_;
-    if (!session_store.username || !session_store.masterkey) {
-        ui.hide('#main');
-        ui.show('#sessionsetup');
-        mpw_session = undefined;
-        if (!session_store.username)
-            window.setTimeout(function(){
-                document.querySelector('#username').focus();
-            }, 15);
-        else {
-            document.querySelector('#username').value = session_store.username;
-            window.setTimeout(function(){
-                document.querySelector('#masterkey').focus();
-            }, 15);
-        }
+
+    if (session_store.username && session_store.masterkey) {
+        showMain();
+        setTimeout(()=>{ resolve_mpw();}, 1); // do later so page paints as fast as possible
     } else {
-        recalc = true;
-        ui.show('#main');
+        showSessionSetup();
     }
 
-    get_active_tab_url()
-    .then(function(url){
-        if (url.startsWith('about:') || url.startsWith('resource:') || url.startsWith('moz-extension:'))
-            url = '';
-        var domain = parse_uri(url).domain.split("."),
-            significant_parts = 2;
-        if (domain.length > 2 && domain[domain.length-2].toLowerCase() === "co")
-            significant_parts = 3;
-        while(domain.length > 1 && domain.length > significant_parts)
-            domain.shift();
-        domain = domain.join(".");
-        for (let d of document.querySelectorAll('.domain'))
-            d.value = domain;
-        update_with_settings_for(domain);
-        if(recalc) {
-            recalculate(opened_by_hotkey);
-        }
-    })
+    let urlpromise = get_active_tab_url()
     .catch(function(x) { //jshint ignore:line
         console.error('get_active_tab_url failed',x);
-    });
+        ui.user_warn("failed to get tab url");
+        setTimeout(()=>{ui.clear_warning()}, 2000);
+        return '';
+    })
+    .then(extractDomainFromUrl)
+    .then(loadSettingsForDomain)
+    .then(updateUIForDomainSettings);
+
+    Promise.all([mpw_promise, urlpromise])
+    .then(recalculate);
 }
 
 window.addEventListener('load', function () {
@@ -340,7 +384,7 @@ document.querySelector('#sessionsetup > form').addEventListener('submit', functi
 
         ui.hide('#sessionsetup');
         ui.show('#main');
-        recalculate();
+        resolve_mpw();
     }
 });
 
@@ -432,17 +476,22 @@ document.querySelector('body').addEventListener('click', function(ev) {
     else if (ev.target.classList.contains('btnlogout')) {
         session_store.masterkey = null;
         store_update({masterkey: null});
-        popup(session_store);
+        mpw_promise = defer();
+        ui.clear_warning();
         ui.user_info("Session destroyed");
+        popup(session_store);
     }
     else if (ev.target.id === 'change_keyid_ok') {
-        session_store.key_id = mpw_session.key_id();
-        store_update({
-            username: session_store.username,
-            masterkey: session_store.masterkey,
-            key_id: session_store.key_id,
-            force_update: true
+        mpw_promise.then(mpw_session => {
+            session_store.key_id = mpw_session.key_id();
+            store_update({
+                username: session_store.username,
+                masterkey: session_store.masterkey,
+                key_id: session_store.key_id,
+                force_update: true
+            });
         });
+        ui.clear_warning();
         ui.user_info("ready");
     }
 });
