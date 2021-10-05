@@ -74,6 +74,8 @@ let ui = {
 
     user_info: function(s) {
         let e = document.querySelector('#usermessage');
+        if (e.classList.contains('warning_message'))
+            return;  // warnings have priority
         e.className = 'info_message';
         e.textContent = s;
     },
@@ -153,7 +155,7 @@ function update_page_password_input(pass, username) {
         allow_subframe: true,
         allow_submit: !ui.is_visible('#storedids_dropdown')})
     .catch(e=>{
-        console.error(e);
+        console.info(e);
     });
 }
 
@@ -189,9 +191,7 @@ function recalculate(hide_after_copy, retry) {
 
     if (!ui.sitename()) {
         ui.thepassword("(need a sitename!)");
-        if (!key_id_mismatch)
-            ui.user_info("need sitename");
-        return;
+        ui.user_info("need sitename");
     }
 
     let siteconfig = ui.siteconfig();
@@ -218,12 +218,11 @@ function recalculate(hide_after_copy, retry) {
         if (hide_after_copy) {
             addon.port.emit('close');
         }
-        if (!key_id_mismatch) {
-            if (session_store.pass_to_clipboard)
-                ui.user_info("Password for " + ui.sitename() + " copied to clipboard");
-            else
-                ui.user_info("Password for " + ui.sitename() + " ready");
-        }
+        if (session_store.pass_to_clipboard)
+            ui.user_info("Password for " + ui.sitename() + " copied to clipboard");
+        else
+            ui.user_info("Password for " + ui.sitename() + " ready");
+    });
 }
 
 function update_with_settings_for(domain) {
