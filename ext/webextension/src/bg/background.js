@@ -66,7 +66,8 @@ var settings = {
     pass_store: false,
     pass_to_clipboard: false,
     auto_submit_pass: false,
-    auto_submit_username: false
+    auto_submit_username: false,
+    max_alg_version: 3
 };
 
 var _masterkey;
@@ -128,7 +129,9 @@ function store_update_impl(d) {
 
 function promised_storage_get(keys) {
     return new Promise((resolve, fail) => {
-        chrome.storage.local.get(keys, itms => {
+        let store = chrome.storage.local;
+
+        store.get(keys, itms => {
             if (itms === undefined) resolve({});
             else resolve(itms);
         });
@@ -145,6 +148,7 @@ const setting_keys = [
             'hotkeycombo',
             'max_alg_version'];
 console.log("Load settings");
+
 promised_storage_get(setting_keys).then(v=>{
     for (let k of setting_keys) {
         if (k === 'pass_store')
@@ -154,6 +158,8 @@ promised_storage_get(setting_keys).then(v=>{
     }
     console.log("settings loaded");
 });
+
+
 
 function store_get_impl(keys) {
     return promised_storage_get(keys)
@@ -357,7 +363,7 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
             store_update_impl(req.data);
             return Promise.resolve();
         case 'store_get':
-            return store_get_impl(req.keys)
+            return store_get_impl(req.keys);
         case 'update_page_password':
             return update_page_password_impl(
                         req.pass,

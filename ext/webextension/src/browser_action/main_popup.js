@@ -27,6 +27,16 @@ import {defer} from "../lib/utils.js";
         .catch(err=>{ console.log("BUG!",err); });
     }
 
+    function sites_get(domain) {
+        return browser.runtime.sendMessage({action: 'store_get', keys:['sites']})
+        .catch(err=>{ console.log("BUG!",err); });
+    }
+
+    function sites_update(domain, sites) {
+        return browser.runtime.sendMessage({action: 'store_update', data: {sites}})
+        .catch(err=>{ console.log("BUG!",err); });
+    }
+
 function parse_uri(sourceUri){
     // stolen with pride: http://blog.stevenlevithan.com/archives/parseuri-split-url
     var uriPartNames = ["source","protocol","authority","domain","port","path","directoryPath","fileName","query","anchor"],
@@ -249,24 +259,23 @@ function recalculate() {
     });
 }
 
-function loadSettingsForDomain(domain) {
-    var keys, site;
-    console.log("Load settings for", domain);
+function loadSettings(domain) {
+    return sites_get(domain)
+    .then(d=>{
+        Object.assign(session_store, d);
+        return domain;
+    });
+}
 
-    if (typeof session_store.sites === 'undefined' || domain === '' ||
-        typeof session_store.sites[domain] === 'undefined') {
-        keys = [];
+function updateUIForDomainSettings(domain)
+{
+    let keys = [];
+    let site = undefined;
+    if (domain === '' || typeof session_store.sites[domain] === 'undefined') {
     } else {
         keys = Object.keys(session_store.sites[domain]);
         site = session_store.sites[domain][keys[0]];
     }
-    return [domain, keys, site];
-}
-
-function updateUIForDomainSettings(r)
-{
-    let [domain, keys, site] = r;
-    console.log("update ui", keys, site);
 
     if (keys.length>1)
         ui.show('#storedids_dropdown');
@@ -315,9 +324,7 @@ function showMain() {
     ui.show('#main');
 }
 
-function popup(session_store_, opened_by_hotkey) {
-    session_store = session_store_;
-
+function popup() {
     if (session_store.username && session_store.masterkey) {
         showMain();
         setTimeout(()=>{ resolve_mpw();}, 1); // do later so page paints as fast as possible
@@ -333,7 +340,7 @@ function popup(session_store_, opened_by_hotkey) {
         return '';
     })
     .then(extractDomainFromUrl)
-    .then(loadSettingsForDomain)
+    .then(loadSettings)
     .then(updateUIForDomainSettings);
 
     Promise.all([mpw_promise, urlpromise])
@@ -342,7 +349,7 @@ function popup(session_store_, opened_by_hotkey) {
 
 window.addEventListener('load', function () {
     browser.runtime.sendMessage({action: 'store_get', keys:
-        ['sites', 'username', 'masterkey', 'key_id', 'max_alg_version', 'defaulttype', 'pass_to_clipboard']})
+        ['username', 'masterkey', 'key_id', 'max_alg_version', 'defaulttype', 'pass_to_clipboard']})
     .then(data => {
         if (data.pwgw_failure) {
             let e = ui.user_warn("System password vault failed! ");
@@ -351,9 +358,12 @@ window.addEventListener('load', function () {
             e.target = "_blank";
             e.textContent = "Help?";
             data.masterkey=undefined;
-        } else
+            session_store.username = data.username;
+        } else {
             ui.user_info("");
-        popup(data);
+            Object.assign(session_store, data);
+        }
+        popup();
     })
     .catch(err => {
         console.error(err);
@@ -429,8 +439,8 @@ function save_site_changes(){
 
     session_store.sites[domain][ui.sitename()] = ui.siteconfig();
 
-    if (domain !== '')
-        store_update({sites: session_store.sites});
+    if (domain !== '' && !chrome.extension.inIncognitoContext)
+        sites_update(domain, session_store.sites);
 
     if (Object.keys(session_store.sites[domain]).length>1)
         ui.show('#storedids_dropdown');
@@ -479,7 +489,7 @@ document.querySelector('body').addEventListener('click', function(ev) {
         mpw_promise = defer();
         ui.clear_warning();
         ui.user_info("Session destroyed");
-        popup(session_store);
+        popup();
     }
     else if (ev.target.id === 'change_keyid_ok') {
         mpw_promise.then(mpw_session => {
