@@ -37,3 +37,12 @@ export function defer() {
 
 	return promise;
 }
+
+export function copy_to_clipboard(mimetype, data) {
+    document.oncopy = function(event) {
+        event.clipboardData.setData(mimetype, data);
+        event.preventDefault();
+    };
+    document.execCommand("Copy", false, null);
+    document.oncopy=null;
+}

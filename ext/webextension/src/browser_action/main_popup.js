@@ -17,7 +17,9 @@
 */
 /*jshint browser:true, devel:true */
 /* globals chrome, mpw */
-import {defer} from "../lib/utils.js";
+import {defer, copy_to_clipboard} from "../lib/utils.js";
+import {parseUri} from "../lib/uritools.js";
+import {ui} from "./ui.js";
 
 (function () {
     "use strict";
@@ -37,124 +39,6 @@ import {defer} from "../lib/utils.js";
         .catch(err=>{ console.log("BUG!",err); });
     }
 
-function parse_uri(sourceUri){
-    // stolen with pride: http://blog.stevenlevithan.com/archives/parseuri-split-url
-    var uriPartNames = ["source","protocol","authority","domain","port","path","directoryPath","fileName","query","anchor"],
-    uriParts = new RegExp("^(?:([^:/?#.]+):)?(?://)?(([^:/?#]*)(?::(\\d*))?)((/(?:[^?#](?![^?#/]*\\.[^?#/.]+(?:[\\?#]|$)))*/?)?([^?#/]*))?(?:\\?([^#]*))?(?:#(.*))?").exec(sourceUri),
-    uri = {};
-    for(var i = 0; i < 10; i++)
-        uri[uriPartNames[i]] = uriParts[i] ? uriParts[i] : "";
-    if(uri.directoryPath.length > 0)
-        uri.directoryPath = uri.directoryPath.replace(/\/?$/, "/");
-    return uri;
-}
-
-let ui = {
-    hide: function(el) {
-        if (typeof el === 'string')
-            el = document.querySelector(el);
-        el.style.display = 'none';
-    },
-    show: function(el) {
-        if (typeof el === 'string')
-            el = document.querySelector(el);
-        el.style.display = '';
-    },
-
-    focus: function(selector) {
-        let el = document.querySelector(selector);
-        window.setTimeout(() => {el.focus();}, 15);
-    },
-
-    is_visible: function(el) {
-        if (typeof el === 'string')
-            el = document.querySelector(el);
-        el = el.style;
-        return el.display !== 'none';
-    },
-
-    toggle: function(el) {
-        if (typeof el === 'string')
-            el = document.querySelector(el);
-        el = el.style;
-        el.display = el.display === 'none' ? '' : 'none';
-        return el.display === '';
-    },
-
-    user_warn: function(s) {
-        let e = document.querySelector('#usermessage');
-        e.className = 'warning_message';
-        e.textContent = s;
-        return e;
-    },
-
-    user_info: function(s) {
-        let e = document.querySelector('#usermessage');
-        if (e.classList.contains('warning_message'))
-            return;  // warnings have priority
-        e.className = 'info_message';
-        e.textContent = s;
-    },
-
-    clear_warning: function() {
-        let e = document.querySelector('#usermessage');
-        e.classList.remove('warning_message');
-    },
-
-    username: function(v) {
-        let e = document.querySelector('#username');
-        let r = e.value;
-        if (v !== undefined)
-            e.value = v;
-        return r;
-    },
-
-    domain: function(v) {
-        return document.querySelector('#domain').value;
-    },
-
-    sitename: function(v) {
-        let e = document.querySelector('#sitename'),
-            r = e.value;
-        if (v !== undefined)
-            e.value = v;
-        return r;
-    },
-
-    siteconfig: function(type, generation, username) {
-        let t = document.querySelector('#passwdtype'),
-            g = document.querySelector('#passwdgeneration'),
-            n = document.querySelector('#loginname');
-        let ret = {type: t.value, generation: g.value, username: n.value};
-        if (type && generation && username !== undefined) {
-            t.value = type;
-            g.value = generation;
-            n.value = username;
-        }
-        return ret;
-    },
-
-    thepassword: function(visible, real) {
-        let e = document.querySelector('#thepassword');
-        if (real)
-            e.setAttribute('data-pass', real);
-        if (e.getAttribute('data-visible') === 'true')
-            e.textContent = real || visible;
-        else {
-            e.innerHTML = '';
-            e = e.appendChild(document.createElement('a'));
-            e.href = '';
-            e.id = 'showpass';
-            e.textContent = visible;
-        }
-    },
-
-    verify: function(s) {
-        document.querySelector('#verify_pass_fld').textContent = s;
-    }
-
-};
-
 function get_active_tab_url() {
     var ret = new Promise(function(resolve, fail){
         chrome.tabs.query({active:true,windowType:"normal",currentWindow:true}, function(tabres){
@@ -169,14 +53,6 @@ function get_active_tab_url() {
     return ret;
 }
 
-function copy_to_clipboard(mimetype, data) {
-    document.oncopy = function(event) {
-        event.clipboardData.setData(mimetype, data);
-        event.preventDefault();
-    };
-    document.execCommand("Copy", false, null);
-    document.oncopy=null;
-}
 function update_page_password_input(pass, username) {
     browser.runtime.sendMessage({action: 'update_page_password',
         pass: pass,
@@ -297,7 +173,7 @@ function updateUIForDomainSettings(domain)
 function extractDomainFromUrl(url) {
     if (url.startsWith('about:') || url.startsWith('resource:') || url.startsWith('moz-extension:'))
         url = '';
-    var domain = parse_uri(url).domain.split("."),
+    var domain = parseUri(url).domain.split("."),
         significant_parts = 2;
     if (domain.length > 2 && domain[domain.length-2].toLowerCase() === "co")
         significant_parts = 3;
