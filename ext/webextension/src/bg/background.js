@@ -111,6 +111,8 @@ function store_update_impl(d) {
             case 'passwdtimeout':
                 if (d[k] === 0)
                     _masterkey = undefined;
+                else if (d.passwdtimeout === -1)
+                    browser.alarms.clear(pw_retention_timer);
                 /* falls through */
             case 'defaulttype':
             case 'pass_store':
