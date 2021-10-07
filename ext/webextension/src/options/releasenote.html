@@ -8,31 +8,44 @@
     </head>
     <body>
         <header class="banner valign_mid container">
-            <div class="valign_mid"><img src="/icons/icon48.png"><h1>MasterPassword Release 2.3.1b1</h1></div>
+            <div class="valign_mid"><img src="/icons/icon48.png"><h1>MasterPassword Release 2.4.0b1</h1></div>
         </header>
         <main>
         <p>Thank you for using MasterPassword for Firefox! The easiest way to handle site-unique password on the web.
         If you want to understand what this is all about, please see <a href="http://masterpasswordapp.com/">here</a>.
 
-         <p style="display:none">
+         <p style="display:normal">
          You've chosen to install a beta release of this addon. Thank you for beeing an early adopter! If you find
          any bugs or missing features, please report them on the <a href="https://github.com/ttyridal/masterpassword-firefox/issues" target="_blank">issue tracker</a>.
-         <p>
-         If you have any issues with with addon, please report them on the <a href="https://github.com/ttyridal/masterpassword-firefox/issues" target="_blank">issue tracker</a>.
+         <p style="display:none">
+         If you have any issues with with addon, please report them on the <a href="https://github.com/ttyridal/masterpassword-firefox/issues" target="_blank">issue tracker</a>.</p>
 
         <h3>Users of OS' key-vault</h3>
         <p>If you're using GNOME Keyring, KWallet, OSX Keychain or Windows Password Vault to store your master key, you'll need to
         download a separate helper app. Please refer to <a href="https://github.com/ttyridal/masterpassword-firefox/wiki/Webextensions" target="_blank">the wiki</a> for further information.
         <h3>Changes since v2.3.0</h3>
-        This is a bugfix release
         <ul>
-        <li>Fixed not working in privacy mode on newer versions of Firefox
-        <li>Fixed python3 issues in os-key-vault helper (linux)
+        <li>Deny multiple instances of site with different settings (see <a href="#details">details below</a>)
+        <li>
         </ul>
 
         <h3>Review</h3>
         <p>If you're happy with this addon and haven't done so already, please consider
         <a href="https://addons.mozilla.org/en-US/firefox/addon/masterpassword-firefox/reviews/add">rating it</a>.
+
+        <h3 style="margin-top:2em">New data format</h3>
+        <p>
+        <a name="details"></a>
+        This version of MasterPassword changes the internal representation for sites. This is done for a couple
+        of reasons. First, the export file can only represent a sitename once. The addon could previously have
+        a sitename with different configurations registered on different websites (ie. sitename google.com could
+        have different generation number when visiting google.co.uk and google.com).
+        <p>
+        Furthermore, the new representation is better suited for working around storage limitations imposed by
+        the browser.
+        <p>
+        The conversion will be automatic if you have no discrepancies in your settings. Otherwise you will meet
+        a warning and can review the process in the configuration pane.
         </main>
     </body>
 </html>

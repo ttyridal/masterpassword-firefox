@@ -30,12 +30,12 @@ import {ui} from "./ui.js";
     }
 
     function sites_get(domain) {
-        return browser.runtime.sendMessage({action: 'store_get', keys:['sites']})
+        return browser.runtime.sendMessage({action: 'site_get', domain:domain})
         .catch(err=>{ console.log("BUG!",err); });
     }
 
     function sites_update(domain, sites) {
-        return browser.runtime.sendMessage({action: 'store_update', data: {sites}})
+        return browser.runtime.sendMessage({action: 'site_update', data: {sites}})
         .catch(err=>{ console.log("BUG!",err); });
     }
 
@@ -138,36 +138,46 @@ function recalculate() {
 function loadSettings(domain) {
     return sites_get(domain)
     .then(d=>{
-        Object.assign(session_store, d);
+        session_store.related_sites = [];
+        session_store.other_sites = [];
+        console.log("filter for", domain);
+        for (const site of d.sitedata) {
+            if (site.url.indexOf(domain) != -1) session_store.related_sites.push(site);
+            else session_store.other_sites.push(site);
+        }
+        console.log(session_store);
         return domain;
     });
 }
 
 function updateUIForDomainSettings(domain)
 {
-    let keys = [];
-    let site = undefined;
-    if (domain === '' || typeof session_store.sites[domain] === 'undefined') {
-    } else {
-        keys = Object.keys(session_store.sites[domain]);
-        site = session_store.sites[domain][keys[0]];
-    }
-
-    if (keys.length>1)
-        ui.show('#storedids_dropdown');
-    else if (keys.length === 0) {
-        keys[0] = domain;
-        site = { generation: 1,
-                 username: '',
-                 type: session_store.defaulttype
-        };
-    }
-
-    ui.sitename(keys[0]);
-    ui.siteconfig(site.type, site.generation, site.username || '');
-
     for (let d of document.querySelectorAll('.domain'))
         d.value = domain;
+
+    let sids = document.querySelector('#storedids');
+    sids.innerHTML = '';
+    if (session_store.related_sites.length > 1) {
+        ui.show('#storedids_dropdown');
+
+        session_store.related_sites.forEach(site => {
+            let li = document.createElement('li');
+            li.textContent = site.sitename;
+            li.dataset.generation = site.generation;
+            li.dataset.type = site.type;
+            if (site.username) li.dataset.username = site.username;
+            sids.appendChild(li);
+        });
+    }
+
+    if (session_store.related_sites.length > 0) {
+        let first = session_store.related_sites[0];
+        ui.sitename(first.sitename);
+        ui.siteconfig(first.type, first.generation, first.username || '');
+    } else {
+        ui.sitename(domain);
+        ui.siteconfig(session_store.defaulttype, 1, '');
+    }
 }
 
 function extractDomainFromUrl(url) {
@@ -278,20 +288,13 @@ document.querySelector('#storedids_dropdown').addEventListener('click', function
     let sids = document.querySelector('#storedids');
 
     if (ui.toggle(sids)) {
-        sids.innerHTML = '';
-        Object.keys(session_store.sites[ui.domain()]).forEach(function(site){
-            sids.appendChild(document.createElement('li')).textContent = site;
-        });
-        ui.show(sids);
         sids.focus();
     }
 });
 
 document.querySelector('#storedids').addEventListener('click', function(ev) {
-    let site = ev.target.textContent,
-        val = session_store.sites[ui.domain()][site];
-    ui.sitename(site);
-    ui.siteconfig(val.type, val.generation, val.username || '');
+    ui.sitename(ev.target.textContent);
+    ui.siteconfig(ev.target.dataset.type, ev.target.dataset.generation, ev.target.dataset.username || '');
     ui.hide(ev.target.parentNode);
     ev.target.parentNode.blur();
     window.setTimeout(recalculate, 1);

@@ -67,7 +67,8 @@ var settings = {
     pass_to_clipboard: false,
     auto_submit_pass: false,
     auto_submit_username: false,
-    max_alg_version: 3
+    max_alg_version: 3,
+    need_manual_sites_upgrade: false
 };
 
 var _masterkey;
@@ -77,6 +78,47 @@ browser.alarms.onAlarm.addListener(a => {
         _masterkey = undefined;
     }
 });
+
+(function convertStorageFormat(){
+    promised_storage_get(['sites'])
+    .then(sites=>{
+        sites = sites.sites;
+        if (typeof sites === 'undefined') return;
+        let result = {};
+        let conflict = false;
+
+        for (const [domain, sitedict] of Object.entries(sites)) {
+            if (conflict) break;
+            console.log("sitedict:",sitedict);
+            for (const [sitename, props] of Object.entries(sitedict)) {
+                if (sitename in result) {
+                    existing = result[sitename];
+                    if ((existing.type != props.type)
+                    ||  (existing.generation != props.generation)
+                    ||  (existing.username != props.username)) {
+                        settings.need_manual_sites_upgrade = true;
+                        return;
+                    } else {
+                        existing.url.push(domain);
+                    }
+                    // check for conflict
+                } else {
+                    props.sitename = sitename;
+                    props.url = [domain];
+                    result[sitename] = props;
+                }
+            }
+        }
+        //if (conflict) exited by early return
+        browser.storage.local.set({sitedata:Object.values(result)})
+        .then(()=>{browser.storage.local.remove('sites')})
+        .then(()=>{
+            console.log("site data successfully converted");
+        });
+
+    });
+})();
+
 
 function temp_store_masterkey(k) {
     if (!settings.passwdtimeout) return;
@@ -95,7 +137,6 @@ function store_update_impl(d) {
                 break;
             case 'username':
             case 'key_id':
-            case 'sites':
                 if (!chrome.extension.inIncognitoContext)
                     syncset[k] = d[k];
                 break;
@@ -149,7 +190,6 @@ const setting_keys = [
             'auto_submit_username',
             'hotkeycombo',
             'max_alg_version'];
-console.log("Load settings");
 
 promised_storage_get(setting_keys).then(v=>{
     for (let k of setting_keys) {
@@ -177,6 +217,7 @@ function store_get_impl(keys) {
                     // upgrade pass_store to bool
                     webext[k] = !(!webext[k] || webext[k] === 'n');
                     /* falls through */
+                case 'need_manual_sites_upgrade':
                 case 'defaulttype':
                 case 'passwdtimeout':
                 case 'pass_to_clipboard':
@@ -192,7 +233,6 @@ function store_get_impl(keys) {
                 case 'masterkey':
                 case 'username':
                 case 'key_id':
-                case 'sites':
                     r[k] = webext[k];
                     break;
                 default:
@@ -349,6 +389,21 @@ function update_page_password_impl(pass, username, allow_subframe, allow_submit)
            });
 }
 
+function site_get_impl(domain) {
+    return promised_storage_get(['sites', 'sitedata'])
+    .then(d => {
+        if ('sites' in d) {
+            let result = [];
+            for (const [sitename, props] of Object.entries(d.sites[domain])) {
+                props.sitename = sitename;
+                props.url = [domain];
+                result.push(props);
+            }
+            return {sitedata: result};
+        } else return {sitedata: d.sitedata};
+    });
+}
+
 chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
     // not really necessary according to the docs, but rather safe than sorry.
     if (!sender || !sender.id || sender.id !== chrome.runtime.id) {
@@ -366,6 +421,12 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
             return Promise.resolve();
         case 'store_get':
             return store_get_impl(req.keys);
+        case 'site_get':
+            return site_get_impl(req.domain);
+        case 'site_update':
+            return site_update_impl(req.site);
+        case 'site_delete':
+            return site_delete_impl(req.site);
         case 'update_page_password':
             return update_page_password_impl(
                         req.pass,
