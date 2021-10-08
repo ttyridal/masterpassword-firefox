@@ -101,6 +101,19 @@ export const ui = {
         return ret;
     },
 
+    setStoredIds: function(sites) {
+        let sids = document.querySelector('#storedids');
+        sids.innerHTML = '';
+        sites.forEach(site => {
+            let li = document.createElement('li');
+            li.textContent = site.sitename;
+            li.dataset.generation = site.generation;
+            li.dataset.type = site.type;
+            if (site.username) li.dataset.username = site.username;
+            sids.appendChild(li);
+        });
+    },
+
     thepassword: function(visible, real) {
         let e = document.querySelector('#thepassword');
         if (real)

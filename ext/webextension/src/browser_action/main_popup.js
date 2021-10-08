@@ -155,19 +155,9 @@ function updateUIForDomainSettings(domain)
     for (let d of document.querySelectorAll('.domain'))
         d.value = domain;
 
-    let sids = document.querySelector('#storedids');
-    sids.innerHTML = '';
     if (session_store.related_sites.length > 1) {
         ui.show('#storedids_dropdown');
-
-        session_store.related_sites.forEach(site => {
-            let li = document.createElement('li');
-            li.textContent = site.sitename;
-            li.dataset.generation = site.generation;
-            li.dataset.type = site.type;
-            if (site.username) li.dataset.username = site.username;
-            sids.appendChild(li);
-        });
+        ui.setStoredIds(session_store.related_sites);
     }
 
     if (session_store.related_sites.length > 0) {
@@ -316,12 +306,27 @@ function save_site_changes(){
     if (typeof session_store.sites[domain] === 'undefined')
         session_store.sites[domain] = {};
 
-    session_store.sites[domain][ui.sitename()] = ui.siteconfig();
+    let cur=null;
+    let sn = ui.sitename();
+    for (let sites of session_store.related_sites) {
+        if (sites.sitename == sn) {
+            cur=sites;
+            break;
+        }
+    }
+    if (cur) {
+        Object.assign(cur, ui.siteconfig());
+    } else {
+        cur = Object.assign({sitename: sn, url: domain}, ui.siteconfig());
+        session_store.related_sites.push(cur);
+    }
+
+    ui.setStoredIds(session_store.related_sites);
 
     if (domain !== '' && !chrome.extension.inIncognitoContext)
-        sites_update(domain, session_store.sites);
+        sites_update(domain, cur);
 
-    if (Object.keys(session_store.sites[domain]).length>1)
+    if (session_store.related_sites.length > 1)
         ui.show('#storedids_dropdown');
 }
 
