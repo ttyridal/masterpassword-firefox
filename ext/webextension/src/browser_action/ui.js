@@ -102,15 +102,11 @@ export const ui = {
     },
 
     setStoredIds: function(sites) {
-        let sids = document.querySelector('#storedids');
-        sids.innerHTML = '';
+        let cb = document.querySelector('#sitename');
+        cb.clearOptions();
         sites.forEach(site => {
-            let li = document.createElement('li');
-            li.textContent = site.sitename;
-            li.dataset.generation = site.generation;
-            li.dataset.type = site.type;
-            if (site.username) li.dataset.username = site.username;
-            sids.appendChild(li);
+            console.log("setStoredIds", site);
+            cb.addOption(site.sitename);
         });
     },
 

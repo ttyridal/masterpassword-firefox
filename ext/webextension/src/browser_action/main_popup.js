@@ -138,10 +138,9 @@ function recalculate() {
 function loadSettings(domain) {
     return sites_get(domain)
     .then(d=>{
-        session_store.related_sites = [];
+        session_store.related_sites = [{sitename:"test1"},{sitename:"test4", generation:3, username:'tjoho'},{sitename:"test3", generation:10},{sitename:"test2"},];
         session_store.other_sites = [];
-        console.log("filter for", domain);
-        for (const site of d.sitedata) {
+        for (let site of d.sitedata) {
             if (site.url.indexOf(domain) != -1) session_store.related_sites.push(site);
             else session_store.other_sites.push(site);
         }
@@ -275,56 +274,37 @@ document.querySelector('#sessionsetup > form').addEventListener('submit', functi
 });
 
 document.querySelector('#storedids_dropdown').addEventListener('click', function(ev){
-    let sids = document.querySelector('#storedids');
-
-    if (ui.toggle(sids)) {
-        sids.focus();
-    }
+    document.querySelector('#sitename').open();
 });
 
-document.querySelector('#storedids').addEventListener('click', function(ev) {
-    ui.sitename(ev.target.textContent);
-    ui.siteconfig(ev.target.dataset.type, ev.target.dataset.generation, ev.target.dataset.username || '');
-    ui.hide(ev.target.parentNode);
-    ev.target.parentNode.blur();
-    window.setTimeout(recalculate, 1);
-});
-
-document.querySelector('#storedids').addEventListener('blur', e=>{
-    window.setTimeout(()=>{
-        ui.hide(document.querySelector('#storedids'));
-    },1);
-});
-
-
+function lookup_stored_site_obj(sitename) {
+    let cur = null;
+    let curidx = session_store.related_sites.findIndex(e => e.sitename == sitename);
+    if (curidx == -1)
+        curidx = session_store.other_sites.findIndex(e => e.sitename == sitename);
+    else
+        return session_store.related_sites[curidx];
+    if (curidx != -1)
+        cur = session_store.other_sites[curidx];
+    return cur;
+}
 
 function save_site_changes(){
     let domain = ui.domain();
-
-    if (typeof session_store.sites === 'undefined')
-        session_store.sites = {};
-    if (typeof session_store.sites[domain] === 'undefined')
-        session_store.sites[domain] = {};
-
-    let cur=null;
     let sn = ui.sitename();
-    for (let sites of session_store.related_sites) {
-        if (sites.sitename == sn) {
-            cur=sites;
-            break;
-        }
-    }
-    if (cur) {
-        Object.assign(cur, ui.siteconfig());
-    } else {
-        cur = Object.assign({sitename: sn, url: domain}, ui.siteconfig());
-        session_store.related_sites.push(cur);
+
+    let site = lookup_stored_site_obj(sn);
+    if (site)
+        Object.assign(site, ui.siteconfig());
+    else {
+        site = Object.assign({sitename: sn, url: domain}, ui.siteconfig());
+        session_store.related_sites.push(site);
     }
 
     ui.setStoredIds(session_store.related_sites);
 
     if (domain !== '' && !chrome.extension.inIncognitoContext)
-        sites_update(domain, cur);
+        sites_update(domain, site);
 
     if (session_store.related_sites.length > 1)
         ui.show('#storedids_dropdown');
@@ -341,6 +321,13 @@ function warn_keyid_not_matching()
 }
 
 document.querySelector('#main').addEventListener('change', function(ev){
+    console.log("change:", ev.target);
+    if (ev.target == document.querySelector('mp-combobox')) {
+        let site = lookup_stored_site_obj(ev.target.value);
+        if (!site)
+            site = {type: session_store.defaulttype, generation: 1, username:''}
+        ui.siteconfig(site.type||session_store.defaulttype, site.generation||1, site.username||'');
+    } else
         save_site_changes();
     recalculate();
 });

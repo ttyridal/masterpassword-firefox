@@ -1,4 +1,8 @@
 html{box-sizing:border-box}*,*:before,*:after{box-sizing:inherit}
+:root {
+    --cb-border: 0;
+    --text-color: #abb2b6;
+}
 header,main,div,body,html,h1,h2,h3,h4,p,img,span,button,input,select,textarea,form {margin:0;padding:0;border:0;}
 h1,h2,h3,h4,h5,h6 {font-weight: normal;}
 button,input,textarea,optgroup{font-weight:bold;}
@@ -72,49 +76,27 @@ button {
   cursor: default;
 }
 
-button:focus, input:focus {
+button:focus, input:focus, mp-combobox:focus-within {
   outline-color: #6696e7;
   outline-width: thin;
+  outline-style: auto;
 }
 
-input, select {
-    background-color: #1b1d23;
+input, select, mp-combobox {
+    background: #1b1d23;
     color: #d7dae0;
     height: 2em;
-    padding-left: 0.3em;
-    padding-right: 0.3em;
+    --cb-padding: 0 0.3em;
+    --cb-dropdown-fontsize: 0 0.3em;
+    --cb-input-font: 1.4em;
+    --cb-drop-font: 1.1em;
+    padding: var(--cb-padding);
     vertical-align: middle;
+    width:100%;
+}
+input, select {
     font-size: 1.4em;
-    width:100%;
 }
-
-div.dropdown {
-    position:relative;
-    background-color: #1b1d23;
-}
-div.dropdown > ul {
-    list-style-type: none;
-    background-color: #1b1d23;
-    z-index: 100;
-    position:absolute;
-    border: 0;
-    margin-top:-0.2em;
-    width:100%;
-    height:5em;
-    font-size: 1.1em;
-    vertical-align: middle;
-    overflow: auto;
-    padding:0
-}
-div.dropdown > ul > li {
-    padding: 0.1em;
-    padding-left: 0.3em;
-}
-div.dropdown > ul > li:hover {
-    background: #abb2b6;
-    color: #000000;
-}
-
 
 *::-webkit-input-placeholder {
     color: #abb2b6;
@@ -186,9 +168,6 @@ header h1 { display:inline-block; font-size: 1.5em; font-weight: 200; }
 }
 #main > * {
     margin-bottom: 0.6em;
-}
-#storedids_dropdown {
-    margin-left: 0.5em;
 }
 
 #thepassword {
