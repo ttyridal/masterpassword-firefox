@@ -15,6 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with the software.  If not, see <http://www.gnu.org/licenses/>.
 */
+"use strict";
 
 export const ui = {
     hide: function(el) {
@@ -101,13 +102,18 @@ export const ui = {
         return ret;
     },
 
-    setStoredIds: function(sites) {
+    setStoredIds: function(sites, othersites) {
         let cb = document.querySelector('#sitename');
         cb.clearOptions();
         sites.forEach(site => {
-            console.log("setStoredIds", site);
             cb.addOption(site.sitename);
         });
+        if (othersites) {
+            cb.addOption('---', {separator:true});
+            othersites.forEach(site => {
+                cb.addOption(site.sitename);
+            });
+        }
     },
 
     thepassword: function(visible, real) {

@@ -156,7 +156,7 @@ function updateUIForDomainSettings(domain)
 
     if (session_store.related_sites.length > 1) {
         ui.show('#storedids_dropdown');
-        ui.setStoredIds(session_store.related_sites);
+        ui.setStoredIds(session_store.related_sites, session_store.other_sites);
     }
 
     if (session_store.related_sites.length > 0) {
@@ -289,7 +289,7 @@ function lookup_stored_site_obj(sitename) {
     return cur;
 }
 
-function save_site_changes(){
+function save_site_changes(isnew){
     let domain = ui.domain();
     let sn = ui.sitename();
 
@@ -299,9 +299,8 @@ function save_site_changes(){
     else {
         site = Object.assign({sitename: sn, url: domain}, ui.siteconfig());
         session_store.related_sites.push(site);
+        ui.setStoredIds(session_store.related_sites, session_store.other_sites);
     }
-
-    ui.setStoredIds(session_store.related_sites);
 
     if (domain !== '' && !chrome.extension.inIncognitoContext)
         sites_update(domain, site);
@@ -324,11 +323,13 @@ document.querySelector('#main').addEventListener('change', function(ev){
     console.log("change:", ev.target);
     if (ev.target == document.querySelector('mp-combobox')) {
         let site = lookup_stored_site_obj(ev.target.value);
-        if (!site)
+        if (!site) {
             site = {type: session_store.defaulttype, generation: 1, username:''}
+            save_site_changes(true);
+        }
         ui.siteconfig(site.type||session_store.defaulttype, site.generation||1, site.username||'');
     } else
-        save_site_changes();
+        save_site_changes(false);
     recalculate();
 });
 

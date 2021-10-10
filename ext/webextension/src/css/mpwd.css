@@ -169,6 +169,10 @@ header h1 { display:inline-block; font-size: 1.5em; font-weight: 200; }
     margin-bottom: 0.6em;
 }
 
+#storedids_dropdown {
+    margin-left: 0.2rem;
+}
+
 #thepassword {
   padding-left: 8px;
 }
