@@ -204,6 +204,15 @@ function resolveConflict(site) {
     });
 }
 
+
+document.querySelector('#importinput').addEventListener('change', function(e) {
+    var fr=new FileReader();
+    fr.onload=function(){
+        import_mpsites(fr.result);
+    }
+    fr.readAsText(this.files[0]);
+});
+
 document.addEventListener('drop', function(e) {
     let dt = e.dataTransfer;
     dt.dropEffect='move';
@@ -216,9 +225,15 @@ document.addEventListener('drop', function(e) {
     }
     var fr = new FileReader();
     fr.onload=function(x){
+        import_mpsites(x.target.result);
+    }
+    fr.readAsText(dt.files[0]);
+});
+
+    function import_mpsites(data) {
         var has_ver1_mb_sites = false;
         try {
-            x = window.mpw_utils.read_mpsites(x.target.result, username, key_id, confirm);
+            x = window.mpw_utils.read_mpsites(data, username, key_id, confirm);
             if (!x) return;
         } catch (e) {
             if (e.name === 'mpsites_import_error') {
@@ -282,11 +297,11 @@ document.addEventListener('drop', function(e) {
         });
 
     };
-    fr.readAsText(dt.files[0]);
-
-});
 
 document.querySelector('body').addEventListener('click', function(ev){
+    if (ev.target.classList.contains('import_mpsites')) {
+        document.querySelector('#importinput').click();
+    }
     if (ev.target.classList.contains('export_mpsites')) {
         start_data_download(window.mpw_utils.make_mpsites(key_id, username, stored_sites, alg_min_version, alg_max_version), 'firefox.mpsites');
     }
