@@ -58,6 +58,45 @@ function mpsites_import_error(code, message) {
 mpsites_import_error.prototype = Object.create(Error.prototype);
 mpsites_import_error.prototype.constructor = mpsites_import_error;
 
+function Site(site_data) {
+    if (site_data)
+        Object.assign(this, site_data);
+    this.username = this.username || '';
+}
+Site.prototype.constructor = Site;
+Site.prototype.type_as_code = function() {
+    switch(this.type){
+        case 's': return '20'; break;
+        case 'x': return '16'; break;
+        case 'i': return '21'; break;
+        case 'b': return '19'; break;
+        case 'p': return '31'; break;
+        case 'n': return '30'; break;
+        case 'l': return '17'; break;
+        case 'm': return '18'; break;
+        default: throw "unknown password type:" + this.type;
+    }
+}
+Site.prototype.required_alg_version = function(alg_min_version) {
+    if (alg_min_version < 3 && !string_is_plain_ascii(this.sitename))
+        return 2;
+    else
+        return alg_min_version;
+}
+Site.prototype.as_mpsites_line = function(alg_min_version) {
+    const last_used = '2015-03-23T13:06:35Z';
+    const use_count = '0';
+    const sp2 = '  ';
+    console.log(this);
+    return [last_used, sp2,
+        pad_left(8, use_count), sp2,
+        pad_left(8, [this.type_as_code(), ':', this.required_alg_version(alg_min_version), ':', this.generation]), sp2,
+        pad_left(25, this.username), '\t',
+        pad_left(25, this.sitename), '\t',
+        '\n'].join('');
+}
+
+
 function read_mpsites(d, username, key_id, confirm_fn){
     var ret=[],l,fheader={'format':-1, 'key_id':undefined, 'username':undefined};
     const file_header = '# Master Password site export';
@@ -128,8 +167,6 @@ function read_mpsites(d, username, key_id, confirm_fn){
     return ret;
 }
 
-
-
 function make_mpsites(key_id, username, stored_sites, alg_min_version, alg_version) {
     var a=[ '# Master Password site export\n',
         '#     Export of site names and stored passwords (unless device-private) encrypted with the master key.\n',
@@ -150,34 +187,14 @@ function make_mpsites(key_id, username, stored_sites, alg_min_version, alg_versi
         '#               Last     Times  Password                      Login\t                     Site\tSite\n',
         '#               used      used      type                       name\t                     name\tpassword\n'];
 
-    Object.keys(stored_sites).forEach(function(domain){
-        Object.keys(stored_sites[domain]).forEach(function(site){
-            let settings = stored_sites[domain][site],
-                alg_version = alg_min_version,
-                typecode;
-            if (alg_min_version < 3 && !string_is_plain_ascii(site))
-                alg_version = 2;
 
-            switch(settings.type){
-                case 's': typecode = '20'; break;
-                case 'x': typecode = '16'; break;
-                case 'i': typecode = '21'; break;
-                case 'b': typecode = '19'; break;
-                case 'p': typecode = '31'; break;
-                case 'n': typecode = '30'; break;
-                case 'l': typecode = '17'; break;
-                case 'm': typecode = '18'; break;
-                default: throw "unknown password type";
-            }
 
-            a.push( ['2015-03-23T13:06:35Z',
-                     '  ', pad_left(8, '0'),
-                     '  ', pad_left(8, [typecode, ':', alg_version, ':', settings.generation]),
-                     '  ', pad_left(25, settings.username || ''),
-                     '\t', pad_left(25, site),
-                     '\t\n'].join(''));
-        });
-    });
+    for (const site of stored_sites) {
+        asite = new Site(site);
+        console.log(asite);
+        a.push(asite.as_mpsites_line(alg_min_version));
+    }
+
     return a;
 }
 
@@ -185,6 +202,7 @@ function make_mpsites(key_id, username, stored_sites, alg_min_version, alg_versi
 
 window.mpw_utils = {
     make_mpsites: make_mpsites,
-    read_mpsites: read_mpsites
+    read_mpsites: read_mpsites,
+    Site: Site
 };
 }());

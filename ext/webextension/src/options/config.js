@@ -26,14 +26,14 @@ function string_is_plain_ascii(s) {
     return s.length === encode_utf8(s).length;
 }
 
- var stored_sites={},
+ var stored_sites=[],
      username="",
      key_id,
      alg_max_version,
      alg_min_version = 1;
 
 function save_sites_to_backend() {
-    browser.runtime.sendMessage({action: 'store_update', data: {sites: stored_sites} })
+    browser.runtime.sendMessage({action: 'sites_put', sites: stored_sites})
     .catch(err=>{ console.log("BUG!",err); });
 }
 
@@ -68,31 +68,23 @@ function stored_sites_table_append(domain, site, type, loginname, count, ver) {
 
 function stored_sites_table_update(stored_sites) {
     document.querySelector('#stored_sites > tbody').innerHTML = '';
-    Object.keys(stored_sites).forEach(function(domain){
-        Object.keys(stored_sites[domain]).forEach(function(site){
-            let settings = stored_sites[domain][site],
-                alg_version = alg_min_version;
 
-            if (alg_min_version < 3 && !string_is_plain_ascii(site))
-                alg_version = 2;
-            if (settings.username === undefined)
-                settings.username = "";
-            stored_sites_table_append(domain,
-                site,
-                settings.type,
-                settings.username,
-                settings.generation,
-                ""+alg_version);
-        });
-    });
+    for (const site of stored_sites) {
+        let asite = new window.mpw_utils.Site(site);
+
+        stored_sites_table_append(site.url,
+            asite.sitename,
+            asite.type,
+            asite.username,
+            asite.generation,
+            ""+asite.required_alg_version(alg_min_version));
+    }
 }
 
 window.addEventListener('load', function() {
     browser.runtime.sendMessage({action: 'store_get', keys:
-      ['sites', 'username', 'max_alg_version', 'key_id']})
+      ['username', 'max_alg_version', 'key_id']})
     .then(data => {
-        if (data.sites)
-            stored_sites = data.sites;
         username = data.username;
         key_id = data.key_id;
         alg_max_version = data.max_alg_version;
@@ -103,11 +95,16 @@ window.addEventListener('load', function() {
                 document.querySelector('#ver3note').style.display = 'inherit';
             }
         }
-
+    })
+    .then(()=>{
+        return browser.runtime.sendMessage({action: 'site_get', domain: null});
+    })
+    .then(d => {
+        stored_sites = d.sitedata;
         stored_sites_table_update(stored_sites);
     })
-    .catch(() => {
-        console.error("Failed loading state from background on popup");
+    .catch((err) => {
+        console.error("Failed loading state from background on popup", err);
     });
 });
 
@@ -134,11 +131,15 @@ document.querySelector('#stored_sites').addEventListener('change', function(e) {
     let t = find_parent('TR', e.target),
         domain = e.target.getAttribute('data-old'),
         newdomain = e.target.value,
-        site = t.querySelector('td:nth-child(1)').textContent;
+        sitename = t.querySelector('td:nth-child(1)').textContent,
+        siteidx = stored_sites.findIndex(e => e.sitename == sitename);
 
-    if (! (newdomain in stored_sites)) stored_sites[newdomain] = {};
-    stored_sites[newdomain][site] = stored_sites[domain][site];
-    delete stored_sites[domain][site];
+    if (siteidx == -1) {
+        console.error("Can't find", sitename, "for update");
+        return;
+    }
+
+    stored_sites[siteidx].url = newdomain;
     save_sites_to_backend();
     console.debug('Change',t,domain,newdomain);
     e.target.setAttribute('data-old', newdomain);
@@ -147,11 +148,14 @@ document.querySelector('#stored_sites').addEventListener('change', function(e) {
 document.querySelector('#stored_sites').addEventListener('click', function(e) {
     if (!e.target.classList.contains('delete')) return;
     let t = find_parent('TR', e.target);
+    let sitename = t.querySelector('td:nth-child(1)').textContent;
+    let siteidx = stored_sites.findIndex(e => e.sitename == sitename);
+    if (siteidx == -1) {
+        console.error("Can't find", sitename, "for delete");
+        return;
+    }
 
-    let sitesearch = t.querySelector('td:nth-child(2) > input').value,
-        sitename = t.querySelector('td:nth-child(1)').textContent;
-
-    delete stored_sites[sitesearch][sitename];
+    stored_sites.splice(siteidx, 1);
     t.parentNode.removeChild(t);
     save_sites_to_backend();
 });
