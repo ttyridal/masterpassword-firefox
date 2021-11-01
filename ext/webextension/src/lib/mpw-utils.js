@@ -94,6 +94,12 @@ Site.prototype.as_mpsites_line = function(alg_min_version) {
         pad_left(25, this.sitename), '\t',
         '\n'].join('');
 }
+Site.prototype.equal = function(other) {
+    return (this.sitename == other.sitename &&
+        this.generation == other.generation &&
+        this.type == other.type &&
+        this.username == other.username);
+}
 
 
 function read_mpsites(d, username, key_id, confirm_fn){
@@ -150,17 +156,16 @@ function read_mpsites(d, username, key_id, confirm_fn){
           case '18': s[3]='m'; break;
           default:console.log('unknown password type, '+s[3]);
         }
-        s={
+        ret.push(new Site({
             lastused: s[1],
             timesused: s[2],
-            passtype: s[3],
+            type: s[3],
             passalgo: parseInt(s[4],10),
-            passcnt: parseInt(s[5],10),
-            loginname: s[6],
+            generation: parseInt(s[5],10),
+            username: s[6],
             sitename: s[7],
             sitepass: s[8]
-          };
-        ret.push(s);
+        }));
     }
 
     return ret;

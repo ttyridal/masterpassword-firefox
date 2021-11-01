@@ -47,7 +47,7 @@ function passtype_to_str(type) {
         case 'i': return "Pin";
         case 'n': return "Name";
         case 'p': return "Phrase";
-        default: throw new Error("Unknown password type");
+        default: throw new Error("Unknown password type:"+type);
     }
 }
 
@@ -169,9 +169,8 @@ function get_sitesearch(sitename) {
         return sitename;
 }
 
-function resolveConflict(site) {
+function resolveConflict(site, existing) {
     return new Promise(function(resolve, reject){
-        let existing = stored_sites[site.sitesearch][site.sitename],
             div = document.querySelector('#conflict_resolve');
 
         div.querySelector('.sitename').textContent = site.sitename;
@@ -180,17 +179,17 @@ function resolveConflict(site) {
         div.querySelector('.existing_count').textContent = existing.generation;
         div.querySelector('.existing_username').textContent = existing.username;
 
-        div.querySelector('.new_type').textContent = passtype_to_str(site.passtype);
-        div.querySelector('.new_count').textContent = site.passcnt;
-        div.querySelector('.new_username').textContent = site.loginname;
+        div.querySelector('.new_type').textContent = passtype_to_str(site.type);
+        div.querySelector('.new_count').textContent = site.generation;
+        div.querySelector('.new_username').textContent = site.username;
 
         function click_handler(ev) {
             switch (ev.target.id) {
                 case 'existing':
-                    resolve(stored_sites[site.sitesearch][site.sitename]);
+                    resolve(existing);
                     break;
                 case 'imported':
-                    resolve({'generation': site.passcnt, 'type': site.passtype, 'username': site.loginname});
+                    resolve(site);
                     break;
                 default:
                     return;
@@ -220,7 +219,7 @@ document.addEventListener('drop', function(e) {
     e.stopPropagation();
     if (dt.files.length !== 1) return;
     if (! /.*\.mpsites$/gi.test(dt.files[0].name)) {
-        alert("need a .mpsites file");
+        messagebox("Error: need a .mpsites file");
         return;
     }
     var fr = new FileReader();
@@ -230,74 +229,59 @@ document.addEventListener('drop', function(e) {
     fr.readAsText(dt.files[0]);
 });
 
-    function import_mpsites(data) {
-        var has_ver1_mb_sites = false;
-        try {
-            x = window.mpw_utils.read_mpsites(data, username, key_id, confirm);
-            if (!x) return;
-        } catch (e) {
-            if (e.name === 'mpsites_import_error') {
-                alert(e.message);
-                return;
-            }
-            else throw e;
+async function import_mpsites(data) {
+    let has_ver1_mb_sites = false;
+    let imported_sites;
+    try {
+        imported_sites = window.mpw_utils.read_mpsites(data, username, key_id, confirm);
+        if (!imported_sites) return;
+    } catch (e) {
+        if (e.name === 'mpsites_import_error') {
+            messagebox("Error: "+e.message);
+            return;
         }
+        else throw e;
+    }
 
-        var done = new Promise(function(all_done){
-            function popsite() {
-                if (! x.length) return false;
 
-                var p, site = x.shift();
+    let stored_site_names = new Set(stored_sites.map(e=>e.sitename));
+    console.log(stored_sites);
 
-                site.sitesearch = get_sitesearch(site.sitename);
-                if (site.passalgo < 2 && !string_is_plain_ascii(site.sitename))
-                    has_ver1_mb_sites = true;
+    for (let site of imported_sites) {
+        site.url = get_sitesearch(site.sitename);
+        let insert_indx = -1;
 
-                if (! (site.sitesearch in stored_sites)) stored_sites[site.sitesearch] = {};
-                if (site.sitename in stored_sites[site.sitesearch] &&
-                    (stored_sites[site.sitesearch][site.sitename].generation !== site.passcnt ||
-                        stored_sites[site.sitesearch][site.sitename].type !== site.passtype ||
-                        stored_sites[site.sitesearch][site.sitename].username !== site.loginname)) {
-
-                    p = resolveConflict(site);
-                } else {
-                    p = Promise.resolve({'generation': site.passcnt, 'type': site.passtype, 'username': site.loginname}, undefined);
-                }
-
-                p.then(function(cfg, nextanswer){
-                    stored_sites[site.sitesearch][site.sitename] = cfg;
-                    if (!popsite())
-                        all_done();
-                })
-                .catch(function(reason){
-                    console.error("popsite failed", reason);
-                });
-
-                return true;
+        if (stored_site_names.has(site.sitename)) {
+            insert_indx = stored_sites.findIndex(e => e.sitename == site.sitename);
+            let asite = new window.mpw_utils.Site(stored_sites[insert_indx]);
+            if (site.equal(asite)) {
+                continue;  // we already have this one.
+            } else {
+                site = await resolveConflict(site, asite);
             }
+        }
+        if (site.passalgo < 2 && !string_is_plain_ascii(site.sitename))
+            has_ver1_mb_sites = true;
 
-            if (!popsite())
-                all_done();
-        });
+        if (insert_indx != -1)
+            stored_sites[insert_indx] = site;
+        else
+            stored_sites.push(site);
 
+        stored_site_names.add(site.sitename);
+    }
 
-        done.then(function(){
-            stored_sites_table_update(stored_sites);
+    stored_sites_table_update(stored_sites);
 
-            if (has_ver1_mb_sites)
-                alert("Version mismatch\n\nYour file contains site names with non ascii characters from "+
-                      "an old masterpassword version. This addon can not reproduce these passwords");
-            else {
-                messagebox('Import successful');
-            }
+    if (has_ver1_mb_sites)
+        alert("Version mismatch\n\nYour file contains site names with non ascii characters from "+
+              "an old masterpassword version. This addon can not reproduce these passwords");
+    else {
+        messagebox('Import successful');
+    }
 
-            save_sites_to_backend();
-        })
-        .catch(function(err){
-            console.error(err);
-        });
-
-    };
+    save_sites_to_backend();
+};
 
 document.querySelector('body').addEventListener('click', function(ev){
     if (ev.target.classList.contains('import_mpsites')) {
