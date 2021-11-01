@@ -87,7 +87,6 @@ Site.prototype.as_mpsites_line = function(alg_min_version) {
     const last_used = '2015-03-23T13:06:35Z';
     const use_count = '0';
     const sp2 = '  ';
-    console.log(this);
     return [last_used, sp2,
         pad_left(8, use_count), sp2,
         pad_left(8, [this.type_as_code(), ':', this.required_alg_version(alg_min_version), ':', this.generation]), sp2,
@@ -191,7 +190,6 @@ function make_mpsites(key_id, username, stored_sites, alg_min_version, alg_versi
 
     for (const site of stored_sites) {
         asite = new Site(site);
-        console.log(asite);
         a.push(asite.as_mpsites_line(alg_min_version));
     }
 
