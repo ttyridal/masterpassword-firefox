@@ -287,8 +287,9 @@ document.addEventListener('drop', function(e) {
             if (has_ver1_mb_sites)
                 alert("Version mismatch\n\nYour file contains site names with non ascii characters from "+
                       "an old masterpassword version. This addon can not reproduce these passwords");
-            else
-                console.debug('Import successful');
+            else {
+                messagebox('Import successful');
+            }
 
             save_sites_to_backend();
         })
@@ -333,6 +334,15 @@ function start_data_download(stringarr,filename) {
 
     // Remove anchor from body
     document.body.removeChild(a);
+}
+
+document.querySelector('#messagebox > div.progress').addEventListener('transitionend', ()=> {
+    document.querySelector("#messagebox").classList.remove('visible');
+});
+
+function messagebox(txt) {
+    document.querySelector("#messagebox").classList.add('visible');
+    document.querySelector("#messagebox_text").innerHTML = txt;
 }
 
 }());

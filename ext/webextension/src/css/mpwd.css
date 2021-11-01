@@ -333,3 +333,35 @@ button#siteconfig_show {
 	color:black;
     padding: 1em;
 }
+
+#messagebox {
+    width: 22vw;
+    position: fixed;
+    right:-22vw;
+    top:1em;
+    background: var(--text-color);
+    color: var(--main-bg-color);
+/*    transition: right 0.2s cubic-bezier(0,.74,.7,1.16);  */
+    transition: right 0.3s cubic-bezier(0,1.4,1,1);
+}
+#messagebox > div.progress {
+    background:blue;
+    display:block;
+    height:3px;
+    width:100%;
+    margin:0 0;
+    position: absolute;
+    bottom:0;
+    left:0;
+    transition: width 0.3s linear;
+}
+#messagebox.visible {
+    right:0vw;
+}
+#messagebox.visible > div.progress {
+    width:0;
+    transition: width 3s linear;
+}
+#messagebox_text {
+    margin: 0.5em;
+}
