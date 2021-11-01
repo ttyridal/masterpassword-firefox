@@ -421,12 +421,12 @@ class ComboBox extends HTMLElement {
         this.listbox.filterOptions(this.filter);
 
 
-        if (this.listbox.countOptions() == 1) {
+        // preselect the first "most probable" option
+        if (this.filter.length >= 1) {
             let soleOption = this.listbox.getFirstItem();
             if (soleOption.textContent.startsWith(this.filter)) {
                 this.setOption(soleOption);
                 this.inputNode.setSelectionRange(this.filter.length, 999);
-                
             }
         }
     }
