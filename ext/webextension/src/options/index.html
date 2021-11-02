@@ -88,9 +88,10 @@
             This browser-plugin implements the third revision of MasterPassword. As a consequence,
             your password list can not be imported in apps supporting max revision 2 (notably the
             official iOS and osX apps with version 2.1.x and earlier)</p>
-            <input type='file' id="importinput" accept=".mpsites" hidden>
+            <input type='file' id="importinput" accept=".mpsites,.mpjson,application/json" hidden>
             <button class="import_mpsites">import</button>
-            <button class="export_mpsites">export</button>
+            <button class="export_mpsites">export (.mpsites)</button>
+            <button class="export_mpsites_json">export (.mpjson)</button>
             <p class="">(You can drag-drop a .mpsites file here to import it)</p>
             <table class="" id="stored_sites">
                 <thead><tr><th>sitename<th>(matching)<th>Login<th>count<th>type<th>ver

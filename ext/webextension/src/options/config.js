@@ -70,14 +70,12 @@ function stored_sites_table_update(stored_sites) {
     document.querySelector('#stored_sites > tbody').innerHTML = '';
 
     for (const site of stored_sites) {
-        let asite = new window.mpw_utils.Site(site);
-
         stored_sites_table_append(site.url,
-            asite.sitename,
-            asite.type,
-            asite.username,
-            asite.generation,
-            ""+asite.required_alg_version(alg_min_version));
+            site.sitename,
+            site.type,
+            site.username,
+            site.generation,
+            ""+site.required_alg_version(alg_min_version));
     }
 }
 
@@ -100,7 +98,7 @@ window.addEventListener('load', function() {
         return browser.runtime.sendMessage({action: 'site_get', domain: null});
     })
     .then(d => {
-        stored_sites = d.sitedata;
+        stored_sites = d.sitedata.map(e => new window.mpw_utils.Site(e));
         stored_sites_table_update(stored_sites);
     })
     .catch((err) => {
@@ -218,7 +216,7 @@ document.addEventListener('drop', function(e) {
     e.preventDefault();
     e.stopPropagation();
     if (dt.files.length !== 1) return;
-    if (! /.*\.mpsites$/gi.test(dt.files[0].name)) {
+    if (! /.*\.(mpsites|mpjson)$/gi.test(dt.files[0].name)) {
         messagebox("Error: need a .mpsites file");
         return;
     }
@@ -245,15 +243,15 @@ async function import_mpsites(data) {
 
 
     let stored_site_names = new Set(stored_sites.map(e=>e.sitename));
-    console.log(stored_sites);
 
     for (let site of imported_sites) {
-        site.url = get_sitesearch(site.sitename);
+        if (!site.url)
+            site.url = get_sitesearch(site.sitename);
         let insert_indx = -1;
 
         if (stored_site_names.has(site.sitename)) {
             insert_indx = stored_sites.findIndex(e => e.sitename == site.sitename);
-            let asite = new window.mpw_utils.Site(stored_sites[insert_indx]);
+            let asite = stored_sites[insert_indx];
             if (site.equal(asite)) {
                 continue;  // we already have this one.
             } else {
@@ -287,8 +285,11 @@ document.querySelector('body').addEventListener('click', function(ev){
     if (ev.target.classList.contains('import_mpsites')) {
         document.querySelector('#importinput').click();
     }
+    if (ev.target.classList.contains('export_mpsites_json')) {
+        start_data_download(window.mpw_utils.make_mpsites(key_id, username, stored_sites, alg_min_version, alg_max_version, true), 'firefox.mpjson');
+    }
     if (ev.target.classList.contains('export_mpsites')) {
-        start_data_download(window.mpw_utils.make_mpsites(key_id, username, stored_sites, alg_min_version, alg_max_version), 'firefox.mpsites');
+        start_data_download(window.mpw_utils.make_mpsites(key_id, username, stored_sites, alg_min_version, alg_max_version, false), 'firefox.mpsites');
     }
     if (ev.target.classList.contains('accordion_toggle')) {
         let d = ev.target.parentNode;

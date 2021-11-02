@@ -61,19 +61,36 @@ mpsites_import_error.prototype.constructor = mpsites_import_error;
 function Site(site_data) {
     if (site_data)
         Object.assign(this, site_data);
+    if (this.type && !isNaN(this.type)) {
+        let t = new Map([
+            [20,'s'],
+            [16,'x'],
+            [21,'i'],
+            [19,'b'],
+            [31,'p'],
+            [30,'n'],
+            [17,'l'],
+            [18,'m'],
+        ]).get(this.type);
+        if (!t)
+            console.log('unknown password type, '+this.type);
+        else
+            this.type = t;
+    }
+
     this.username = this.username || '';
 }
 Site.prototype.constructor = Site;
 Site.prototype.type_as_code = function() {
     switch(this.type){
-        case 's': return '20'; break;
-        case 'x': return '16'; break;
-        case 'i': return '21'; break;
-        case 'b': return '19'; break;
-        case 'p': return '31'; break;
-        case 'n': return '30'; break;
-        case 'l': return '17'; break;
-        case 'm': return '18'; break;
+        case 's': return 20; break;
+        case 'x': return 16; break;
+        case 'i': return 21; break;
+        case 'b': return 19; break;
+        case 'p': return 31; break;
+        case 'n': return 30; break;
+        case 'l': return 17; break;
+        case 'm': return 18; break;
         default: throw "unknown password type:" + this.type;
     }
 }
@@ -89,7 +106,7 @@ Site.prototype.as_mpsites_line = function(alg_min_version) {
     const sp2 = '  ';
     return [last_used, sp2,
         pad_left(8, use_count), sp2,
-        pad_left(8, [this.type_as_code(), ':', this.required_alg_version(alg_min_version), ':', this.generation]), sp2,
+        pad_left(8, [this.type_as_code().toString(), ':', this.required_alg_version(alg_min_version), ':', this.generation]), sp2,
         pad_left(25, this.username), '\t',
         pad_left(25, this.sitename), '\t',
         '\n'].join('');
@@ -100,10 +117,65 @@ Site.prototype.equal = function(other) {
         this.type == other.type &&
         this.username == other.username);
 }
+Site.prototype.as_mpjson = function(alg_min_version) {
+    let o = {};
+    o[this.sitename] = {
+        "counter": this.generation,
+        "algorithm": this.required_alg_version(alg_min_version),
+        "type": this.type_as_code(),
+        //login_type: 30
+        "uses": 0,
+        "last_used": '2015-03-23T13:06:35Z',
+        "ext.browser.url": this.url,
+        "ext.browser.username": this.username
+        }
+    return o;
+}
 
 
 function read_mpsites(d, username, key_id, confirm_fn){
-    var ret=[],l,fheader={'format':-1, 'key_id':undefined, 'username':undefined};
+    let jsn;
+    try {
+        jsn = JSON.parse(d);
+    } catch (e) {
+        console.log("failed to parse json.. try legacy mpsites");
+        return read_mpsites_legacy(d, username, key_id, confirm_fn);
+    }
+    if (!('export' in jsn &&
+          'sites' in jsn &&
+          'user' in jsn &&
+          'format' in jsn['export'] &&
+          jsn['export']['format'] == 1)) {
+        throw new mpsites_import_error(30, "Not a mpjson v1 file");
+    }
+    if (username && jsn.user['full_name'] && jsn.user['full_name'] !== username) {
+        if (!confirm_fn("Username mismatch!\n\nYou may still import this file, "+
+                "but passwords will be different from where you exported the file"))
+            return undefined;
+    } else if (key_id && jsn.user['key_id'] && jsn.user['key_id'] .toLowerCase() !== key_id.toLowerCase()) {
+        if (!confirm_fn("Key ID mismatch!\n\nYou may still import this file, "+
+                "but passwords will be different from where you exported the file"))
+            return undefined;
+    }
+
+    let ret = [];
+    for (const [sitename, siteprops] of Object.entries(jsn.sites)) {
+        ret.push(new Site({
+            sitename: sitename,
+            generation: siteprops.counter || 1,
+            type: siteprops.type,
+            passalgo: siteprops.algorithm,
+            lastused: siteprops.last_used,
+            timesused: siteprops.uses,
+            url: siteprops["ext.browser.url"] || [],
+            username: siteprops["ext.browser.username"]
+        }));
+    }
+    return ret;
+}
+
+function read_mpsites_legacy(d, username, key_id, confirm_fn){
+    let ret=[],l,fheader={'format':-1, 'key_id':undefined, 'username':undefined};
     const file_header = '# Master Password site export';
     d = d.split('\n');
     d = d.map(function(cv, i, a) { return cv.replace(/^\s+|[\r\n]+$/gm,''); });
@@ -145,21 +217,10 @@ function read_mpsites(d, username, key_id, confirm_fn){
             console.warn("Unexpected sites input", line);
             continue;
         }
-        switch(s[3]){
-          case '20': s[3]='s'; break;
-          case '16': s[3]='x'; break;
-          case '21': s[3]='i'; break;
-          case '19': s[3]='b'; break;
-          case '31': s[3]='p'; break;
-          case '30': s[3]='n'; break;
-          case '17': s[3]='l'; break;
-          case '18': s[3]='m'; break;
-          default:console.log('unknown password type, '+s[3]);
-        }
         ret.push(new Site({
             lastused: s[1],
             timesused: s[2],
-            type: s[3],
+            type: parseInt(s[3]),
             passalgo: parseInt(s[4],10),
             generation: parseInt(s[5],10),
             username: s[6],
@@ -171,7 +232,26 @@ function read_mpsites(d, username, key_id, confirm_fn){
     return ret;
 }
 
-function make_mpsites(key_id, username, stored_sites, alg_min_version, alg_version) {
+function make_mpsites(key_id, username, stored_sites, alg_min_version, alg_version, as_json) {
+    if (as_json) {
+        let sites = stored_sites.reduce((prev, cur) => Object.assign(prev, cur.as_mpjson(alg_min_version)), {});
+        return [JSON.stringify({
+            "export": {
+                "date": new Date().toISOString().slice(0,-2) +'Z',
+                "redacted": true,
+                "format": 1
+            },
+            "user": {
+                "avatar": 0,
+                "full_name": username,
+                "algorithm": alg_version,
+                "key_id": key_id.toUpperCase(),
+                "default_type": 17,
+            },
+            "sites": sites
+        }, null, 2)];
+    }
+
     var a=[ '# Master Password site export\n',
         '#     Export of site names and stored passwords (unless device-private) encrypted with the master key.\n',
         '#\n',
@@ -194,8 +274,7 @@ function make_mpsites(key_id, username, stored_sites, alg_min_version, alg_versi
 
 
     for (const site of stored_sites) {
-        asite = new Site(site);
-        a.push(asite.as_mpsites_line(alg_min_version));
+        a.push(site.as_mpsites_line(alg_min_version));
     }
 
     return a;
