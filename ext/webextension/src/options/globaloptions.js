@@ -4,8 +4,13 @@
 (function(){
 "use strict";
 
+const runtimeSendMessage = (typeof browser !== 'undefined' ?
+                           browser.runtime.sendMessage :
+                           (msg) => new Promise(suc => { chrome.runtime.sendMessage(msg, suc); })
+                           );
+
 function store_update(data) {
-    browser.runtime.sendMessage({action: 'store_update', data: data })
+    runtimeSendMessage({action: 'store_update', data: data })
     .catch(err=>{ console.log("BUG!",err); });
 }
 
@@ -30,7 +35,7 @@ document.querySelector('#pass_store').addEventListener('change', function() {
 });
 
 window.addEventListener('load', function() {
-    browser.runtime.sendMessage({action: 'store_get', keys:
+    runtimeSendMessage({action: 'store_get', keys:
         ['defaulttype',
          'passwdtimeout',
          'pass_to_clipboard',
@@ -38,6 +43,9 @@ window.addEventListener('load', function() {
          'auto_submit_username',
          'pass_store']})
     .then(data => {
+        data = Object.assign({defaulttype: 'l', passwdtimeout: 0, pass_to_clipboard: true,
+                 auto_submit_pass: false, auto_submit_username: false}, data);
+
         document.querySelector('#passwdtype').value = data.defaulttype;
         document.querySelector('#passwdtimeout').value = data.passwdtimeout;
         document.querySelector('#pass_to_clipboard').checked = data.pass_to_clipboard;

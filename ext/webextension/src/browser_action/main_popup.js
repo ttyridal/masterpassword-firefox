@@ -24,10 +24,14 @@ import {parseUri} from "../lib/uritools.js";
 import {ui} from "./ui.js";
 
 (function () {
-    "use strict";
+"use strict";
+
+const runtimeSendMessage = (typeof browser !== 'undefined' ?
+                       browser.runtime.sendMessage :
+                       (msg) => new Promise(suc => chrome.runtime.sendMessage(msg, suc)));
 
     function store_update(data) {
-        browser.runtime.sendMessage({action: 'store_update', data: data })
+        runtimeSendMessage({action: 'store_update', data: data })
         .catch(err=>{ console.log("BUG!",err); });
     }
 
@@ -46,7 +50,7 @@ function get_active_tab_url() {
 }
 
 function update_page_password_input(pass, username) {
-    browser.runtime.sendMessage({action: 'update_page_password',
+    runtimeSendMessage({action: 'update_page_password',
         pass: pass,
         username: username,
         allow_subframe: true,
@@ -205,7 +209,11 @@ function updateUIForDomainSettings(combined)
 }
 
 function extractDomainFromUrl(url) {
-    if (url.startsWith('about:') || url.startsWith('resource:') || url.startsWith('moz-extension:'))
+    if (!url || url.startsWith('about:')
+        || url.startsWith('resource:')
+        || url.startsWith('moz-extension:')
+        || url.startsWith('chrome-extension:')
+        || url.startsWith('chrome:'))
         url = '';
     let domain_parts = parseUri(url).domain.split(".");
     let significant_parts = 2;
@@ -257,9 +265,9 @@ function popup() {
 }
 
 window.addEventListener('load', function () {
-    browser.runtime.sendMessage({action: 'store_get', keys:
-        ['username', 'masterkey', 'key_id', 'max_alg_version', 'defaulttype', 'pass_to_clipboard']})
-    .then(data => {
+    let r = runtimeSendMessage({action: 'store_get', keys:
+        ['username', 'masterkey', 'key_id', 'max_alg_version', 'defaulttype', 'pass_to_clipboard']});
+    r.then(data => {
         if (data.pwgw_failure) {
             let e = ui.user_warn("System password vault failed! ");
             e = e.appendChild(document.createElement('a'));

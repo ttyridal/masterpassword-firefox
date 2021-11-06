@@ -20,6 +20,17 @@
 (function(){
 "use strict";
 
+if (!browser) {
+    var browser = {};
+    browser.alarms = chrome.alarms;
+    browser.tabs = chrome.tabs;
+    browser.management = {
+        getSelf: () => {
+            return new Promise((success) => chrome.management.getSelf(success));
+        }
+    };
+}
+
 var port;
 function port_default_error(p) { port = undefined; }
 function pwvault_gateway(msg) {
@@ -385,7 +396,12 @@ function update_page_password_impl(pass, username, allow_subframe, allow_submit)
                    frameId: r.frameId,
                    matchAboutBlank: true
                });
-           });
+           })
+           .catch(err=>{
+               if (err instanceof Update_pass_failed || (err.name && err.name == 'update_pass_failed'))
+                   console.log(err.message);
+               else
+                   console.error("update_page_password", err);});
 }
 
 chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
@@ -400,17 +416,22 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
     }
 
     switch(req.action) {
+        case 'IamActive':  // noisy bastard
+            return;
         case 'store_update':
             store_update_impl(req.data);
-            return Promise.resolve();
+            sendResponse(Promise.resolve());
+            return;
         case 'store_get':
-            return store_get_impl(req.keys);
+            store_get_impl(req.keys).then(res=>sendResponse(res));
+            return true;
         case 'update_page_password':
-            return update_page_password_impl(
+            update_page_password_impl(
                         req.pass,
                         req.username,
                         req.allow_subframe,
-                        req.allow_submit);
+                        req.allow_submit).then(res=>sendResponse(res));
+            return true;
         default:
             console.log("unknown action", req);
     }

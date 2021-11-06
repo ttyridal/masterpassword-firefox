@@ -78,8 +78,16 @@ function stored_sites_table_update(sites) {
 }
 
 window.addEventListener('load', function() {
-    browser.runtime.sendMessage({action: 'store_get', keys:
-      ['username', 'max_alg_version', 'key_id']})
+    const promised_storage_get = (keys) => {
+        return new Promise((resolve, fail) => {
+            chrome.storage.local.get(keys, itms => {
+                if (itms === undefined) resolve({});
+                else resolve(itms);
+            });
+        });
+    };
+
+    promised_storage_get(['username', 'max_alg_version', 'key_id'])
     .then(data => {
         username = data.username;
         key_id = data.key_id;
