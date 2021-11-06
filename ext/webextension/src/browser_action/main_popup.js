@@ -322,7 +322,7 @@ function warn_keyid_not_matching()
 }
 
 document.querySelector('#main').addEventListener('change', function(ev){
-    let sn = ui.sitename;
+    let sn = ui.sitename();
     let domain = ui.domain();
     const target_is_sitename_select = ev.target == document.querySelector('mp-combobox');
     console.log("change:", sn, ev.target);
@@ -351,7 +351,6 @@ document.querySelector('#main').addEventListener('change', function(ev){
         ui.siteconfig(site.type, site.generation, site.username);
 
     if (domain !== '' && !chrome.extension.inIncognitoContext) {
-        console.log("add or replace", site.sitename);
         sitestore.addOrReplace(site);
     }
 

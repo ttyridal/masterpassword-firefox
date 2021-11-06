@@ -39,18 +39,19 @@ function get_nowrap() {
         store.get(['sites', 'sitedata'], d => {
             if ('sitedata' in d)
                 resolve(d.sitedata);
-            else if (!'sites' in d)
-                resolve([]);
-            else {
+            else if ('sites' in d) {
                 sitedata_needs_upgrade = true;
                 let result = [];
-                for (const [sitename, props] of Object.entries(d.sites[domain])) {
-                    props.sitename = sitename;
-                    props.url = [domain];
-                    result.push(props);
+                for (const [domain, sitedict] of Object.entries(sites)) {
+                    for (const [sitename, props] of Object.entries(sitedict)) {
+                        props.sitename = sitename;
+                        props.url = [domain];
+                        result.push(props);
+                    }
                 }
                 resolve(result);
-            }
+            } else
+                resolve([]);
         });
     });
 }
