@@ -102,18 +102,15 @@ export const ui = {
         return ret;
     },
 
-    setStoredIds: function(sites, othersites) {
+    setStoredIds: function(sites) {
         let cb = document.querySelector('#sitename');
         cb.clearOptions();
         sites.forEach(site => {
-            cb.addOption(site.sitename);
-        });
-        if (othersites) {
-            cb.addOption('---', {separator:true});
-            othersites.forEach(site => {
+            if (site === null)
+                cb.addOption('---', {separator:true});
+            else
                 cb.addOption(site.sitename);
-            });
-        }
+        });
     },
 
     thepassword: function(visible, real) {
@@ -136,5 +133,4 @@ export const ui = {
     }
 
 };
-
 

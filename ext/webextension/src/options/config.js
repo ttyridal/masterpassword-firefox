@@ -1,4 +1,4 @@
-/* Copyright Torbjorn Tyridal 2015
+/* Copyright Torbjorn Tyridal 2015-2021
 
     This file is part of Masterpassword for Firefox (herby known as "the software").
 
@@ -18,6 +18,10 @@
 /*jshint browser:true, devel:true, nonstandard:true, -W055 */
 /* globals chrome */
 
+"use strict";
+import sitestore from "../lib/sitestore.js";
+import mpw_utils from "../lib/mpw-utils.js";
+
 (function(){
 function encode_utf8(s) {
   return unescape(encodeURIComponent(s));
@@ -26,16 +30,10 @@ function string_is_plain_ascii(s) {
     return s.length === encode_utf8(s).length;
 }
 
- var stored_sites=[],
-     username="",
+ var username="",
      key_id,
      alg_max_version,
      alg_min_version = 1;
-
-function save_sites_to_backend() {
-    browser.runtime.sendMessage({action: 'sites_put', sites: stored_sites})
-    .catch(err=>{ console.log("BUG!",err); });
-}
 
 function passtype_to_str(type) {
     switch(type) {
@@ -66,10 +64,10 @@ function stored_sites_table_append(domain, site, type, loginname, count, ver) {
     document.querySelector('#stored_sites > tbody').appendChild(tr);
 }
 
-function stored_sites_table_update(stored_sites) {
+function stored_sites_table_update(sites) {
     document.querySelector('#stored_sites > tbody').innerHTML = '';
 
-    for (const site of stored_sites) {
+    for (const site of sites) {
         stored_sites_table_append(site.url,
             site.sitename,
             site.type,
@@ -93,16 +91,12 @@ window.addEventListener('load', function() {
                 document.querySelector('#ver3note').style.display = 'inherit';
             }
         }
-    })
-    .then(()=>{
-        return browser.runtime.sendMessage({action: 'site_get', domain: null});
-    })
-    .then(d => {
-        stored_sites = d.sitedata.map(e => new window.mpw_utils.Site(e));
-        stored_sites_table_update(stored_sites);
-    })
+    });
+
+    sitestore.get().then(sites=>{stored_sites_table_update(sites);})
     .catch((err) => {
-        console.error("Failed loading state from background on popup", err);
+        messagebox("Failed loading sites");
+        console.error("Failed loading sites on load", err);
     });
 });
 
@@ -127,35 +121,25 @@ function find_parent(name, node) {
 document.querySelector('#stored_sites').addEventListener('change', function(e) {
     if (!e.target.classList.contains('domainvalue')) return;
     let t = find_parent('TR', e.target),
-        domain = e.target.getAttribute('data-old'),
-        newdomain = e.target.value,
-        sitename = t.querySelector('td:nth-child(1)').textContent,
-        siteidx = stored_sites.findIndex(e => e.sitename == sitename);
+        oldurl = e.target.getAttribute('data-old'),
+        newurl = e.target.value,
+        sitename = t.querySelector('td:nth-child(1)').textContent;
 
-    if (siteidx == -1) {
-        console.error("Can't find", sitename, "for update");
-        return;
-    }
+    const url = Array.from(new Set(newurl.split(',')))
+    sitestore.update(sitename, {url});
 
-    stored_sites[siteidx].url = newdomain;
-    save_sites_to_backend();
-    console.debug('Change',t,domain,newdomain);
-    e.target.setAttribute('data-old', newdomain);
+    console.debug('Change',t,url,oldurl);
+    e.target.setAttribute('data-old', newurl);
 });
 
 document.querySelector('#stored_sites').addEventListener('click', function(e) {
     if (!e.target.classList.contains('delete')) return;
     let t = find_parent('TR', e.target);
     let sitename = t.querySelector('td:nth-child(1)').textContent;
-    let siteidx = stored_sites.findIndex(e => e.sitename == sitename);
-    if (siteidx == -1) {
-        console.error("Can't find", sitename, "for delete");
-        return;
-    }
+    let url = t.querySelector('input').getAttribute('data-old');
 
-    stored_sites.splice(siteidx, 1);
+    sitestore.remove(sitename);
     t.parentNode.removeChild(t);
-    save_sites_to_backend();
 });
 
 
@@ -169,7 +153,7 @@ function get_sitesearch(sitename) {
 
 function resolveConflict(site, existing) {
     return new Promise(function(resolve, reject){
-            div = document.querySelector('#conflict_resolve');
+        let div = document.querySelector('#conflict_resolve');
 
         div.querySelector('.sitename').textContent = site.sitename;
         div.querySelector('.domainvalue').textContent = site.sitesearch;
@@ -231,7 +215,7 @@ async function import_mpsites(data) {
     let has_ver1_mb_sites = false;
     let imported_sites;
     try {
-        imported_sites = window.mpw_utils.read_mpsites(data, username, key_id, confirm);
+        imported_sites = mpw_utils.read_mpsites(data, username, key_id, confirm);
         if (!imported_sites) return;
     } catch (e) {
         if (e.name === 'mpsites_import_error') {
@@ -241,35 +225,37 @@ async function import_mpsites(data) {
         else throw e;
     }
 
-
-    let stored_site_names = new Set(stored_sites.map(e=>e.sitename));
+    let sites = await sitestore.get();
+    let site_index = new Map(sites.map((e, i) => [e.sitename, i]));
 
     for (let site of imported_sites) {
         if (!site.url)
             site.url = get_sitesearch(site.sitename);
-        let insert_indx = -1;
 
-        if (stored_site_names.has(site.sitename)) {
-            insert_indx = stored_sites.findIndex(e => e.sitename == site.sitename);
-            let asite = stored_sites[insert_indx];
+        let conflict_idx = site_index.get(site.sitename);
+
+        if (conflict_idx !== undefined) {
+            let asite = sites[conflict_idx];
             if (site.equal(asite)) {
-                continue;  // we already have this one.
+                asite.url = Array.from(new Set([...site.url, ...asite.url]));
+                sites[conflict_idx] = asite;
             } else {
+                let url = Array.from(new Set([...site.url, ...asite.url]));
                 site = await resolveConflict(site, asite);
+                site.url = url;
+                sites[conflict_idx] = site;
             }
+        } else {
+            site_index.set(site.sitename, sites.length);
+            sites.push(site);
         }
+
         if (site.passalgo < 2 && !string_is_plain_ascii(site.sitename))
             has_ver1_mb_sites = true;
-
-        if (insert_indx != -1)
-            stored_sites[insert_indx] = site;
-        else
-            stored_sites.push(site);
-
-        stored_site_names.add(site.sitename);
     }
 
-    stored_sites_table_update(stored_sites);
+    sitestore.set(sites);
+    stored_sites_table_update(sites);
 
     if (has_ver1_mb_sites)
         alert("Version mismatch\n\nYour file contains site names with non ascii characters from "+
@@ -277,8 +263,6 @@ async function import_mpsites(data) {
     else {
         messagebox('Import successful');
     }
-
-    save_sites_to_backend();
 };
 
 document.querySelector('body').addEventListener('click', function(ev){
@@ -286,10 +270,14 @@ document.querySelector('body').addEventListener('click', function(ev){
         document.querySelector('#importinput').click();
     }
     if (ev.target.classList.contains('export_mpsites_json')) {
-        start_data_download(window.mpw_utils.make_mpsites(key_id, username, stored_sites, alg_min_version, alg_max_version, true), 'firefox.mpjson');
+        sitestore.get().then(sites=> {
+            start_data_download(mpw_utils.make_mpsites(key_id, username, sites, alg_min_version, alg_max_version, true), 'firefox.mpjson');
+        });
     }
     if (ev.target.classList.contains('export_mpsites')) {
-        start_data_download(window.mpw_utils.make_mpsites(key_id, username, stored_sites, alg_min_version, alg_max_version, false), 'firefox.mpsites');
+        sitestore.get().then(sites=> {
+            start_data_download(mpw_utils.make_mpsites(key_id, username, sites, alg_min_version, alg_max_version, false), 'firefox.mpsites');
+        });
     }
     if (ev.target.classList.contains('accordion_toggle')) {
         let d = ev.target.parentNode;

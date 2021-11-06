@@ -1,3 +1,20 @@
+/* Copyright Torbjorn Tyridal 2021
+
+    This file is part of Masterpassword for Firefox (herby known as "the software").
+
+    The software is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    The software is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with the software.  If not, see <http://www.gnu.org/licenses/>.
+*/
 (()=>{
 "use strict";
 
@@ -71,7 +88,6 @@ ul[role="listbox"] li[role="option"] {
 [role="listbox"] li[role="option"]:hover {
     color: #000;
     background-color: var(--text-color);
-    
 }
 [role="listbox"].open {
     display: block;
@@ -387,13 +403,13 @@ class ComboBox extends HTMLElement {
             default:
             break;
         }
-    
+
     }
 
     handleKeyup(event) {
         const isPrintableCharacter = (str) => { return str.length === 1 && str.match(/\S/); }
         const key = event.key;
-        
+
         if (isPrintableCharacter(key)) {
             this.filter += key;
             this.option = null;
@@ -422,8 +438,8 @@ class ComboBox extends HTMLElement {
 
 
         // preselect the first "most probable" option
-        if (this.filter.length >= 1) {
-            let soleOption = this.listbox.getFirstItem();
+        let soleOption = this.listbox.getFirstItem();
+        if (this.filter.length >= 1 && soleOption) {
             if (soleOption.textContent.startsWith(this.filter)) {
                 this.setOption(soleOption);
                 this.inputNode.setSelectionRange(this.filter.length, 999);

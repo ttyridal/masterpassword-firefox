@@ -1,4 +1,4 @@
-/* Copyright Torbjorn Tyridal 2015
+/* Copyright Torbjorn Tyridal 2015-2021
 
     This file is part of Masterpassword for Firefox (herby known as "the software").
 
@@ -89,7 +89,6 @@ browser.alarms.onAlarm.addListener(a => {
 
         for (const [domain, sitedict] of Object.entries(sites)) {
             if (conflict) break;
-            console.log("sitedict:",sitedict);
             for (const [sitename, props] of Object.entries(sitedict)) {
                 if (sitename in result) {
                     existing = result[sitename];
@@ -117,7 +116,7 @@ browser.alarms.onAlarm.addListener(a => {
         });
 
     });
-})();
+}); //();
 
 
 function temp_store_masterkey(k) {
@@ -389,21 +388,6 @@ function update_page_password_impl(pass, username, allow_subframe, allow_submit)
            });
 }
 
-function site_get_impl(domain) {
-    return promised_storage_get(['sites', 'sitedata'])
-    .then(d => {
-        if ('sites' in d) {
-            let result = [];
-            for (const [sitename, props] of Object.entries(d.sites[domain])) {
-                props.sitename = sitename;
-                props.url = [domain];
-                result.push(props);
-            }
-            return {sitedata: result};
-        } else return {sitedata: d.sitedata};
-    });
-}
-
 chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
     // not really necessary according to the docs, but rather safe than sorry.
     if (!sender || !sender.id || sender.id !== chrome.runtime.id) {
@@ -421,12 +405,6 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
             return Promise.resolve();
         case 'store_get':
             return store_get_impl(req.keys);
-        case 'site_get':
-            return site_get_impl(req.domain);
-        case 'site_update':
-            return site_update_impl(req.site);
-        case 'site_delete':
-            return site_delete_impl(req.site);
         case 'update_page_password':
             return update_page_password_impl(
                         req.pass,

@@ -1,4 +1,4 @@
-/* Copyright Torbjorn Tyridal 2015
+/* Copyright Torbjorn Tyridal 2015-2021
 
     This file is part of Masterpassword for Firefox (herby known as "the software").
 
@@ -17,7 +17,8 @@
 */
 /*jshint browser:true, jquery:true, devel:true, nonstandard:true, -W055 */
 
-(function(){
+"use strict";
+export default (function() {
 
 function encode_utf8(s) {
   return unescape(encodeURIComponent(s));
@@ -131,7 +132,6 @@ Site.prototype.as_mpjson = function(alg_min_version) {
         }
     return o;
 }
-
 
 function read_mpsites(d, username, key_id, confirm_fn){
     let jsn;
@@ -282,9 +282,9 @@ function make_mpsites(key_id, username, stored_sites, alg_min_version, alg_versi
 
 
 
-window.mpw_utils = {
-    make_mpsites: make_mpsites,
-    read_mpsites: read_mpsites,
-    Site: Site
+return {
+    make_mpsites,
+    read_mpsites,
+    Site
 };
 }());

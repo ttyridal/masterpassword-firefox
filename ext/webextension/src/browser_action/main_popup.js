@@ -1,4 +1,4 @@
-/* Copyright Torbjorn Tyridal 2015
+/* Copyright Torbjorn Tyridal 2015-2021
 
     This file is part of Masterpassword for Firefox (herby known as "the software").
 
@@ -17,6 +17,8 @@
 */
 /*jshint browser:true, devel:true */
 /* globals chrome, mpw */
+import sitestore from "../lib/sitestore.js";
+import mpw_utils from "../lib/mpw-utils.js";
 import {defer, copy_to_clipboard} from "../lib/utils.js";
 import {parseUri} from "../lib/uritools.js";
 import {ui} from "./ui.js";
@@ -26,16 +28,6 @@ import {ui} from "./ui.js";
 
     function store_update(data) {
         browser.runtime.sendMessage({action: 'store_update', data: data })
-        .catch(err=>{ console.log("BUG!",err); });
-    }
-
-    function sites_get(domain) {
-        return browser.runtime.sendMessage({action: 'site_get', domain:domain})
-        .catch(err=>{ console.log("BUG!",err); });
-    }
-
-    function sites_update(domain, sites) {
-        return browser.runtime.sendMessage({action: 'site_update', data: {sites}})
         .catch(err=>{ console.log("BUG!",err); });
     }
 
@@ -135,51 +127,93 @@ function recalculate() {
     });
 }
 
-function loadSettings(domain) {
-    return sites_get(domain)
-    .then(d=>{
-        session_store.related_sites = [{sitename:"test1"},{sitename:"test4", generation:3, username:'tjoho'},{sitename:"test3", generation:10},{sitename:"test2"},];
-        session_store.other_sites = [];
-        for (let site of d.sitedata) {
-            if (site.url.indexOf(domain) != -1) session_store.related_sites.push(site);
-            else session_store.other_sites.push(site);
+function loadSites(domain) {
+    const [domain_parts, significant_domain] = domain;
+    const domain_parts_r = [...domain_parts].reverse()
+    const significant_parts = significant_domain.length;
+
+    const zip = (a, b) => Array.from(Array(Math.max(b.length, a.length)), (_, i) => [a[i], b[i]]);
+
+    const num_equal_elements = (a,b) => {
+        const z = zip(a,b)
+        let i = 0;
+        for (i = 0; i < z.length; i++)
+            if (z[i][0] != z[i][1]) break;
+        return i
+    }
+
+    const url_match_score = (site) => {
+        let score = 0;
+        for (const u of site.url) {
+            score = Math.max(score, num_equal_elements(domain_parts_r, u.split('.').reverse()));
         }
-        console.log(session_store);
-        return domain;
+        return score >= significant_parts ? score : 0;
+    };
+
+    return sitestore.get()
+    .then(sites => {
+        const compare_score_then_name = (a, b) => {
+            if (a[0] > b[0]) { return -1; }
+            if (a[0] < b[0]) { return 1; }
+            if (a[1].sitename < b[1].sitename) { return -1; }
+            return 1;
+        }
+
+        let url_scored_sites = sites.map(s=>[url_match_score(s), s]).sort(compare_score_then_name);
+        let num_related=-1;
+        let domain = significant_domain.join('.');
+
+        sites = url_scored_sites.map((el,i) => { if (el[0]>=significant_parts) num_related=i; return el[1];});
+        num_related++;
+
+        if (!num_related && domain) {
+            console.log("insert default site");
+            sites.unshift(new mpw_utils.Site({
+                url:[domain],
+                sitename:domain,
+                generation: 1,
+                username: '',
+                type: session_store.defaulttype}));
+            num_related++;
+        }
+        if (domain)
+            sites.splice(num_related, 0, null);
+
+        session_store.stored_sites = sites;
+
+        return [domain, num_related];
     });
 }
 
-function updateUIForDomainSettings(domain)
+function updateUIForDomainSettings(combined)
 {
+    const [domain, num_related] = combined;
+
     for (let d of document.querySelectorAll('.domain'))
         d.value = domain;
 
-    if (session_store.related_sites.length > 1) {
+    ui.setStoredIds(session_store.stored_sites);
+    if (num_related > 1)
         ui.show('#storedids_dropdown');
-        ui.setStoredIds(session_store.related_sites, session_store.other_sites);
-    }
 
-    if (session_store.related_sites.length > 0) {
-        let first = session_store.related_sites[0];
+    if (domain) {
+        let first = session_store.stored_sites[0];
         ui.sitename(first.sitename);
         ui.siteconfig(first.type, first.generation, first.username || '');
-    } else {
-        ui.sitename(domain);
-        ui.siteconfig(session_store.defaulttype, 1, '');
-    }
+    } else
+         ui.siteconfig(session_store.defaulttype, 1, '');
 }
 
 function extractDomainFromUrl(url) {
     if (url.startsWith('about:') || url.startsWith('resource:') || url.startsWith('moz-extension:'))
         url = '';
-    var domain = parseUri(url).domain.split("."),
-        significant_parts = 2;
-    if (domain.length > 2 && domain[domain.length-2].toLowerCase() === "co")
+    let domain_parts = parseUri(url).domain.split(".");
+    let significant_parts = 2;
+    if (domain_parts.length > 2 && domain_parts[domain_parts.length-2].toLowerCase() === "co")
         significant_parts = 3;
-    while(domain.length > 1 && domain.length > significant_parts)
-        domain.shift();
-    domain = domain.join(".");
-    return domain;
+
+    let significant_domain = domain_parts.slice(-significant_parts)
+    return [domain_parts, significant_domain];
 }
 
 function showSessionSetup() {
@@ -215,7 +249,7 @@ function popup() {
         return '';
     })
     .then(extractDomainFromUrl)
-    .then(loadSettings)
+    .then(loadSites)
     .then(updateUIForDomainSettings);
 
     Promise.all([mpw_promise, urlpromise])
@@ -277,38 +311,6 @@ document.querySelector('#storedids_dropdown').addEventListener('click', function
     document.querySelector('#sitename').open();
 });
 
-function lookup_stored_site_obj(sitename) {
-    let cur = null;
-    let curidx = session_store.related_sites.findIndex(e => e.sitename == sitename);
-    if (curidx == -1)
-        curidx = session_store.other_sites.findIndex(e => e.sitename == sitename);
-    else
-        return session_store.related_sites[curidx];
-    if (curidx != -1)
-        cur = session_store.other_sites[curidx];
-    return cur;
-}
-
-function save_site_changes(isnew){
-    let domain = ui.domain();
-    let sn = ui.sitename();
-
-    let site = lookup_stored_site_obj(sn);
-    if (site)
-        Object.assign(site, ui.siteconfig());
-    else {
-        site = Object.assign({sitename: sn, url: domain}, ui.siteconfig());
-        session_store.related_sites.push(site);
-        ui.setStoredIds(session_store.related_sites, session_store.other_sites);
-    }
-
-    if (domain !== '' && !chrome.extension.inIncognitoContext)
-        sites_update(domain, site);
-
-    if (session_store.related_sites.length > 1)
-        ui.show('#storedids_dropdown');
-}
-
 function warn_keyid_not_matching()
 {
     console.debug("keyids did not match!");
@@ -320,16 +322,45 @@ function warn_keyid_not_matching()
 }
 
 document.querySelector('#main').addEventListener('change', function(ev){
-    console.log("change:", ev.target);
-    if (ev.target == document.querySelector('mp-combobox')) {
-        let site = lookup_stored_site_obj(ev.target.value);
-        if (!site) {
-            site = {type: session_store.defaulttype, generation: 1, username:''}
-            save_site_changes(true);
+    let sn = ui.sitename;
+    let domain = ui.domain();
+    const target_is_sitename_select = ev.target == document.querySelector('mp-combobox');
+    console.log("change:", sn, ev.target);
+
+
+    const siteidx = session_store.stored_sites.findIndex(e => e ? e.sitename == sitename : false);
+    let site = siteidx != -1 ? session_store.stored_sites[siteidx] : null;
+
+    if (!site) {
+        if (!target_is_sitename_select) {
+            console.log("impossible condition?");
+            let props = {sitename: sn, url:[domain]};
+            Object.assign(props, ui.siteconfig());
+            site = new mpw_utils.Site(props);
+        } else {
+            site = new mpw_utils.Site({sitename: sn, url:[domain], type: session_store.defaulttype, generation: 1, username:''})
         }
-        ui.siteconfig(site.type||session_store.defaulttype, site.generation||1, site.username||'');
-    } else
-        save_site_changes(false);
+    } else {
+        // TODO: add this domain to site's url
+        // place it at the very top
+        session_store.stored_sites.splice(siteidx, 1);
+        session_store.stored_sites.unshift(site);
+    }
+
+    if (target_is_sitename_select)
+        ui.siteconfig(site.type, site.generation, site.username);
+
+    if (domain !== '' && !chrome.extension.inIncognitoContext) {
+        console.log("add or replace", site.sitename);
+        sitestore.addOrReplace(site);
+    }
+
+    // TODO: remove default site from stored_sites if it exists and it's not the one we're changing
+    // --> meaning the user wanted a different sitename for this url
+
+    //     if (session_store.related_sites.length > 1)
+    //         ui.show('#storedids_dropdown');
+
     recalculate();
 });
 
