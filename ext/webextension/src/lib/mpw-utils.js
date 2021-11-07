@@ -50,14 +50,12 @@ function pad_left(len, s, chr) {
     }
 }
 
-function mpsites_import_error(code, message) {
-    this.name = 'mpsites_import_error';
-    this.message = message || '';
-    this.code = code || 0;
-    this.stack = (new Error()).stack;
+class MPsitesImportError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "MPsitesImportError";
+  }
 }
-mpsites_import_error.prototype = Object.create(Error.prototype);
-mpsites_import_error.prototype.constructor = mpsites_import_error;
 
 function Site(site_data) {
     if (site_data)
@@ -146,7 +144,7 @@ function read_mpsites(d, username, key_id, confirm_fn){
           'user' in jsn &&
           'format' in jsn['export'] &&
           jsn['export']['format'] == 1)) {
-        throw new mpsites_import_error(30, "Not a mpjson v1 file");
+        throw new MPsitesImportError("Not a mpjson v1 file");
     }
     if (username && jsn.user['full_name'] && jsn.user['full_name'] !== username) {
         if (!confirm_fn("Username mismatch!\n\nYou may still import this file, "+
@@ -182,11 +180,11 @@ function read_mpsites_legacy(d, username, key_id, confirm_fn){
 
     if ((l = d.shift()) !== file_header) {
         console.warn("header not as expected", l);
-        throw new mpsites_import_error(3, "Not a mpsites file");
+        throw new MPsitesImportError("Not a mpsites file");
     }
 
     while((l = d.shift()) !== '##'){
-        if (!d.length) throw new mpsites_import_error(3, "Not a mpsites file");
+        if (!d.length) throw new MPsitesImportError("Not a mpsites file");
     }
 
     while((l = d.shift()) !== '##'){
@@ -197,7 +195,7 @@ function read_mpsites_legacy(d, username, key_id, confirm_fn){
     }
     if (fheader.format !== 1) {
         console.log(fheader);
-        throw new mpsites_import_error(1, "Unsupported mpsites format");
+        throw new MPsitesImportError("Unsupported mpsites format");
     }
     if (username && fheader.username && fheader.username !== username) {
         if (!confirm_fn("Username mismatch!\n\nYou may still import this file, "+
@@ -285,6 +283,7 @@ function make_mpsites(key_id, username, stored_sites, alg_min_version, alg_versi
 return {
     make_mpsites,
     read_mpsites,
-    Site
+    Site,
+    MPsitesImportError
 };
 }());

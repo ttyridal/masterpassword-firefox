@@ -25,11 +25,22 @@
 "use strict";
 import mpw_utils from "./mpw-utils.js";
 
+class NeedUpgradeError extends Error {
+  constructor() {
+    super("Need data upgrade");
+    this.name = "NeedUpgradeError";
+  }
+}
+
 export default (function() {
 
 let sitedata_needs_upgrade = false;
 const browser_is_chrome = typeof browser === 'undefined';
 const store = (browser_is_chrome ? chrome.storage.sync : chrome.storage.local);
+
+function need_upgrade() {
+    return sitedata_needs_upgrade;
+}
 
 function get(url) {
     return get_nowrap().then(sites => sites.map(e => new mpw_utils.Site(e)));
@@ -59,8 +70,8 @@ function get_nowrap() {
 
 function addOrReplace(site) {
     if (sitedata_needs_upgrade) {
-        console.error("need upgrade before storage");
-        return;
+        console.error("need upgrade before addOrReplace");
+        throw new NeedUpgradeError();
     }
     return new Promise((resolve, fail) => {
         get()
@@ -84,6 +95,10 @@ function set(sites) {
 }
 
 function update(sitename, params) {
+    if (sitedata_needs_upgrade) {
+        console.error("need upgrade before update");
+        throw new NeedUpgradeError();
+    }
     return new Promise((resolve, fail) => {
         get()
         .then(sites=>{
@@ -118,7 +133,10 @@ function addurl(sitename, url) {
 }
 
 function remove(sitename, url) {
-    console.log("sitestore.remove(",sitename,url,")");
+    if (sitedata_needs_upgrade) {
+        console.error("need upgrade before remove");
+        throw new NeedUpgradeError();
+    }
     return new Promise((resolve, fail) => {
         get()
         .then(sites=>{
@@ -160,7 +178,9 @@ return {
     addOrReplace,
     addurl,
     remove,
-    update
+    update,
+    need_upgrade,
+    NeedUpgradeError
 }
 
 })();

@@ -134,7 +134,13 @@ document.querySelector('#stored_sites').addEventListener('change', function(e) {
         sitename = t.querySelector('td:nth-child(1)').textContent;
 
     const url = Array.from(new Set(newurl.split(',')))
-    sitestore.update(sitename, {url});
+    try {
+        sitestore.update(sitename, {url});
+    } catch (er) {
+        if (er instanceof sitestore.NeedUpgradeError)
+            messagebox(er.message);
+        e.target.value = oldurl;
+    }
 
     console.debug('Change',t,url,oldurl);
     e.target.setAttribute('data-old', newurl);
@@ -146,8 +152,13 @@ document.querySelector('#stored_sites').addEventListener('click', function(e) {
     let sitename = t.querySelector('td:nth-child(1)').textContent;
     let url = t.querySelector('input').getAttribute('data-old');
 
-    sitestore.remove(sitename);
-    t.parentNode.removeChild(t);
+    try {
+        sitestore.remove(sitename);
+        t.parentNode.removeChild(t);
+    } catch (er) {
+        if (er instanceof sitestore.NeedUpgradeError)
+            messagebox(er.message);
+    }
 });
 
 
@@ -212,6 +223,12 @@ document.addEventListener('drop', function(e) {
         messagebox("Error: need a .mpsites file");
         return;
     }
+
+    if (sitestore.need_upgrade()) {
+        messagebox("need data upgrade before import");
+        return;
+    }
+
     var fr = new FileReader();
     fr.onload=function(x){
         import_mpsites(x.target.result);
@@ -222,11 +239,12 @@ document.addEventListener('drop', function(e) {
 async function import_mpsites(data) {
     let has_ver1_mb_sites = false;
     let imported_sites;
+
     try {
         imported_sites = mpw_utils.read_mpsites(data, username, key_id, confirm);
         if (!imported_sites) return;
     } catch (e) {
-        if (e.name === 'mpsites_import_error') {
+        if (e instanceof mpw_utils.MPsitesImportError) {
             messagebox("Error: "+e.message);
             return;
         }
@@ -275,6 +293,10 @@ async function import_mpsites(data) {
 
 document.querySelector('body').addEventListener('click', function(ev){
     if (ev.target.classList.contains('import_mpsites')) {
+        if (sitestore.need_upgrade()) {
+            messagebox("need data upgrade before import");
+            return;
+        }
         document.querySelector('#importinput').click();
     }
     if (ev.target.classList.contains('export_mpsites_json')) {
