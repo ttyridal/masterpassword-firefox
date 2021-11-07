@@ -330,11 +330,9 @@ function warn_keyid_not_matching()
 }
 
 document.querySelector('#main').addEventListener('change', function(ev){
-    let sn = ui.sitename();
+    let sitename = ui.sitename();
     let domain = ui.domain();
     const target_is_sitename_select = ev.target == document.querySelector('mp-combobox');
-    console.log("change:", sn, ev.target);
-
 
     const siteidx = session_store.stored_sites.findIndex(e => e ? e.sitename == sitename : false);
     let site = siteidx != -1 ? session_store.stored_sites[siteidx] : null;
@@ -342,14 +340,14 @@ document.querySelector('#main').addEventListener('change', function(ev){
     if (!site) {
         if (!target_is_sitename_select) {
             console.log("impossible condition?");
-            let props = {sitename: sn, url:[domain]};
+            let props = {sitename: sitename, url:[domain]};
             Object.assign(props, ui.siteconfig());
             site = new mpw_utils.Site(props);
         } else {
-            site = new mpw_utils.Site({sitename: sn, url:[domain], type: session_store.defaulttype, generation: 1, username:''})
+            site = new mpw_utils.Site({sitename: sitename, url:[domain], type: session_store.defaulttype, generation: 1, username:''})
         }
     } else {
-        // TODO: add this domain to site's url
+        site.url = Array.from(new Set([...site.url, domain]));
         // place it at the very top
         session_store.stored_sites.splice(siteidx, 1);
         session_store.stored_sites.unshift(site);
