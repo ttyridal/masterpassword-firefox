@@ -23,6 +23,7 @@ html{
   color: var(--text-color);
   background-color: var(--main-bg-color);
 }
+body { font-size: 100%;}
 
 main {
     display: block;
