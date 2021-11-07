@@ -78,7 +78,7 @@ button {
   text-align: center;
   white-space: nowrap;
   vertical-align: middle;
-  cursor: default;
+  cursor: pointer;
 }
 
 button:focus, input:focus, mp-combobox:focus-within {
@@ -333,6 +333,10 @@ button#siteconfig_show {
     background:white;
 	color:black;
     padding: 1em;
+}
+
+.inset {
+    margin-left: 2em;
 }
 
 #messagebox {

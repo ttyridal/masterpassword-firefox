@@ -67,6 +67,8 @@ function stored_sites_table_append(domain, site, type, loginname, count, ver) {
 function stored_sites_table_update(sites) {
     document.querySelector('#stored_sites > tbody').innerHTML = '';
 
+    sites.sort((a,b)=>(a.sitename > b.sitename ? 1 : -1));
+
     for (const site of sites) {
         stored_sites_table_append(site.url,
             site.sitename,
@@ -101,7 +103,12 @@ window.addEventListener('load', function() {
         }
     });
 
-    sitestore.get().then(sites=>{stored_sites_table_update(sites);})
+    sitestore.get().then(sites=>{
+        stored_sites_table_update(sites);
+        if (sitestore.need_upgrade()) {
+            document.querySelector('.upgrade_datastore').style.display='';
+        }
+    })
     .catch((err) => {
         messagebox("Failed loading sites");
         console.error("Failed loading sites on load", err);
@@ -170,19 +177,27 @@ function get_sitesearch(sitename) {
         return sitename;
 }
 
-function resolveConflict(site, existing) {
+function resolveConflict(site, existing, AB) {
     return new Promise(function(resolve, reject){
         let div = document.querySelector('#conflict_resolve');
 
         div.querySelector('.sitename').textContent = site.sitename;
-        div.querySelector('.domainvalue').textContent = site.sitesearch;
+        div.querySelector('.domainvalue_existing').textContent = existing.url;
         div.querySelector('.existing_type').textContent = passtype_to_str(existing.type);
         div.querySelector('.existing_count').textContent = existing.generation;
         div.querySelector('.existing_username').textContent = existing.username;
 
+        div.querySelector('.domainvalue_new').textContent = site.url;
         div.querySelector('.new_type').textContent = passtype_to_str(site.type);
         div.querySelector('.new_count').textContent = site.generation;
         div.querySelector('.new_username').textContent = site.username;
+
+        if (AB) {
+            div.querySelector('.existing').innerText = div.querySelector('.existing').innerText.replace(/existing/i, 'A');
+            div.querySelector('.importing').innerText = div.querySelector('.importing').innerText.replace(/importing/i, 'B');
+            div.querySelector('#existing').innerText = 'Keep A';
+            div.querySelector('#imported').innerText = 'Keep B';
+        }
 
         function click_handler(ev) {
             switch (ev.target.id) {
@@ -236,6 +251,38 @@ document.addEventListener('drop', function(e) {
     fr.readAsText(dt.files[0]);
 });
 
+async function merge_new_sites(sites, imported_sites, AB) {
+    let has_ver1_mb_sites = false;
+    let site_index = new Map(sites.map((e, i) => [e.sitename, i]));
+
+    for (let site of imported_sites) {
+        if (!site.url)
+            site.url = get_sitesearch(site.sitename);
+
+        let conflict_idx = site_index.get(site.sitename);
+
+        if (conflict_idx !== undefined) {
+            let asite = sites[conflict_idx];
+            if (site.equal(asite)) {
+                asite.url = Array.from(new Set([...site.url, ...asite.url]));
+                sites[conflict_idx] = asite;
+            } else {
+                let url = Array.from(new Set([...site.url, ...asite.url]));
+                site = await resolveConflict(site, asite, AB);
+                site.url = url;
+                sites[conflict_idx] = site;
+            }
+        } else {
+            site_index.set(site.sitename, sites.length);
+            sites.push(site);
+        }
+
+        if (site.passalgo < 2 && !string_is_plain_ascii(site.sitename))
+            has_ver1_mb_sites = true;
+    }
+    return [sites, has_ver1_mb_sites];
+}
+
 async function import_mpsites(data) {
     let has_ver1_mb_sites = false;
     let imported_sites;
@@ -252,33 +299,8 @@ async function import_mpsites(data) {
     }
 
     let sites = await sitestore.get();
-    let site_index = new Map(sites.map((e, i) => [e.sitename, i]));
 
-    for (let site of imported_sites) {
-        if (!site.url)
-            site.url = get_sitesearch(site.sitename);
-
-        let conflict_idx = site_index.get(site.sitename);
-
-        if (conflict_idx !== undefined) {
-            let asite = sites[conflict_idx];
-            if (site.equal(asite)) {
-                asite.url = Array.from(new Set([...site.url, ...asite.url]));
-                sites[conflict_idx] = asite;
-            } else {
-                let url = Array.from(new Set([...site.url, ...asite.url]));
-                site = await resolveConflict(site, asite);
-                site.url = url;
-                sites[conflict_idx] = site;
-            }
-        } else {
-            site_index.set(site.sitename, sites.length);
-            sites.push(site);
-        }
-
-        if (site.passalgo < 2 && !string_is_plain_ascii(site.sitename))
-            has_ver1_mb_sites = true;
-    }
+    [sites, has_ver1_mb_sites] = await merge_new_sites(sites, imported_sites);
 
     sitestore.set(sites);
     stored_sites_table_update(sites);
@@ -292,6 +314,22 @@ async function import_mpsites(data) {
 };
 
 document.querySelector('body').addEventListener('click', function(ev){
+    if (ev.target.classList.contains('upgrade_datastore')) {
+        document.querySelector('#preupgrade').style.display='';
+    }
+    if (ev.target.classList.contains('upgrade_datastore_now')) {
+        document.querySelector('#preupgrade').style.display='none';
+        sitestore.get().then(sites => merge_new_sites([], sites, true)).then(x => {
+            let [sites, _] = x;
+            sitestore.set(sites);
+            messagebox("Upgrade complete");
+            stored_sites_table_update(sites);
+            document.querySelector('.upgrade_datastore').style.display='none';
+        });
+    }
+    if (ev.target.classList.contains('hide_preupgrade')) {
+        document.querySelector('#preupgrade').style.display='none';
+    }
     if (ev.target.classList.contains('import_mpsites')) {
         if (sitestore.need_upgrade()) {
             messagebox("need data upgrade before import");

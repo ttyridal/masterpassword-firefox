@@ -91,46 +91,6 @@ browser.alarms.onAlarm.addListener(a => {
     }
 });
 
-(function convertStorageFormat(){
-    promised_storage_get(['sites'])
-    .then(sites=>{
-        sites = sites.sites;
-        if (typeof sites === 'undefined') return;
-        let result = {};
-        let conflict = false;
-
-        for (const [domain, sitedict] of Object.entries(sites)) {
-            if (conflict) break;
-            for (const [sitename, props] of Object.entries(sitedict)) {
-                if (sitename in result) {
-                    existing = result[sitename];
-                    if ((existing.type != props.type)
-                    ||  (existing.generation != props.generation)
-                    ||  (existing.username != props.username)) {
-                        settings.need_manual_sites_upgrade = true;
-                        return;
-                    } else {
-                        existing.url.push(domain);
-                    }
-                    // check for conflict
-                } else {
-                    props.sitename = sitename;
-                    props.url = [domain];
-                    result[sitename] = props;
-                }
-            }
-        }
-        //if (conflict) exited by early return
-        browser.storage.local.set({sitedata:Object.values(result)})
-        .then(()=>{browser.storage.local.remove('sites')})
-        .then(()=>{
-            console.log("site data successfully converted");
-        });
-
-    });
-}); //();
-
-
 function temp_store_masterkey(k) {
     if (!settings.passwdtimeout) return;
     if (settings.passwdtimeout > 0) {

@@ -79,7 +79,7 @@
         </div>
     </div>
 
-    <div class="container accordion">
+    <div class="container accordion in">
         <h2 class="accordion_toggle">Stored sites</h2>
         <div>
             <p class="warning_message" id="ver3note" style="display:none">
@@ -92,6 +92,7 @@
             <button class="import_mpsites">import</button>
             <button class="export_mpsites">export (.mpsites)</button>
             <button class="export_mpsites_json">export (.mpjson)</button>
+            <button class="upgrade_datastore" style="color:red;font-weight:800;display:none">Upgrade datastore</button>
             <p class="">(You can drag-drop a .mpsites file here to import it)</p>
             <table class="" id="stored_sites">
                 <thead><tr><th>sitename<th>(matching)<th>Login<th>count<th>type<th>ver
@@ -137,16 +138,35 @@
 
 <div id="conflict_resolve" class="backdrop" style="display:none">
     <div class="dialog">
-        <h2>Conflicting <span class="sitename"></span> (<small class="domainvalue"></small>)</h2>
-        <h3>existing</h3>
-        type: <span class="existing_type"></span>
-        count: <span class="existing_count"></span>
-        username: <span class="existing_username"></span>
-        <h3>importing</h3>
-        type: <span class="new_type"></span>
-        count: <span class="new_count"></span>
-        username: <span class="new_username"></span>
+        <h2>Conflicting sitename <span class="sitename"></span></h2>
+        <small>url's will be merged in both cases</small>
+        <h3 class="existing">existing  (<small>for url <span class="domainvalue_existing"></span></small>)</h3>
+        <div class="inset">
+            type: <span class="existing_type"></span><br>
+            count: <span class="existing_count"></span><br>
+            username: <span class="existing_username"></span><br>
+        </div>
+        <h3 class="importing">importing (<small>for url <span class="domainvalue_new"></span></small>)</h3>
+        <div class="inset">
+            type: <span class="new_type"></span><br>
+            count: <span class="new_count"></span><br>
+            username: <span class="new_username"></span><br>
+        </div>
         <div style="padding-top:1em"><button id="existing">Keep existing</button> <button id="imported">Replace with imported</button></div>
+    </div>
+</div>
+
+<div id="preupgrade" class="backdrop" style="display:none">
+    <div class="dialog">
+        <p>This process will convert your stored sites to the new format<p>Please notice that 
+        the new format will prevent having the same site stored under different urls with different
+        parameters. eg. your.site.com will have the same counter, type and username regardless of
+        the url of the current tab.<p>
+        You will be prompted to select the one to keep if your data contains such inconsistencies.
+        <p>
+        <button class="export_mpsites_json">save data now</button>
+        <button class="upgrade_datastore_now">start upgrade</button>
+        <button class="hide_preupgrade">cancel</button>
     </div>
 </div>
 
