@@ -23,10 +23,14 @@
         <h3>Users of OS' key-vault</h3>
         <p>If you're using GNOME Keyring, KWallet, OSX Keychain or Windows Password Vault to store your master key, you'll need to
         download a separate helper app. Please refer to <a href="https://github.com/ttyridal/masterpassword-firefox/wiki/Webextensions" target="_blank">the wiki</a> for further information.
-        <h3>Changes since v2.3.0</h3>
+        <h3>Changes since v2.3.1 (firefox) / 2.1.5 (chrome)</h3>
         <ul>
         <li>Deny multiple instances of site with different settings (see <a href="#details">details below</a>)
-        <li>
+        <li>Added import/export of mpjson format (can now store url match info)
+        <li>Added import mpsites/mpjson <i>button</i>, in addition to drag-n-drop
+        <li>Reduced set of required permissions
+        <li>Merged Firefox and Chrome codebases
+        <li>Fix for frameworks that did not detect password inserted (thanks to Andrew Armenia)
         </ul>
 
         <h3>Review</h3>
@@ -46,6 +50,20 @@
         <p>
         The conversion will be automatic if you have no discrepancies in your settings. Otherwise you will meet
         a warning and can review the process in the configuration pane.
+
+        <h3>Privacy Policy</h3>
+        <p>Neither Masterpassword nor it's authors collect any information from or about the usage of
+        Masterpassword.<br>full stop!</p>
+
+        <p>Masterpassword store your settings (site name, etc) locally on your device. This information is
+        never transferred anywhere by Masterpassword.<p>
+
+        <p>Your browser vendor may collect data on your usage of this extension; when you download it, every
+        time you activate it (and site was active when you did) etc. Please refer to your vendor's policy for
+        details.<br>
+        Further, if you have enabled synchronization of addon-data within your browser, the browser may
+        transfer and store this on a synchronization server. Again please refer to your browser vendor's
+        policy for details.</p>
         </main>
     </body>
 </html>
