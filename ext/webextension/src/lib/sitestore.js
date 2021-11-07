@@ -28,7 +28,8 @@ import mpw_utils from "./mpw-utils.js";
 export default (function() {
 
 let sitedata_needs_upgrade = false;
-const store = chrome.storage.local;
+const browser_is_chrome = typeof browser === 'undefined';
+const store = (browser_is_chrome ? chrome.storage.sync : chrome.storage.local);
 
 function get(url) {
     return get_nowrap().then(sites => sites.map(e => new mpw_utils.Site(e)));
@@ -42,7 +43,7 @@ function get_nowrap() {
             else if ('sites' in d) {
                 sitedata_needs_upgrade = true;
                 let result = [];
-                for (const [domain, sitedict] of Object.entries(sites)) {
+                for (const [domain, sitedict] of Object.entries(d.sites)) {
                     for (const [sitename, props] of Object.entries(sitedict)) {
                         props.sitename = sitename;
                         props.url = [domain];

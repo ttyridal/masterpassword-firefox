@@ -21,6 +21,7 @@
 "use strict";
 
 if (!browser) {
+    const browser_is_chrome = true;
     var browser = {};
     browser.alarms = chrome.alarms;
     browser.tabs = chrome.tabs;
@@ -180,9 +181,13 @@ function store_update_impl(d) {
     chrome.storage.local.set(syncset);
 }
 
-function promised_storage_get(keys) {
+function promised_storage_get(keys, always_local) {
     return new Promise((resolve, fail) => {
-        let store = chrome.storage.local;
+        let store;
+        if (browser_is_chrome && !always_local)
+            store = chrome.storage.sync;
+        else
+            store = chrome.storage.local;
 
         store.get(keys, itms => {
             if (itms === undefined) resolve({});
@@ -438,7 +443,7 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
 
 });
 
-Promise.all([browser.management.getSelf(), promised_storage_get(['releasenote_version'])])
+Promise.all([browser.management.getSelf(), promised_storage_get(['releasenote_version'], true)])
 .then(c => {
     if (c[0].version !== c[1].releasenote_version) {
         browser.tabs.create({
