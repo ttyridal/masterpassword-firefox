@@ -393,7 +393,7 @@ document.querySelector('#copypass').addEventListener('click', function(ev) {
 
 document.querySelector('body').addEventListener('click', function(ev) {
     if (ev.target.classList.contains('btnconfig')) {
-        chrome.tabs.create({'url': '../options/index.html'}, function(tab) { });
+        chrome.tabs.create({'url': '/src/options/index.html'}, function(tab) { });
     }
     else if (ev.target.classList.contains('btnlogout')) {
         session_store.masterkey = null;
