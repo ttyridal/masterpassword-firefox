@@ -18,7 +18,7 @@
 /*jshint browser:true, devel:true */
 /* globals chrome, mpw */
 import sitestore from "../lib/sitestore.js";
-import {Site} from "../lib/site.js";
+import {Site} from "../lib/sites.js";
 import {defer, copy_to_clipboard} from "../lib/utils.js";
 import {parseUri} from "../lib/uritools.js";
 import {ui} from "./ui.js";
