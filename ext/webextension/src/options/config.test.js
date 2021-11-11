@@ -33,7 +33,7 @@ it('config.js loads without error', async () => {
 
     const sitestore = (await import('../lib/sitestore.js')).default;
     sitestore.get = jest.fn().mockResolvedValue([]);
-    const configjs = (await import('./config.js')).default;
+    const configjs = (await import('./config.js'));
 
 
     window.dispatchEvent(new window.Event('load'));

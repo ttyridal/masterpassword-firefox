@@ -23,7 +23,7 @@
     SOFTWARE.
 */
 "use strict";
-import mpw_utils from "./mpw-utils.js";
+import {Site} from "./sites.js";
 
 class NeedUpgradeError extends Error {
   constructor() {
@@ -43,7 +43,7 @@ function need_upgrade() {
 }
 
 function get(url) {
-    return get_nowrap().then(sites => sites.map(e => new mpw_utils.Site(e)));
+    return get_nowrap().then(sites => sites.map(e => new Site(e)));
 };
 
 function get_nowrap() {
@@ -160,18 +160,6 @@ function remove(sitename, url) {
     });
 }
 
-/*
-function removeConflict(sitename, url) {
-    return new Promise((resolve, fail) => {
-        get()
-        .then(sites=>{
-            const not_matching = (e) => ((e.sitename != sitename) && (!url || (url != e.url)));
-            sites = sites.filter(not_matching);
-            store.set({'sitedata': sites}, ()=>resolve());
-        });
-    });
-}
-*/
 return {
     get,
     set,

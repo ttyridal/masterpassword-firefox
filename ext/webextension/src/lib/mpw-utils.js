@@ -18,14 +18,8 @@
 /*jshint browser:true, jquery:true, devel:true, nonstandard:true, -W055 */
 
 "use strict";
+import {Site} from "./sites.js";
 export default (function() {
-
-function encode_utf8(s) {
-  return unescape(encodeURIComponent(s));
-}
-function string_is_plain_ascii(s) {
-    return s.length === encode_utf8(s).length;
-}
 
 function pad_left(len, s, chr) {
     chr = chr || ' ';
@@ -57,76 +51,29 @@ class MPsitesImportError extends Error {
   }
 }
 
-function Site(site_data) {
-    if (site_data)
-        Object.assign(this, site_data);
-    if (this.type && !isNaN(this.type)) {
-        let t = new Map([
-            [20,'s'],
-            [16,'x'],
-            [21,'i'],
-            [19,'b'],
-            [31,'p'],
-            [30,'n'],
-            [17,'l'],
-            [18,'m'],
-        ]).get(this.type);
-        if (!t)
-            console.log('unknown password type, '+this.type);
-        else
-            this.type = t;
-    }
-
-    this.username = this.username || '';
-}
-Site.prototype.constructor = Site;
-Site.prototype.type_as_code = function() {
-    switch(this.type){
-        case 's': return 20; break;
-        case 'x': return 16; break;
-        case 'i': return 21; break;
-        case 'b': return 19; break;
-        case 'p': return 31; break;
-        case 'n': return 30; break;
-        case 'l': return 17; break;
-        case 'm': return 18; break;
-        default: throw "unknown password type:" + this.type;
-    }
-}
-Site.prototype.required_alg_version = function(alg_min_version) {
-    if (alg_min_version < 3 && !string_is_plain_ascii(this.sitename))
-        return 2;
-    else
-        return alg_min_version;
-}
-Site.prototype.as_mpsites_line = function(alg_min_version) {
+function site_as_mpsites_line(site, alg_min_version) {
     const last_used = '2015-03-23T13:06:35Z';
     const use_count = '0';
     const sp2 = '  ';
     return [last_used, sp2,
         pad_left(8, use_count), sp2,
-        pad_left(8, [this.type_as_code().toString(), ':', this.required_alg_version(alg_min_version), ':', this.generation]), sp2,
-        pad_left(25, this.username), '\t',
-        pad_left(25, this.sitename), '\t',
+        pad_left(8, [site.type_as_code().toString(), ':', site.required_alg_version(alg_min_version), ':', site.generation]), sp2,
+        pad_left(25, site.username), '\t',
+        pad_left(25, site.sitename), '\t',
         '\n'].join('');
 }
-Site.prototype.equal = function(other) {
-    return (this.sitename == other.sitename &&
-        this.generation == other.generation &&
-        this.type == other.type &&
-        this.username == other.username);
-}
-Site.prototype.as_mpjson = function(alg_min_version) {
+
+function site_as_mpjson(site, alg_min_version) {
     let o = {};
-    o[this.sitename] = {
-        "counter": this.generation,
-        "algorithm": this.required_alg_version(alg_min_version),
-        "type": this.type_as_code(),
+    o[site.sitename] = {
+        "counter": site.generation,
+        "algorithm": site.required_alg_version(alg_min_version),
+        "type": site.type_as_code(),
         //login_type: 30
         "uses": 0,
         "last_used": '2015-03-23T13:06:35Z',
-        "ext.browser.url": this.url,
-        "ext.browser.username": this.username
+        "ext.browser.url": site.url,
+        "ext.browser.username": site.username
         }
     return o;
 }
@@ -232,7 +179,7 @@ function read_mpsites_legacy(d, username, key_id, confirm_fn){
 
 function make_mpsites(key_id, username, stored_sites, alg_min_version, alg_version, as_json) {
     if (as_json) {
-        let sites = stored_sites.reduce((prev, cur) => Object.assign(prev, cur.as_mpjson(alg_min_version)), {});
+        let sites = stored_sites.reduce((prev, cur) => Object.assign(prev, site_as_mpjson(cur, alg_min_version)), {});
         return [JSON.stringify({
             "export": {
                 "date": new Date().toISOString().slice(0,-2) +'Z',
@@ -272,10 +219,46 @@ function make_mpsites(key_id, username, stored_sites, alg_min_version, alg_versi
 
 
     for (const site of stored_sites) {
-        a.push(site.as_mpsites_line(alg_min_version));
+        a.push(site_as_mpsites_line(site, alg_min_version));
     }
 
     return a;
+}
+
+function get_sitesearch(sitename) {
+    let y = sitename.split("@");
+    if (y.length > 1)
+        return y[y.length-1];
+    else
+        return sitename;
+}
+
+async function merge_sites(sites, imported_sites, resolveConflict) {
+    let site_index = new Map(sites.map((e, i) => [e.sitename, i]));
+
+    for (let site of imported_sites) {
+        if (!site.url)
+            site.url = get_sitesearch(site.sitename);
+
+        let conflict_idx = site_index.get(site.sitename);
+
+        if (conflict_idx !== undefined) {
+            let asite = sites[conflict_idx];
+            if (site.equal(asite)) {
+                asite.url = Array.from(new Set([...site.url, ...asite.url]));
+                sites[conflict_idx] = asite;
+            } else {
+                let url = Array.from(new Set([...site.url, ...asite.url]));
+                site = await resolveConflict(site, asite);
+                site.url = url;
+                sites[conflict_idx] = site;
+            }
+        } else {
+            site_index.set(site.sitename, sites.length);
+            sites.push(site);
+        }
+    }
+    return sites;
 }
 
 
@@ -283,7 +266,7 @@ function make_mpsites(key_id, username, stored_sites, alg_min_version, alg_versi
 return {
     make_mpsites,
     read_mpsites,
-    Site,
+    merge_sites,
     MPsitesImportError
 };
 }());

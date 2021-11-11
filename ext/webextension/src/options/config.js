@@ -169,14 +169,6 @@ document.querySelector('#stored_sites').addEventListener('click', function(e) {
 });
 
 
-function get_sitesearch(sitename) {
-    let y = sitename.split("@");
-    if (y.length > 1)
-        return y[y.length-1];
-    else
-        return sitename;
-}
-
 function resolveConflict(site, existing, AB) {
     return new Promise(function(resolve, reject){
         let div = document.querySelector('#conflict_resolve');
@@ -251,34 +243,6 @@ document.addEventListener('drop', function(e) {
     fr.readAsText(dt.files[0]);
 });
 
-async function merge_new_sites(sites, imported_sites, AB) {
-    let site_index = new Map(sites.map((e, i) => [e.sitename, i]));
-
-    for (let site of imported_sites) {
-        if (!site.url)
-            site.url = get_sitesearch(site.sitename);
-
-        let conflict_idx = site_index.get(site.sitename);
-
-        if (conflict_idx !== undefined) {
-            let asite = sites[conflict_idx];
-            if (site.equal(asite)) {
-                asite.url = Array.from(new Set([...site.url, ...asite.url]));
-                sites[conflict_idx] = asite;
-            } else {
-                let url = Array.from(new Set([...site.url, ...asite.url]));
-                site = await resolveConflict(site, asite, AB);
-                site.url = url;
-                sites[conflict_idx] = site;
-            }
-        } else {
-            site_index.set(site.sitename, sites.length);
-            sites.push(site);
-        }
-    }
-    return sites;
-}
-
 async function import_mpsites(data) {
     let imported_sites;
 
@@ -295,7 +259,7 @@ async function import_mpsites(data) {
 
     let sites = await sitestore.get();
 
-    sites = await merge_new_sites(sites, imported_sites);
+    sites = await mpw_utils.merge_sites(sites, imported_sites, (a,b)=>resolveConflict(a,b,false));
 
     sitestore.set(sites);
     stored_sites_table_update(sites);
@@ -315,7 +279,7 @@ document.querySelector('body').addEventListener('click', function(ev){
     }
     if (ev.target.classList.contains('upgrade_datastore_now')) {
         document.querySelector('#preupgrade').style.display='none';
-        sitestore.get().then(sites => merge_new_sites([], sites, true)).then(x => {
+        sitestore.get().then(sites => mpw_utils.merge_sites([], sites, (a,b)=>resolveConflict(a,b,true))).then(x => {
             let [sites, _] = x;
             sitestore.set(sites);
             messagebox("Upgrade complete");

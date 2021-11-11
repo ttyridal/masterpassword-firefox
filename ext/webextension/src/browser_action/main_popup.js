@@ -18,7 +18,7 @@
 /*jshint browser:true, devel:true */
 /* globals chrome, mpw */
 import sitestore from "../lib/sitestore.js";
-import mpw_utils from "../lib/mpw-utils.js";
+import {Site} from "../lib/site.js";
 import {defer, copy_to_clipboard} from "../lib/utils.js";
 import {parseUri} from "../lib/uritools.js";
 import {ui} from "./ui.js";
@@ -172,7 +172,7 @@ function loadSites(domain) {
 
         if (!num_related && domain) {
             console.log("insert default site");
-            sites.unshift(new mpw_utils.Site({
+            sites.unshift(new Site({
                 url:[domain],
                 sitename:domain,
                 generation: 1,
@@ -342,9 +342,9 @@ document.querySelector('#main').addEventListener('change', function(ev){
             console.log("impossible condition?");
             let props = {sitename: sitename, url:[domain]};
             Object.assign(props, ui.siteconfig());
-            site = new mpw_utils.Site(props);
+            site = new Site(props);
         } else {
-            site = new mpw_utils.Site({sitename: sitename, url:[domain], type: session_store.defaulttype, generation: 1, username:''})
+            site = new Site({sitename: sitename, url:[domain], type: session_store.defaulttype, generation: 1, username:''})
         }
     } else {
         site.url = Array.from(new Set([...site.url, domain]));
