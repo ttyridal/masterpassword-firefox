@@ -1,0 +1,16 @@
+{
+    "name": "MasterPassword WebExt",
+    "version": "3.0.0",
+    "description": "MasterPassword WebExt",
+    "scripts": {
+        "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --silent=false",
+        "unittest": "node --experimental-vm-modules node_modules/jest/bin/jest.js --silent=false src/*.test.js"
+    },
+    "type": "module",
+    "devDependencies": {
+        "jest": "^27.3.1",
+        "jest-puppeteer": "^6.0.0",
+        "jest-webextension-mock": "^3.7.19",
+        "puppeteer": "^11.0.0"
+    }
+}
