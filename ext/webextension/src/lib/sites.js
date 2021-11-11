@@ -47,18 +47,21 @@ export function Site(site_data) {
     }
 
     this.username = this.username || '';
+    this.sitename = this.sitename || '';
+    this.generation = this.generation || 1;
+    this.type = this.type || 'l';
 }
 Site.prototype.constructor = Site;
 Site.prototype.type_as_code = function() {
     switch(this.type){
-        case 's': return 20; break;
-        case 'x': return 16; break;
-        case 'i': return 21; break;
-        case 'b': return 19; break;
-        case 'p': return 31; break;
-        case 'n': return 30; break;
-        case 'l': return 17; break;
-        case 'm': return 18; break;
+        case 's': return 20;
+        case 'x': return 16;
+        case 'i': return 21;
+        case 'b': return 19;
+        case 'p': return 31;
+        case 'n': return 30;
+        case 'l': return 17;
+        case 'm': return 18;
         default: throw "unknown password type:" + this.type;
     }
 }
