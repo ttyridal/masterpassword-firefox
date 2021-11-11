@@ -110,8 +110,8 @@ window.addEventListener('load', function() {
         }
     })
     .catch((err) => {
-        messagebox("Failed loading sites");
         console.error("Failed loading sites on load", err);
+        messagebox("Failed loading sites");
     });
 });
 
@@ -252,7 +252,6 @@ document.addEventListener('drop', function(e) {
 });
 
 async function merge_new_sites(sites, imported_sites, AB) {
-    let has_ver1_mb_sites = false;
     let site_index = new Map(sites.map((e, i) => [e.sitename, i]));
 
     for (let site of imported_sites) {
@@ -276,15 +275,11 @@ async function merge_new_sites(sites, imported_sites, AB) {
             site_index.set(site.sitename, sites.length);
             sites.push(site);
         }
-
-        if (site.passalgo < 2 && !string_is_plain_ascii(site.sitename))
-            has_ver1_mb_sites = true;
     }
-    return [sites, has_ver1_mb_sites];
+    return sites;
 }
 
 async function import_mpsites(data) {
-    let has_ver1_mb_sites = false;
     let imported_sites;
 
     try {
@@ -300,12 +295,13 @@ async function import_mpsites(data) {
 
     let sites = await sitestore.get();
 
-    [sites, has_ver1_mb_sites] = await merge_new_sites(sites, imported_sites);
+    sites = await merge_new_sites(sites, imported_sites);
 
     sitestore.set(sites);
     stored_sites_table_update(sites);
 
-    if (has_ver1_mb_sites)
+    const site_not_compatible = (site) => (site.passalgo < 2 && !string_is_plain_ascii(site.sitename))
+    if (imported_sites.some(site_not_compatible))
         alert("Version mismatch\n\nYour file contains site names with non ascii characters from "+
               "an old masterpassword version. This addon can not reproduce these passwords");
     else {

@@ -7,7 +7,6 @@ class chromeMockStorage {
     constructor() {
     }
     get(lst, cb) {
-        console
         cb({});
     }
 }

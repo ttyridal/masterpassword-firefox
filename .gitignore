@@ -3,3 +3,4 @@
 /ext/chromeext/icons
 /ext/chromeext/src
 /*.zip
+node_modules/
