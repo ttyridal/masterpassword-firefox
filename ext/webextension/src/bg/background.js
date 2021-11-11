@@ -20,8 +20,8 @@
 (function(){
 "use strict";
 
+const browser_is_chrome = typeof browser === 'undefined';
 if (!browser) {
-    const browser_is_chrome = true;
     var browser = {};
     browser.alarms = chrome.alarms;
     browser.tabs = chrome.tabs;
