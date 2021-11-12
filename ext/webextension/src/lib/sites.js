@@ -50,6 +50,9 @@ export function Site(site_data) {
     this.sitename = this.sitename || '';
     this.generation = this.generation || 1;
     this.type = this.type || 'l';
+    this.url = this.url || [];
+    if (!Array.isArray(this.url))
+        throw new Error("Site.url shall be an array of strings");
 }
 Site.prototype.constructor = Site;
 Site.prototype.type_as_code = function() {

@@ -5,14 +5,14 @@ import {Site} from './sites.js'
 
 import fs from 'fs'
 
-
-it('exports mpsites', () => {
-    const non_conflict_sites =[
+const non_conflict_sites =[
             new Site({sitename: 'test.domain', url:['testdomain.no'], type:'m', generation:1}),
             new Site({sitename: 'user@test.domain', url:['testdomain.no'], type:'l', username:'reasonably_short', generation:1}),
             new Site({sitename: 'åuser@test.domain', url:['testdomain.no'], type:'x', username: 'veryveryveryveryveryveryverylong', generation:2}),
             new Site({sitename: 'very@long.domain@another_very_very_long_test.domain', url:['another.domain'], type:'i', username: 'regular', generation:3})
         ];
+
+it('exports mpsites', () => {
     const alg_version_min = 1;
     const alg_version = 3;
     const use_mpjson = false;
@@ -114,4 +114,14 @@ it('import old ios client file', () => {
         expect.objectContaining({ type: 'l', passalgo: 2, generation: 2, username: '', sitename: 'mysite.com'}),
         expect.objectContaining({ type: 'l', passalgo: 2, generation: 1, username: '', sitename: 'a.very.very.very.very.ling.site.com'}),
     ]));
+});
+
+it('merge 1', async () => {
+    let res = await mpw_utils.merge_sites(non_conflict_sites.slice(0,2), non_conflict_sites.slice(2));
+    expect(res).toEqual(expect.arrayContaining(non_conflict_sites));
+
+    let s5 = new Site({sitename:"mysite.com"})
+    let res2 = await mpw_utils.merge_sites(res, [s5]);
+    expect(res).toEqual(expect.arrayContaining([...non_conflict_sites, s5]));
+    console.log(res2);
 });

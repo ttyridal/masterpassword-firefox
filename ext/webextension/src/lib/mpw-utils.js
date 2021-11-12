@@ -237,8 +237,8 @@ async function merge_sites(sites, imported_sites, resolveConflict) {
     let site_index = new Map(sites.map((e, i) => [e.sitename, i]));
 
     for (let site of imported_sites) {
-        if (!site.url)
-            site.url = get_sitesearch(site.sitename);
+        if (!site.url || site.url.length==0)
+            site.url = [get_sitesearch(site.sitename)];
 
         let conflict_idx = site_index.get(site.sitename);
 
