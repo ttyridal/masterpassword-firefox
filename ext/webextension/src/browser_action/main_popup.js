@@ -21,6 +21,7 @@ import sitestore from "../lib/sitestore.js";
 import {Site} from "../lib/sites.js";
 import {defer, copy_to_clipboard} from "../lib/utils.js";
 import {parseUri} from "../lib/uritools.js";
+import config from "../lib/config.js";
 import {ui} from "./ui.js";
 
 (function () {
@@ -30,10 +31,18 @@ const runtimeSendMessage = (typeof browser !== 'undefined' ?
                        browser.runtime.sendMessage :
                        (msg) => new Promise(suc => chrome.runtime.sendMessage(msg, suc)));
 
-    function store_update(data) {
-        runtimeSendMessage({action: 'store_update', data: data })
-        .catch(err=>{ console.log("BUG!",err); });
-    }
+function masterkey_set(masterkey, nosave) {
+    runtimeSendMessage({action: 'masterkey_set',
+                        masterkey: masterkey,
+                        use_pass_store: config.pass_store && !nosave,
+                        keep_time: config.passwdtimeout})
+    .catch(err=>{ console.log("BUG!",err); });
+}
+
+function masterkey_clear() {
+    runtimeSendMessage({action: 'masterkey_set', masterkey: null, use_pass_store: false })
+    .catch(err=>{ console.log("BUG!",err); });
+}
 
 function get_active_tab_url() {
     var ret = new Promise(function(resolve, fail){
@@ -50,11 +59,19 @@ function get_active_tab_url() {
 }
 
 function update_page_password_input(pass, username) {
-    runtimeSendMessage({action: 'update_page_password',
+    config.get(['auto_submit_pass', 'auto_submit_username'])
+    .then(v => {
+        const url_has_single_site = !ui.is_visible('#storedids_dropdown');
+        let allow_submit = url_has_single_site && v.auto_submit_pass;
+        if (!v.auto_submit_username)
+            username = '';
+
+        return runtimeSendMessage({action: 'update_page_password',
         pass: pass,
         username: username,
         allow_subframe: true,
-        allow_submit: !ui.is_visible('#storedids_dropdown')})
+        allow_submit: allow_submit});
+    })
     .catch(e=>{
         console.info(e);
     });
@@ -63,29 +80,27 @@ function update_page_password_input(pass, username) {
 var mpw_promise = defer(),
     session_store = {};
 
-function resolve_mpw() {
+function resolve_mpw(masterkey) {
     mpw_promise.resolve(
         mpw(
-            session_store.username,
-            session_store.masterkey,
-            session_store.max_alg_version));
+            config.username,
+            masterkey,
+            config.algorithm_version));
     mpw_promise.then(mpw_session => {
         ui.verify("Verify: " + mpw_session.sitepassword(".", 0, "nx"));
 
         var key_id = mpw_session.key_id();
-        if (session_store.key_id && key_id !== session_store.key_id) {
+ 
+
+        if (!config.key_id) {
+            config.set({ key_id: key_id});
+            masterkey_set(masterkey);
+        }
+        else if (key_id !== config.key_id) {
             warn_keyid_not_matching();
-            store_update({
-                username: session_store.username,
-                masterkey: session_store.masterkey});
-        }
-        else {
-            session_store.key_id = key_id;
-            store_update({
-                username: session_store.username,
-                masterkey: session_store.masterkey,
-                key_id: key_id});
-        }
+            masterkey_set(masterkey, true);
+        } else
+            masterkey_set(masterkey);
     });
 }
 
@@ -118,13 +133,13 @@ function recalculate() {
 
         ui.thepassword(Array(pass.length+1).join("\u00B7"), pass); // &middot;
 
-        if (session_store.pass_to_clipboard)
+        if (config.pass_to_clipboard)
             copy_to_clipboard("text/plain", pass);
         update_page_password_input(pass, siteconfig.username);
         //if (hide_after_copy) {
         //    addon.port.emit('close');
         //}
-        if (session_store.pass_to_clipboard)
+        if (config.pass_to_clipboard)
             ui.user_info("Password for " + ui.sitename() + " copied to clipboard");
         else
             ui.user_info("Password for " + ui.sitename() + " ready");
@@ -177,7 +192,7 @@ function loadSites(domain) {
                 sitename:domain,
                 generation: 1,
                 username: '',
-                type: session_store.defaulttype}));
+                type: config.defaulttype}));
             num_related++;
         }
         if (domain)
@@ -205,7 +220,7 @@ function updateUIForDomainSettings(combined)
         ui.sitename(first.sitename);
         ui.siteconfig(first.type, first.generation, first.username || '');
     } else
-         ui.siteconfig(session_store.defaulttype, 1, '');
+         ui.siteconfig(config.defaulttype, 1, '');
 }
 
 function extractDomainFromUrl(url) {
@@ -228,10 +243,10 @@ function showSessionSetup() {
     ui.hide('#main');
     ui.show('#sessionsetup');
 
-    if (!session_store.username) {
+    if (!config.username) {
         ui.focus('#username');
     } else {
-        ui.username(session_store.username);
+        ui.username(config.username);
         ui.focus('#masterkey');
     }
 }
@@ -241,10 +256,10 @@ function showMain() {
     ui.show('#main');
 }
 
-function popup() {
-    if (session_store.username && session_store.masterkey) {
+function popup(masterkey) {
+    if (config.username && masterkey) {
         showMain();
-        setTimeout(()=>{ resolve_mpw();}, 1); // do later so page paints as fast as possible
+        setTimeout(()=>{ resolve_mpw(masterkey);}, 1); // do later so page paints as fast as possible
     } else {
         showSessionSetup();
     }
@@ -265,22 +280,22 @@ function popup() {
 }
 
 window.addEventListener('load', function () {
-    let r = runtimeSendMessage({action: 'store_get', keys:
-        ['username', 'masterkey', 'key_id', 'max_alg_version', 'defaulttype', 'pass_to_clipboard']});
-    r.then(data => {
+    config.get(['username', 'key_id', 'defaulttype', 'pass_to_clipboard', 'pass_store', 'passwdtimeout'])
+    .then(v=>{
+        return runtimeSendMessage({action: 'masterkey_get', use_pass_store: !!v.pass_store});
+    })
+    .then(data => {
         if (data.pwgw_failure) {
             let e = ui.user_warn("System password vault failed! ");
             e = e.appendChild(document.createElement('a'));
             e.href = "https://github.com/ttyridal/masterpassword-firefox/wiki/Key-vault-troubleshooting";
             e.target = "_blank";
             e.textContent = "Help?";
-            data.masterkey=undefined;
-            session_store.username = data.username;
+            mk_data.masterkey=undefined;
         } else {
             ui.user_info("");
-            Object.assign(session_store, data);
         }
-        popup();
+        popup(data.masterkey);
     })
     .catch(err => {
         console.error(err);
@@ -305,13 +320,14 @@ document.querySelector('#sessionsetup > form').addEventListener('submit', functi
         masterkey.focus();
     }
     else {
-        session_store.username = username.value;
-        session_store.masterkey= masterkey.value;
+        let mk = masterkey.value;
         masterkey.value = '';
+
+        config.set({username: username.value});
 
         ui.hide('#sessionsetup');
         ui.show('#main');
-        resolve_mpw();
+        resolve_mpw(mk);
     }
 });
 
@@ -344,7 +360,7 @@ document.querySelector('#main').addEventListener('change', function(ev){
             Object.assign(props, ui.siteconfig());
             site = new Site(props);
         } else {
-            site = new Site({sitename: sitename, url:[domain], type: session_store.defaulttype, generation: 1, username:''})
+            site = new Site({sitename: sitename, url:[domain], type: config.defaulttype, generation: 1, username:''})
         }
     } else {
         site.url = Array.from(new Set([...site.url, domain]));
@@ -396,8 +412,7 @@ document.querySelector('body').addEventListener('click', function(ev) {
         chrome.tabs.create({'url': '/src/options/index.html'}, function(tab) { });
     }
     else if (ev.target.classList.contains('btnlogout')) {
-        session_store.masterkey = null;
-        store_update({masterkey: null});
+        masterkey_clear();
         mpw_promise = defer();
         ui.clear_warning();
         ui.user_info("Session destroyed");
@@ -405,13 +420,7 @@ document.querySelector('body').addEventListener('click', function(ev) {
     }
     else if (ev.target.id === 'change_keyid_ok') {
         mpw_promise.then(mpw_session => {
-            session_store.key_id = mpw_session.key_id();
-            store_update({
-                username: session_store.username,
-                masterkey: session_store.masterkey,
-                key_id: session_store.key_id,
-                force_update: true
-            });
+            config.set({ key_id: mpw_session.key_id() });
         });
         ui.clear_warning();
         ui.user_info("ready");

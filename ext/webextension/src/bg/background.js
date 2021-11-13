@@ -71,18 +71,6 @@ function pwvault_gateway(msg) {
     });
 }
 
-var settings = {
-    // default settings:
-    passwdtimeout: -1,
-    defaulttype: 'l',
-    pass_store: false,
-    pass_to_clipboard: false,
-    auto_submit_pass: false,
-    auto_submit_username: false,
-    max_alg_version: 3,
-    need_manual_sites_upgrade: false
-};
-
 var _masterkey;
 const pw_retention_timer = 'pw_retention_timer';
 browser.alarms.onAlarm.addListener(a => {
@@ -91,154 +79,30 @@ browser.alarms.onAlarm.addListener(a => {
     }
 });
 
-function temp_store_masterkey(k) {
-    if (!settings.passwdtimeout) return;
-    if (settings.passwdtimeout > 0) {
-        browser.alarms.create(pw_retention_timer, {delayInMinutes: settings.passwdtimeout});
+chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.passwdtimeout) {
+        if (changes.passwdtimeout.newValue == 0)
+            _masterkey = undefined;
+        if (changes.passwdtimeout.newValue <= 0)
+            browser.alarms.clear(pw_retention_timer);
+    }
+});
+
+function temp_store_masterkey(k, keep_time) {
+    if (!keep_time) return;
+    if (keep_time > 0) {
+        // create a new alarm with same name will automatically clear the old -> reset :)
+        browser.alarms.create(pw_retention_timer, {delayInMinutes: keep_time});
     }
     _masterkey = k;
 }
 
-function store_update_impl(d) {
-    let syncset = {};
-
-    Object.keys(d).forEach(k => {
-        switch (k) {
-            case 'force_update':
-                break;
-            case 'username':
-            case 'key_id':
-                if (!chrome.extension.inIncognitoContext)
-                    syncset[k] = d[k];
-                break;
-            case 'masterkey':
-                if (settings.pass_store) {
-                    if (d.key_id || d.force_update)
-                        Promise.resolve(pwvault_gateway({'type':'pwset','name':'default', 'value': d[k]}))
-                        .catch(e => { console.error(e); });
-                } else
-                    temp_store_masterkey(d[k]);
-                break;
-            // settings:
-            case 'passwdtimeout':
-                if (d[k] === 0)
-                    _masterkey = undefined;
-                else if (d.passwdtimeout === -1)
-                    browser.alarms.clear(pw_retention_timer);
-                /* falls through */
-            case 'defaulttype':
-            case 'pass_store':
-            case 'pass_to_clipboard':
-            case 'auto_submit_pass':
-            case 'auto_submit_username':
-                syncset[k] = settings[k] = d[k];
-                break;
-            default:
-                console.info("Trying to store unknown key",k);
-                break;
-        }
-    });
-    chrome.storage.local.set(syncset);
-}
-
 function promised_storage_get(keys, always_local) {
-    return new Promise((resolve, fail) => {
-        let store;
-        if (browser_is_chrome && !always_local)
-            store = chrome.storage.sync;
-        else
-            store = chrome.storage.local;
-
-        store.get(keys, itms => {
+    return new Promise(resolve => {
+        chrome.storage.local.get(keys, itms => {
             if (itms === undefined) resolve({});
             else resolve(itms);
         });
-    });
-}
-
-const setting_keys = [
-            'defaulttype',
-            'passwdtimeout',
-            'pass_store',
-            'pass_to_clipboard',
-            'auto_submit_pass',
-            'auto_submit_username',
-            'hotkeycombo',
-            'max_alg_version'];
-
-promised_storage_get(setting_keys).then(v=>{
-    for (let k of setting_keys) {
-        if (k === 'pass_store')
-            v[k] = !(!v[k] || v[k] === 'n');
-        if (typeof v[k] !== 'undefined')
-            settings[k] = v[k];
-    }
-    console.log("settings loaded");
-});
-
-
-
-function store_get_impl(keys) {
-    return promised_storage_get(keys)
-    .then(webext => {
-        if (settings.passwdtimeout === 0) // clear now in case it's recently changed
-            _masterkey = undefined;
-
-        let r = {};
-        for (let k of keys) {
-            switch (k) {
-                //preferences
-                case 'pass_store':
-                    // upgrade pass_store to bool
-                    webext[k] = !(!webext[k] || webext[k] === 'n');
-                    /* falls through */
-                case 'need_manual_sites_upgrade':
-                case 'defaulttype':
-                case 'passwdtimeout':
-                case 'pass_to_clipboard':
-                case 'auto_submit_pass':
-                case 'auto_submit_username':
-                case 'hotkeycombo':
-                case 'max_alg_version':
-                    if (typeof webext[k] !== 'undefined')
-                        settings[k] = webext[k];
-                    r[k] = settings[k];
-                    break;
-
-                case 'masterkey':
-                case 'username':
-                case 'key_id':
-                    r[k] = webext[k];
-                    break;
-                default:
-                    throw new Error("unknown key requested: "+k);
-            }
-        }
-        return r;
-    })
-    .then(r => {
-        if (keys.indexOf('masterkey') === -1)
-            return r;
-
-        if (settings.pass_store && keys.indexOf('masterkey') !== -1) {
-            return Promise.all([r,
-                pwvault_gateway({'type':'pwget', 'name':'default'})
-                .catch(err => {
-                    console.error("pwvault_gateway failed " + err);
-                    return {success:false, reason:err};
-                })
-            ]);
-        } else
-            return [r, {success: true, value: _masterkey}];
-    })
-    .then(comb => {
-        if (keys.indexOf('masterkey') === -1)
-            return comb;
-
-        let [r, mk] = comb;
-        if (mk && mk.success) r.masterkey = mk.value;
-        else r.pwgw_failure = mk.reason;
-        return r;
     });
 }
 
@@ -332,7 +196,7 @@ function _insert_password(args) {
         pwinput.value = args.pass;
         pwinput.dispatchEvent(new Event('change', {bubbles: true, cancelable: true}));
         pwinput.dispatchEvent(new Event('input', {bubbles: true, cancelable: true}));
-        if (args.allow_submit && args.autosubmit && pwinput.form)
+        if (args.autosubmit && pwinput.form)
             window.setTimeout(()=>{
                 let btn = pwinput.form.querySelector('input[type=submit], button[type=submit]');
                 let cancelled = !btn.dispatchEvent(new Event('click', {bubbles: true, cancelable: true}));
@@ -354,8 +218,7 @@ function update_page_password_impl(pass, username, allow_subframe, allow_submit)
                    throw new Update_pass_failed("no password field selected");
                if (!allow_subframe && r.frameId)
                    throw new Update_pass_failed("Not pasting to subframe");
-               username = settings.auto_submit_username && username;
-               let args = { pass: pass, username: username, autosubmit: settings.auto_submit_pass, allow_submit: allow_submit };
+               let args = { pass: pass, username: username, autosubmit: allow_submit };
                return chrome.tabs.executeScript(r.tab.id, {
                    code: ';('+_insert_password+'('+JSON.stringify(args)+'));',
                    frameId: r.frameId,
@@ -383,13 +246,33 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
     switch(req.action) {
         case 'IamActive':  // noisy bastard
             return;
-        case 'store_update':
-            store_update_impl(req.data);
-            sendResponse(Promise.resolve());
+        case 'masterkey_get':
+            if (_masterkey) {
+                sendResponse({masterkey: _masterkey});
+                return;
+            } else if (req.use_pass_store) {
+                pwvault_gateway({'type':'pwget', 'name':'default'})
+                .then(mk => {
+                    sendResponse({masterkey: mk.value});
+                })
+                .catch(err => {
+                    console.error("pwvault_gateway failed " + err);
+                    sendResponse({pwgw_failure: err});
+                });
+                return true;
+            }
+            sendResponse({});
             return;
-        case 'store_get':
-            store_get_impl(req.keys).then(res=>sendResponse(res));
-            return true;
+        case 'masterkey_set':
+            if (!req.masterkey) {
+                _masterkey = undefined;
+            } else if (req.use_pass_store) {
+                pwvault_gateway({'type':'pwset','name':'default', 'value': req.masterkey})
+                .catch(e => { console.error(e); });
+            } else
+                temp_store_masterkey(req.masterkey, req.keep_time);
+            sendResponse({});
+            return;
         case 'update_page_password':
             update_page_password_impl(
                         req.pass,

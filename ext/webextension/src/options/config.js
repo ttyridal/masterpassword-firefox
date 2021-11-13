@@ -21,6 +21,7 @@
 "use strict";
 import sitestore from "../lib/sitestore.js";
 import mpw_utils from "../lib/mpw-utils.js";
+import config from "../lib/config.js";
 
 (function(){
 function encode_utf8(s) {
@@ -30,10 +31,7 @@ function string_is_plain_ascii(s) {
     return s.length === encode_utf8(s).length;
 }
 
- var username="",
-     key_id,
-     alg_max_version,
-     alg_min_version = 1;
+var alg_min_version = 1;
 
 function passtype_to_str(type) {
     switch(type) {
@@ -80,34 +78,19 @@ function stored_sites_table_update(sites) {
 }
 
 window.addEventListener('load', function() {
-    const promised_storage_get = (keys) => {
-        return new Promise((resolve, fail) => {
-            chrome.storage.local.get(keys, itms => {
-                if (itms === undefined) resolve({});
-                else resolve(itms);
-            });
-        });
-    };
+    Promise.all([config.get('username'), sitestore.get()])
+    .then(values=>{
+        let [username, sites] = values;
 
-    promised_storage_get(['username', 'max_alg_version', 'key_id'])
-    .then(data => {
-        username = data.username;
-        key_id = data.key_id;
-        alg_max_version = data.max_alg_version;
+        let sites_max_version = Math.max(...(sites.map(s => s.required_alg_version(1))));
+        alg_min_version = Math.max(sites_max_version, string_is_plain_ascii(username) ? 1 : 3);
+        if (alg_min_version > 2)
+            document.querySelector('#ver3note').style.display = 'inherit';
 
-        if (!string_is_plain_ascii(username)) {
-            alg_min_version = Math.min(3, alg_max_version);
-            if (alg_min_version > 2) {
-                document.querySelector('#ver3note').style.display = 'inherit';
-            }
-        }
-    });
-
-    sitestore.get().then(sites=>{
         stored_sites_table_update(sites);
-        if (sitestore.need_upgrade()) {
+
+        if (sitestore.need_upgrade())
             document.querySelector('.upgrade_datastore').style.display='';
-        }
     })
     .catch((err) => {
         console.error("Failed loading sites on load", err);
@@ -246,6 +229,7 @@ document.addEventListener('drop', function(e) {
 async function import_mpsites(data) {
     let imported_sites;
 
+    let {key_id, username} = await config.get(['key_id', 'username']);
     try {
         imported_sites = mpw_utils.read_mpsites(data, username, key_id, confirm);
         if (!imported_sites) return;
@@ -298,13 +282,18 @@ document.querySelector('body').addEventListener('click', function(ev){
         document.querySelector('#importinput').click();
     }
     if (ev.target.classList.contains('export_mpsites_json')) {
-        sitestore.get().then(sites=> {
-            start_data_download(mpw_utils.make_mpsites(key_id, username, sites, alg_min_version, alg_max_version, true), 'firefox.mpjson');
+
+        Promise.all([config.get(['key_id', 'username']), sitestore.get()])
+        .then(values => {
+            let [{key_id, username}, sites] = values;
+            start_data_download(mpw_utils.make_mpsites(key_id, username, sites, alg_min_version, config.algorithm_version, true), 'firefox.mpjson');
         });
     }
     if (ev.target.classList.contains('export_mpsites')) {
-        sitestore.get().then(sites=> {
-            start_data_download(mpw_utils.make_mpsites(key_id, username, sites, alg_min_version, alg_max_version, false), 'firefox.mpsites');
+        Promise.all([config.get(['key_id', 'username']), sitestore.get()])
+        .then(values => {
+            let [{key_id, username}, sites] = values;
+            start_data_download(mpw_utils.make_mpsites(key_id, username, sites, alg_min_version, config.algorithm_version, false), 'firefox.mpsites');
         });
     }
     if (ev.target.classList.contains('accordion_toggle')) {

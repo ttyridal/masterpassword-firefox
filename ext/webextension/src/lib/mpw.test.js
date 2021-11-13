@@ -97,7 +97,7 @@ it('mpw utf8 algorithm v2', async ()=>{
     expect('j3*sW(mU$hkFDzjiKyHU').toEqual(pw.sitepassword(sitename,cnt,'x'));
 });
 
-it('mpw utf8 algorithm v2', async ()=>{
+it('mpw utf8 algorithm v1', async ()=>{
     const pw = mpw('abc','abc', 1);
     const cnt = 1;
     const sitename = "æøåß";
