@@ -15,8 +15,6 @@
     You should have received a copy of the GNU General Public License
     along with the software.  If not, see <http://www.gnu.org/licenses/>.
 */
-/*jshint browser:true, devel:true, nonstandard:true, -W055 */
-/* globals chrome */
 
 "use strict";
 import sitestore from "../lib/sitestore.js";
@@ -80,7 +78,7 @@ function stored_sites_table_update(sites) {
 window.addEventListener('load', function() {
     Promise.all([config.get('username'), sitestore.get()])
     .then(values=>{
-        let [username, sites] = values;
+        let [username, sites] = values;
 
         let sites_max_version = Math.max(...(sites.map(s => s.required_alg_version(1))));
         alg_min_version = Math.max(sites_max_version, string_is_plain_ascii(username) ? 1 : 3);
@@ -140,7 +138,6 @@ document.querySelector('#stored_sites').addEventListener('click', function(e) {
     if (!e.target.classList.contains('delete')) return;
     let t = find_parent('TR', e.target);
     let sitename = t.querySelector('td:nth-child(1)').textContent;
-    let url = t.querySelector('input').getAttribute('data-old');
 
     try {
         sitestore.remove(sitename);
@@ -153,7 +150,7 @@ document.querySelector('#stored_sites').addEventListener('click', function(e) {
 
 
 function resolveConflict(site, existing, AB) {
-    return new Promise(function(resolve, reject){
+    return new Promise(resolve => {
         let div = document.querySelector('#conflict_resolve');
 
         div.querySelector('.sitename').textContent = site.sitename;
@@ -195,7 +192,7 @@ function resolveConflict(site, existing, AB) {
 }
 
 
-document.querySelector('#importinput').addEventListener('change', function(e) {
+document.querySelector('#importinput').addEventListener('change', () => {
     var fr=new FileReader();
     fr.onload=function(){
         import_mpsites(fr.result);
@@ -255,7 +252,7 @@ async function import_mpsites(data) {
     else {
         messagebox('Import successful');
     }
-};
+}
 
 document.querySelector('body').addEventListener('click', function(ev){
     if (ev.target.classList.contains('upgrade_datastore')) {
@@ -326,7 +323,7 @@ function start_data_download(stringarr,filename) {
     document.body.removeChild(a);
 }
 
-document.querySelector('#messagebox > div.progress').addEventListener('transitionend', ()=> {
+document.querySelector('#messagebox > div.progress').addEventListener('transitionend', () => {
     document.querySelector("#messagebox").classList.remove('visible');
 });
 

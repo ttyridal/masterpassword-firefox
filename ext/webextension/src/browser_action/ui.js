@@ -77,7 +77,7 @@ export const ui = {
         return r;
     },
 
-    domain: function(v) {
+    domain: function() {
         return document.querySelector('#domain').value;
     },
 

@@ -22,6 +22,8 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 */
+/* globals chrome */
+
 "use strict";
 import {Site} from "./sites.js";
 
@@ -42,12 +44,12 @@ function need_upgrade() {
     return sitedata_needs_upgrade;
 }
 
-function get(url) {
+function get() {
     return get_nowrap().then(sites => sites.map(e => new Site(e)));
-};
+}
 
 function get_nowrap() {
-    return new Promise((resolve, fail) => {
+    return new Promise(resolve => {
         store.get(['sites', 'sitedata'], d => {
             if ('sitedata' in d)
                 resolve(d.sitedata);
@@ -73,7 +75,7 @@ function addOrReplace(site) {
         console.error("need upgrade before addOrReplace");
         throw new NeedUpgradeError();
     }
-    return new Promise((resolve, fail) => {
+    return new Promise(resolve => {
         get()
         .then(sites=>{
             const siteidx = sites.findIndex(e => e.sitename == site.sitename);
@@ -89,7 +91,7 @@ function addOrReplace(site) {
 }
 
 function set(sites) {
-    return new Promise((resolve, fail) => {
+    return new Promise(resolve => {
         store.set({'sitedata': sites}, ()=>resolve());
     });
 }

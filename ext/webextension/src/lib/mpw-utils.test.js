@@ -1,5 +1,5 @@
 "use strict";
-import {jest} from '@jest/globals'
+import {jest, expect, it} from '@jest/globals'
 import mpw_utils from './mpw-utils.js'
 import {Site} from './sites.js'
 
@@ -121,7 +121,7 @@ it('merge 1', async () => {
     expect(res).toEqual(expect.arrayContaining(non_conflict_sites));
 
     let s5 = new Site({sitename:"mysite.com"})
-    let res2 = await mpw_utils.merge_sites(res, [s5]);
+    await mpw_utils.merge_sites(res, [s5]);
     expect(res).toEqual(expect.arrayContaining([...non_conflict_sites, s5]));
 });
 
@@ -144,7 +144,7 @@ it('merge 2', async () => {
     for (let i=1; i < 5; i++)
         expect(res[i]).toBe(non_conflict_sites[i]);
 
-    const resolve2 = jest.fn((a,b)=>a);
+    const resolve2 = jest.fn((a/*,b*/)=>a);
     // merge_sites modifies the first argument.. taking a copy
     let orig = Object.assign({}, non_conflict_sites[0]);
     res = await mpw_utils.merge_sites(non_conflict_sites, [s5], resolve2);

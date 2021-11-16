@@ -15,8 +15,8 @@
     You should have received a copy of the GNU General Public License
     along with the software.  If not, see <http://www.gnu.org/licenses/>.
 */
-/*jshint browser:true, devel:true */
-/* globals chrome, mpw */
+/* globals browser, chrome, mpw */
+
 import sitestore from "../lib/sitestore.js";
 import {Site} from "../lib/sites.js";
 import {defer, copy_to_clipboard} from "../lib/utils.js";
@@ -31,7 +31,7 @@ const runtimeSendMessage = (typeof browser !== 'undefined' ?
                        browser.runtime.sendMessage :
                        (msg) => new Promise(suc => chrome.runtime.sendMessage(msg, suc)));
 
-function masterkey_set(masterkey, nosave) {
+function masterkey_set(masterkey, nosave) {
     runtimeSendMessage({action: 'masterkey_set',
                         masterkey: masterkey,
                         use_pass_store: config.pass_store && !nosave,
@@ -39,13 +39,13 @@ function masterkey_set(masterkey, nosave) {
     .catch(err=>{ console.log("BUG!",err); });
 }
 
-function masterkey_clear() {
+function masterkey_clear() {
     runtimeSendMessage({action: 'masterkey_set', masterkey: null, use_pass_store: false })
     .catch(err=>{ console.log("BUG!",err); });
 }
 
 function get_active_tab_url() {
-    var ret = new Promise(function(resolve, fail){
+    var ret = new Promise(resolve => {
         chrome.tabs.query({active:true,windowType:"normal",currentWindow:true}, function(tabres){
         if (tabres.length !== 1) {
             ui.user_warn("Error: bug in tab selector");
@@ -218,13 +218,13 @@ function updateUIForDomainSettings(combined)
     if (domain) {
         let first = session_store.stored_sites[0];
         ui.sitename(first.sitename);
-        ui.siteconfig(first.type, first.generation, first.username || '');
+        ui.siteconfig(first.type, first.generation, first.username || '');
     } else
          ui.siteconfig(config.defaulttype, 1, '');
 }
 
 function extractDomainFromUrl(url) {
-    if (!url || url.startsWith('about:')
+    if (!url || url.startsWith('about:')
         || url.startsWith('resource:')
         || url.startsWith('moz-extension:')
         || url.startsWith('chrome-extension:')
@@ -291,7 +291,7 @@ window.addEventListener('load', function () {
             e.href = "https://github.com/ttyridal/masterpassword-firefox/wiki/Key-vault-troubleshooting";
             e.target = "_blank";
             e.textContent = "Help?";
-            mk_data.masterkey=undefined;
+            data.masterkey=undefined;
         } else {
             ui.user_info("");
         }
@@ -331,7 +331,7 @@ document.querySelector('#sessionsetup > form').addEventListener('submit', functi
     }
 });
 
-document.querySelector('#storedids_dropdown').addEventListener('click', function(ev){
+document.querySelector('#storedids_dropdown').addEventListener('click', function(){
     document.querySelector('#sitename').open();
 });
 
@@ -400,7 +400,7 @@ document.querySelector('#thepassword').addEventListener('click', function(ev) {
     ev.stopPropagation();
 });
 
-document.querySelector('#copypass').addEventListener('click', function(ev) {
+document.querySelector('#copypass').addEventListener('click', function() {
     let pass = document.querySelector('#thepassword').getAttribute('data-pass');
     copy_to_clipboard("text/plain", pass);
     if (pass && pass !== '')
@@ -409,7 +409,7 @@ document.querySelector('#copypass').addEventListener('click', function(ev) {
 
 document.querySelector('body').addEventListener('click', function(ev) {
     if (ev.target.classList.contains('btnconfig')) {
-        chrome.tabs.create({'url': '/src/options/index.html'}, function(tab) { });
+        chrome.tabs.create({'url': '/src/options/index.html'}, function() { });
     }
     else if (ev.target.classList.contains('btnlogout')) {
         masterkey_clear();
@@ -427,7 +427,7 @@ document.querySelector('body').addEventListener('click', function(ev) {
     }
 });
 
-document.querySelector('#siteconfig_show').addEventListener('click', function(ev) {
+document.querySelector('#siteconfig_show').addEventListener('click', function() {
     let sc = document.querySelector('#siteconfig');
     sc.style.transform = 'scale(0,0)';
     sc.style.transformOrigin = '0 0';

@@ -1,6 +1,7 @@
+import {expect, it} from '@jest/globals'
 import { parseUri } from './uritools.js';
 
-test('extracts url', () => {
+it('extracts url', () => {
   expect(parseUri("https://torbjorn.tyridal.no/some/page?args=1")).toEqual(
         {"anchor": "", 
          "authority": "torbjorn.tyridal.no", 

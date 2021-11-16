@@ -46,10 +46,10 @@ export function Site(site_data) {
             this.type = t;
     }
 
-    this.username = this.username || '';
-    this.sitename = this.sitename || '';
-    this.generation = this.generation || 1;
-    this.type = this.type || 'l';
+    this.username = this.username || '';
+    this.sitename = this.sitename || '';
+    this.generation = this.generation || 1;
+    this.type = this.type || 'l';
     this.url = this.url || [];
     if (!Array.isArray(this.url))
         throw new Error("Site.url shall be an array of strings");

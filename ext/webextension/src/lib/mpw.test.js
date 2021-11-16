@@ -1,7 +1,9 @@
 /**
  * @jest-environment jsdom
  */
-import {jest} from '@jest/globals'
+/* globals mpw */
+
+import {expect, it, beforeAll} from '@jest/globals'
 
 beforeAll(async () => {
     await import('./scrypt-asm.js');

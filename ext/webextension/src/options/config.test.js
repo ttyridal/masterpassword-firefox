@@ -1,11 +1,13 @@
 /**
  * @jest-environment jsdom
  */
-import {jest} from '@jest/globals'
+/* globals global */
+
+import {jest, beforeAll, it} from '@jest/globals'
 
 beforeAll(()=>{
     global.chrome = {
-        storage: {local:{}}
+        storage: {local:{}, sync:{}}
     };
 });
 
@@ -29,7 +31,9 @@ it('config.js loads without error', async () => {
     '  <div id="messagebox"><div id="messageboxtxt"></div><div class="progress"></div></div>' + 
     '</div>';
 
-    global.chrome.storage.local.get = (lst,cb)=>{if (lst.includes('username') &&  lst.includes('max_alg_version')) return {'username':'test','max_alg_version':3}; return {}};
+    global.chrome.storage.sync.get = (lst,cb)=>{
+        if (lst.includes('username') &&  lst.includes('max_alg_version')) 
+            return {'username':'test','max_alg_version':3}; return {}};
 
     const sitestore = (await import('../lib/sitestore.js')).default;
     sitestore.get = jest.fn().mockResolvedValue([]);

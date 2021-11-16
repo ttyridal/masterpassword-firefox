@@ -1,6 +1,10 @@
-import {jest} from '@jest/globals'
+/**
+ * @jest-environment node
+ */
+/* globals global */
 
-let windowSpy;
+import {it, expect, jest, afterEach} from '@jest/globals'
+
 let sitestore;
 
 class chromeMockStorage {

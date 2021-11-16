@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with the software.  If not, see <http://www.gnu.org/licenses/>.
 */
-/* global browser, window, console, chrome, Event, document */
+/* global browser, chrome */
 
 (function(){
 "use strict";
@@ -33,7 +33,7 @@ if (!browser) {
 }
 
 var port;
-function port_default_error(p) { port = undefined; }
+function port_default_error() { port = undefined; }
 function pwvault_gateway(msg) {
     console.log("pwvault_gw:",msg.type);
     // Keeping the port open "forever".. seems to be a bug in firefox
@@ -97,7 +97,7 @@ function temp_store_masterkey(k, keep_time) {
     _masterkey = k;
 }
 
-function promised_storage_get(keys, always_local) {
+function promised_storage_get(keys) {
     return new Promise(resolve => {
         chrome.storage.local.get(keys, itms => {
             if (itms === undefined) resolve({});
@@ -107,7 +107,7 @@ function promised_storage_get(keys, always_local) {
 }
 
 function current_tab() {
-    return new Promise((r,f)=>{
+    return new Promise(r => {
         chrome.tabs.query({active:true, currentWindow:true}, function(tabs) {
             r(tabs[0]);
         });
@@ -211,9 +211,9 @@ function update_page_password_impl(pass, username, allow_subframe, allow_submit)
     return current_tab()
            .then(find_active_input)
            .then(r=>{
-               if (r.tgt.type.toLowerCase() === 'password') {}
+               if (r.tgt.type.toLowerCase() === 'password') { /* empty */ }
                else if ((r.tgt.type === '' || r.tgt.type.match(/(text|email|num|tel)/ig)) &&
-                    r.tgt.name.match(/.*(user|name|email|login).*/ig)) {}
+                    r.tgt.name.match(/.*(user|name|email|login).*/ig)) { /* empty */ }
                else
                    throw new Update_pass_failed("no password field selected");
                if (!allow_subframe && r.frameId)
@@ -226,7 +226,7 @@ function update_page_password_impl(pass, username, allow_subframe, allow_submit)
                });
            })
            .catch(err=>{
-               if (err instanceof Update_pass_failed || (err.name && err.name == 'update_pass_failed'))
+               if (err instanceof Update_pass_failed || (err.name && err.name == 'update_pass_failed'))
                    console.log(err.message);
                else
                    console.error("update_page_password", err);});

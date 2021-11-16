@@ -256,7 +256,7 @@ class ComboBox extends HTMLElement {
         }
     }
 
-    insertOption(pos, txt, opts) {
+    insertOption(pos, txt) {
         let li;
         if (txt instanceof HTMLElement) {
             let idx = this.listbox.allOptions.indexOf(txt);
@@ -324,7 +324,7 @@ class ComboBox extends HTMLElement {
     }
 
 
-    handleSlotchange(ev) { }
+    handleSlotchange() { }
 
     handleClick(event) {
         if ((event.target.tagName == 'LI') && event.target.getAttribute('role') == 'option') {
@@ -427,7 +427,7 @@ class ComboBox extends HTMLElement {
 
 
         // this is for the case when a selection in the textbox has been deleted
-        if ((this.inputNode.value.length < this.filter.length) || (['Delete', 'Backspace'].includes(event.code))) {
+        if ((this.inputNode.value.length < this.filter.length) || (['Delete', 'Backspace'].includes(event.code))) {
             this.filter = this.inputNode.value;
             this.listbox.open(true);
             this.option = null;

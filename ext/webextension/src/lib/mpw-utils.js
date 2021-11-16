@@ -123,7 +123,7 @@ function read_mpsites_legacy(d, username, key_id, confirm_fn){
     let ret=[],l,fheader={'format':-1, 'key_id':undefined, 'username':undefined};
     const file_header = '# Master Password site export';
     d = d.split('\n');
-    d = d.map(function(cv, i, a) { return cv.replace(/^\s+|[\r\n]+$/gm,''); });
+    d = d.map(function(cv) { return cv.replace(/^\s+|[\r\n]+$/gm,''); });
 
     if ((l = d.shift()) !== file_header) {
         console.warn("header not as expected", l);

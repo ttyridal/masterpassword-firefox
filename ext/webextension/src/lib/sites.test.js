@@ -1,5 +1,5 @@
 "use strict";
-import {jest} from '@jest/globals'
+import {it, expect} from '@jest/globals'
 import {Site} from './sites.js'
 
 

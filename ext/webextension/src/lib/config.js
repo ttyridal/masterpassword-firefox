@@ -1,3 +1,5 @@
+/* globals chrome */
+
 "use strict;"
 
 class Config {
@@ -6,26 +8,26 @@ class Config {
         this._cache = {};
     }
 
-    get algorithm_version() { return 3 };
-    get browser_is_chrome() { return typeof browser === 'undefined' };
+    get algorithm_version() { return 3 }
+    get browser_is_chrome() { return typeof browser === 'undefined' }
     get username() { if (typeof this._cache.username === 'undefined')
                         throw new Error("need get(['username'])");
-                     else return this._cache.username; };
+                     else return this._cache.username; }
     get key_id() { if (typeof this._cache.key_id === 'undefined')
                         throw new Error("need get(['key_id'])");
-                     else return this._cache.key_id; };
+                     else return this._cache.key_id; }
     get defaulttype() { if (typeof this._cache.defaulttype === 'undefined')
                         throw new Error("need get(['defaulttype'])");
-                     else return this._cache.defaulttype; };
+                     else return this._cache.defaulttype; }
     get pass_to_clipboard() { if (typeof this._cache.pass_to_clipboard === 'undefined')
                         throw new Error("need get(['pass_to_clipboard'])");
-                     else return this._cache.pass_to_clipboard; };
+                     else return this._cache.pass_to_clipboard; }
     get pass_store() { if (typeof this._cache.pass_store === 'undefined')
                         throw new Error("need get(['pass_store'])");
-                     else return this._cache.pass_store; };
+                     else return this._cache.pass_store; }
     get passwdtimeout() { if (typeof this._cache.passwdtimeout === 'undefined')
                         throw new Error("need get(['passwdtimeout'])");
-                     else return this._cache.passwdtimeout; };
+                     else return this._cache.passwdtimeout; }
 
     set(toset){
         if ('masterkey' in toset) throw new Error("key should never be stored on config");
@@ -77,8 +79,8 @@ class Config {
             store.get(lst, cb=>{
                 // set some default values if they are not on store
                 // need them to not be undefined, or cache above will fail
-                if (lst.includes('defaulttype')) cb.defaulttype = cb.defaulttype || 'l';
-                if (lst.includes('key_id')) cb.key_id = cb.key_id || '';
+                if (lst.includes('defaulttype')) cb.defaulttype = cb.defaulttype || 'l';
+                if (lst.includes('key_id')) cb.key_id = cb.key_id || '';
                 if (lst.includes('pass_to_clipboard')) cb.pass_to_clipboard = !!cb.pass_to_clipboard;
                 if (lst.includes('username')) cb.username = cb.username || '';
                 if (lst.includes('pass_store')) cb.pass_store = !!cb.pass_store;
