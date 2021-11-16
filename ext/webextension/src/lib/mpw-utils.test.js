@@ -50,7 +50,7 @@ it('imports mpsites', () => {
         ];
 
     const r = mpw_utils.read_mpsites(mpsite_header.concat(sites).join('\n'));
-    
+
     expect(r).toEqual(expect.arrayContaining([
     expect.objectContaining({ type: 'x', passalgo: 1, generation: 6, username: '', sitename: 'asite'}),
     expect.objectContaining({ type: 'l', passalgo: 3, generation: 1, username: '', sitename: 'csite'}),
@@ -123,5 +123,62 @@ it('merge 1', async () => {
     let s5 = new Site({sitename:"mysite.com"})
     let res2 = await mpw_utils.merge_sites(res, [s5]);
     expect(res).toEqual(expect.arrayContaining([...non_conflict_sites, s5]));
-    console.log(res2);
+});
+
+it('merge 2', async () => {
+    const s5 = new Site({sitename: 'test.domain', url:['testdomain.no'], type:'m', generation:2, mark:true});
+    const resolve = jest.fn((a,b)=>b);
+    let res = await mpw_utils.merge_sites(non_conflict_sites, [s5], resolve);
+
+    expect(resolve).toHaveBeenCalledTimes(1);
+    expect(resolve).toHaveBeenCalledWith(s5, non_conflict_sites[0]);
+    expect(res[0]).toBe(non_conflict_sites[0]);
+
+    resolve.mockClear();
+
+    res = await mpw_utils.merge_sites([s5], non_conflict_sites, resolve);
+
+    expect(resolve).toHaveBeenCalledTimes(1);
+    expect(resolve).toHaveBeenCalledWith(non_conflict_sites[0], s5);
+    expect(res[0]).toBe(s5);
+    for (let i=1; i < 5; i++)
+        expect(res[i]).toBe(non_conflict_sites[i]);
+
+    const resolve2 = jest.fn((a,b)=>a);
+    // merge_sites modifies the first argument.. taking a copy
+    let orig = Object.assign({}, non_conflict_sites[0]);
+    res = await mpw_utils.merge_sites(non_conflict_sites, [s5], resolve2);
+    expect(resolve2).toHaveBeenCalledTimes(1);
+    expect(resolve2).toHaveBeenCalledWith(s5, orig);
+    expect(res[0]).toBe(s5);
+});
+
+it('exports mpjson', () => {
+    const alg_version_min = 1;
+    const alg_version = 3;
+    const use_mpjson = true;
+    let sites = [...non_conflict_sites,
+        new Site({sitename: 'manyurls.com', url:['manyurls.com', 'some.site.no','me.to'], type:'x', generation:1})];
+    const ret = mpw_utils.make_mpsites("0123456", "mainuser", sites, alg_version_min, alg_version, use_mpjson);
+
+    const jsn = JSON.parse(ret.join(''))
+    expect(jsn).toEqual(expect.objectContaining({'export': expect.objectContaining({'redacted': true, 'format': 1})}));
+    expect(jsn).toEqual(expect.objectContaining({'user': expect.objectContaining({'full_name': 'mainuser', 'algorithm': 3, 'key_id': '0123456'})}));
+    expect(jsn.sites).toBeDefined();
+    expect(jsn.sites['test.domain']).toEqual(expect.objectContaining({
+          'counter': 2,
+          'algorithm': 1,
+          'type': 18,
+          'ext.browser.url': ['testdomain.no'],
+          'ext.browser.username': ''}));
+    expect(jsn.sites['manyurls.com']).toEqual(expect.objectContaining({
+          'type': 16,
+          'ext.browser.url': ['manyurls.com','some.site.no','me.to'],
+          'ext.browser.username': ''}));
+    expect(jsn.sites['åuser@test.domain']).toEqual(expect.objectContaining({
+          'algorithm': 2,
+          'ext.browser.url': ['testdomain.no'],
+          'ext.browser.username': 'veryveryveryveryveryveryverylong',
+          'counter': 2}));
+    console.log(jsn);
 });
