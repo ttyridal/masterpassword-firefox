@@ -23,6 +23,8 @@ __status__ = "Production"
 APPNAME = b'masterpassword-for-firefox'
 USAGE = b'masterkey'
 
+scriptname = os.path.basename(sys.argv[0]).encode()
+
 if 1:
     logging.basicConfig(
             level=logging.DEBUG,
@@ -355,8 +357,8 @@ def install():
     paths = []
     if not any(a in args for a in ('firefox', 'chrome', 'chromium', 'all')):
         sys.stdout.write(b'Usage:\n  '
-                         b'pwvault_gateway_dbus.py install [--global] {firefox|chrome|chromium|all}\n'
-                         b'\n  --global will install system wide, otherwise current user only\n')
+                         b'%s install [--global] {firefox|chrome|chromium|all}\n'
+                         b'\n  --global will install system wide, otherwise current user only\n' % scriptname)
         return
 
     if 'firefox' in args or 'all' in args:
@@ -404,7 +406,7 @@ def install():
 
 
 if len(sys.argv) < 2:
-    sys.stdout.write(b"Missing arguments: pwvault_gateway_dbus.py install help for more\n")
+    sys.stdout.write(b"Missing arguments: %s install help for more\n" % scriptname)
 elif sys.argv[1] == 'test':
     test_main()
 elif sys.argv[1] == 'install':
