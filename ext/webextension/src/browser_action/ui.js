@@ -77,6 +77,14 @@ export const ui = {
         return r;
     },
 
+    masterkey: function(v) {
+        let e = document.querySelector('#masterkey');
+        let r = e.value;
+        if (v !== undefined)
+            e.value = v;
+        return r;
+    },
+
     domain: function() {
         return document.querySelector('#domain').value;
     },

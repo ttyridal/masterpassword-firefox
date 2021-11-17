@@ -33,15 +33,13 @@ it('config.js loads without error', async () => {
 
     global.chrome.storage.sync.get = (lst,cb)=>{
         if (lst.includes('username') &&  lst.includes('max_alg_version')) 
-            return {'username':'test','max_alg_version':3}; return {}};
+            cb({'username':'test','max_alg_version':3}); 
+        else cb({})};
 
     const sitestore = (await import('../lib/sitestore.js')).default;
     sitestore.get = jest.fn().mockResolvedValue([]);
-    const configjs = (await import('./config.js'));
+    await import('./config.js');
 
 
     window.dispatchEvent(new window.Event('load'));
-
-
-    console.log(document.body.innerHTML);
-})
+});
