@@ -17,10 +17,11 @@ const real_setTimeout = setTimeout;
 beforeAll(async ()=>{
     global.chrome = {
         storage: {local:{}, sync:{}},
-        runtime: { },
+        runtime: { sendMessage: jest.fn((lst,cb)=>{cb({})}) },
         tabs: {}
     };
     sitestore = (await import('../lib/sitestore.js')).default;
+    sitestore.get = jest.fn().mockResolvedValue([]);
 
     document.body.innerHTML =
     '<div>' +
@@ -66,6 +67,8 @@ beforeAll(async ()=>{
 afterEach(() => {
     jest.useRealTimers();
     document.querySelector('#btnlogout').dispatchEvent(new Event('click', {bubbles: true, cancelable: true}));
+    chrome.runtime.sendMessage.mockClear();
+    sitestore.get .mockClear();
 });
 
 
@@ -76,8 +79,7 @@ it('main_popup.js loads without error', async () => {
 });
 
 it('main_popup.js login with in memory masterkey', async () => {
-    sitestore.get = jest.fn().mockResolvedValue([]);
-    chrome.runtime.sendMessage = jest.fn((lst,cb)=>{cb({masterkey: 'test'})});
+    chrome.runtime.sendMessage.mockImplementationOnce((lst,cb)=>{cb({masterkey: 'test'})});
 
     jest.useFakeTimers();
     jest.spyOn(global, 'setTimeout');
@@ -96,9 +98,6 @@ it('main_popup.js login with in memory masterkey', async () => {
 });
 
 it('main_popup.js requests login', async () => {
-    sitestore.get = jest.fn().mockResolvedValue([]);
-    chrome.runtime.sendMessage = jest.fn((lst,cb)=>{cb({})});
-
     jest.useFakeTimers();
     jest.spyOn(global, 'setTimeout');
 
@@ -127,10 +126,10 @@ it('main_popup.js requests login', async () => {
 });
 
 it('selects the matching site instead of default', async () => {
-    sitestore.get = jest.fn().mockResolvedValue([
+    sitestore.get.mockResolvedValueOnce([
         new Site({sitename: "google.com", url:['google.no'], type:'x'}),
         new Site({sitename: "domain.com", url:['test.no'], type:'x'})]);
-    chrome.runtime.sendMessage = jest.fn((lst,cb)=>{cb({masterkey: 'test'})});
+    chrome.runtime.sendMessage.mockImplementationOnce((lst,cb)=>{cb({masterkey: 'test'})});
 
     jest.useFakeTimers();
     jest.spyOn(global, 'setTimeout');
@@ -150,11 +149,11 @@ it('selects the matching site instead of default', async () => {
 });
 
 it('selects the best match', async () => {
-    sitestore.get = jest.fn().mockResolvedValue([
+    sitestore.get.mockResolvedValueOnce([
         new Site({sitename: "empty.no", url:['something.else.no'], type:'x'}),
         new Site({sitename: "test.no", url:['test.no'], type:'x'}),
         new Site({sitename: "wwwtest.no", url:['www.test.no'], type:'x'})]);
-    chrome.runtime.sendMessage = jest.fn((lst,cb)=>{cb({masterkey: 'test'})});
+    chrome.runtime.sendMessage.mockImplementationOnce((lst,cb)=>{cb({masterkey: 'test'})});
 
     jest.useFakeTimers();
     jest.spyOn(global, 'setTimeout');
@@ -175,11 +174,11 @@ it('selects the best match', async () => {
 
 
 it.skip('prefers matching sitename', async () => {
-    sitestore.get = jest.fn().mockResolvedValue([
+    sitestore.get.mockResolvedValueOnce([
         new Site({sitename: "empty.no", url:['something.else.no'], type:'x'}),
         new Site({sitename: "test.no", url:['test.no'], type:'x'}),
         new Site({sitename: "www.test.no", url:['test.no'], type:'x'})]);
-    chrome.runtime.sendMessage = jest.fn((lst,cb)=>{cb({masterkey: 'test'})});
+    chrome.runtime.sendMessage.mockImplementationOnce((lst,cb)=>{cb({masterkey: 'test'})});
 
     jest.useFakeTimers();
     jest.spyOn(global, 'setTimeout');

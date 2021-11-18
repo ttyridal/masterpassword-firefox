@@ -22,6 +22,9 @@ document.querySelector('#auto_submit_username').addEventListener('change', funct
 document.querySelector('#pass_store').addEventListener('change', function() {
     config.set({pass_store: this.checked});
 });
+document.querySelector('#use_sync').addEventListener('change', function() {
+    config.set({use_sync: this.checked});
+});
 
 window.addEventListener('load', function() {
     config.get(['defaulttype',
@@ -29,7 +32,8 @@ window.addEventListener('load', function() {
          'pass_to_clipboard',
          'auto_submit_pass',
          'auto_submit_username',
-         'pass_store'])
+         'pass_store',
+         'use_sync'])
     .then(data => {
         data = Object.assign({defaulttype: 'l', passwdtimeout: 0, pass_to_clipboard: true,
                  auto_submit_pass: false, auto_submit_username: false}, data);
@@ -40,6 +44,7 @@ window.addEventListener('load', function() {
         document.querySelector('#auto_submit_pass').checked = data.auto_submit_pass;
         document.querySelector('#auto_submit_username').checked = data.auto_submit_username;
         document.querySelector('#pass_store').checked = data.pass_store;
+        document.querySelector('#use_sync').checked = data.use_sync;
     });
 });
 

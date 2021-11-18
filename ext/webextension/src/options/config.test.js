@@ -5,9 +5,12 @@
 
 import {jest, beforeAll, it} from '@jest/globals'
 
+import {mockStorageGet} from '../../mocks/chromestorage.js'
+
 beforeAll(()=>{
     global.chrome = {
-        storage: {local:{}, sync:{}}
+        storage: {local:{get: jest.fn().mockImplementation(mockStorageGet())}, 
+                  sync:{get: jest.fn().mockImplementation(mockStorageGet())}}
     };
 });
 
@@ -31,10 +34,7 @@ it('config.js loads without error', async () => {
     '  <div id="messagebox"><div id="messageboxtxt"></div><div class="progress"></div></div>' + 
     '</div>';
 
-    global.chrome.storage.sync.get = (lst,cb)=>{
-        if (lst.includes('username') &&  lst.includes('max_alg_version')) 
-            cb({'username':'test','max_alg_version':3}); 
-        else cb({})};
+    global.chrome.storage.sync.get.mockImplementation(mockStorageGet({username:'test', max_alg_version:3}));
 
     const sitestore = (await import('../lib/sitestore.js')).default;
     sitestore.get = jest.fn().mockResolvedValue([]);

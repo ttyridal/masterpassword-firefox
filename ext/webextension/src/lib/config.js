@@ -18,11 +18,17 @@
 /* globals chrome */
 "use strict;"
 
+function promised_storage_get(storage, keys) {
+    return new Promise(resolve => {
+        storage.get(keys, itms => { resolve(itms); });
+    });
+}
+
 class Config {
     constructor() {
-        console.log("calling constructor");
         this._cache = {};
     }
+    reset() { this._cache = {}; }
 
     get algorithm_version() { return 3 }
     get browser_is_chrome() { return typeof browser === 'undefined' }
@@ -57,7 +63,7 @@ class Config {
             if (store === chrome.storage.sync) {
                 let obj = {...toset};
                 let localset = {};
-                for (const x of ['pass_store', 'passwdtimeout']) {
+                for (const x of ['pass_store', 'passwdtimeout', 'use_sync']) {
                     if (x in obj) {
                         localset[x] = obj[x];
                         delete obj[x];
@@ -79,44 +85,55 @@ class Config {
     }
 
     get(lst){
-        const store = (this.browser_is_chrome ? chrome.storage.sync : chrome.storage.local)
         const singlekey = typeof lst === "string";
-        return new Promise(res => {
-            if (singlekey) lst = [lst];
+        if (singlekey) lst = [lst];
+
+        return (typeof this._cache.use_sync === 'undefined'
+            ? promised_storage_get(chrome.storage.local, {'use_sync': this.browser_is_chrome})
+            : Promise.resolve(this._cache.use_sync))
+        .then((values)=>{
+            this._cache.use_sync = values.use_sync;
+
+            let result = {use_sync: this._cache.use_sync};
+            let store_fetch = lst.filter(e => e !== 'use_sync');
+
             let localget = [];
+            let store = this._cache.use_sync ? chrome.storage.sync : chrome.storage.local;
 
             // stuff to always keep in local store
-            if (store === chrome.storage.sync) {
+            if (this._cache.use_sync) {
                 for (const x of ['pass_store', 'passwdtimeout']) {
                     if (lst.includes(x)) localget.push(x);
                 }
             }
 
-            store.get(lst, cb=>{
-                // set some default values if they are not on store
-                // need them to not be undefined, or cache above will fail
-                if (lst.includes('defaulttype')) cb.defaulttype = cb.defaulttype || 'l';
-                if (lst.includes('key_id')) cb.key_id = cb.key_id || '';
-                if (lst.includes('pass_to_clipboard')) cb.pass_to_clipboard = !!cb.pass_to_clipboard;
-                if (lst.includes('username')) cb.username = cb.username || '';
-                if (lst.includes('pass_store')) cb.pass_store = !!cb.pass_store;
-                if (lst.includes('passwdtimeout')) cb.passwdtimeout = isNaN(cb.passwdtimeout) ? -1 : cb.passwdtimeout;
+            return Promise.all([Promise.resolve(result), Promise.resolve(localget), promised_storage_get(store, store_fetch)]);
+        })
+        .then(values => {
+            let [result, localget, cb] = values;
+            Object.assign(result, cb);
 
-                Object.assign(this._cache, cb);
+            if (localget.length)
+                return Promise.all([Promise.resolve(result), promised_storage_get(chrome.storage.local, localget)]);
+            else
+                return [result, {}];
+        })
+        .then(values => {
+            let [result, cb] = values;
+            Object.assign(result, cb);
 
-                if (localget.size) {
-                    console.log("Need to get local", localget);
-                    chrome.storage.local.get(localget, stuff => {
-                        Object.assign(this._cache, stuff);
-                        Object.assign(cb, stuff);
-                        if (lst.includes('pass_store')) cb.pass_store = !!cb.pass_store;
-                        if (lst.includes('passwdtimeout')) cb.passwdtimeout = isNaN(cb.passwdtimeout) ? -1 : cb.passwdtimeout;
-                        res(singlekey ? cb[lst[0]] : cb);
-                    });
-                } else {
-                    res(singlekey ? cb[lst[0]] : cb);
-                }
-            });
+            // set some default values if they are not on store
+            // need them to not be undefined, or cache above will fail
+            if (lst.includes('defaulttype')) result.defaulttype = result.defaulttype || 'l';
+            if (lst.includes('key_id')) result.key_id = result.key_id || '';
+            if (lst.includes('pass_to_clipboard')) result.pass_to_clipboard = !!result.pass_to_clipboard;
+            if (lst.includes('username')) result.username = result.username || '';
+            if (lst.includes('pass_store')) result.pass_store = !!result.pass_store;
+            if (lst.includes('passwdtimeout')) result.passwdtimeout = isNaN(result.passwdtimeout) ? -1 : result.passwdtimeout;
+
+            Object.assign(this._cache, result);
+
+            return singlekey ? result[lst[0]] : result;
         });
     }
 }
