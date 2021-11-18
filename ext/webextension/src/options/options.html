@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title></title>
+<meta charset="UTF-8">
+<style>
+dd { margin-bottom: 0.5em}
+</style>
+</head>
+<body>
+    <dl>
+        <dt><label for="passwdtype">Default password type</label><dd>
+            <select id="passwdtype">
+            <option value="x">Maximum
+            <option value="l" selected>Long
+            <option value="m">Medium
+            <option value="b">Basic
+            <option value="s">Short
+            <option value="i">Pin
+            <option value="n">Name
+            <option value="p">Phrase
+            <option value="nx">Name [V]
+            <option value="px">Phrase [V]
+        </select>
+        <dt><label for="passwdtimeout">Remember password</label><dd>
+            <select id="passwdtimeout">
+            <option value="0">Never
+            <option value="5">5 minutes
+            <option value="15">15 minutes
+            <option value="30">30 minutes
+            <option value="60">1 hour
+            <option value="480">8 hours
+            <option value="-1" selected>Until closed
+        </select>
+        <dt><label for="pass_to_clipboard">Copy password to clipboard</label><dd>
+            <input id="pass_to_clipboard" type="checkbox"/>
+        <dt><label for="auto_submit_pass">Send submit after injecting password</label><dd>
+            <input id="auto_submit_pass" type="checkbox"/>
+        <dt><label for="auto_submit_username">Inject username to page</label><dd>
+            <input id="auto_submit_username" type="checkbox"/>
+        <dt><label for="pass_store">Use OS' password store</label><dd>
+            <input id="pass_store" type="checkbox"/>
+    </dl>
+<script type="module" src="globaloptions.js"></script>
+</body>
+</html>
