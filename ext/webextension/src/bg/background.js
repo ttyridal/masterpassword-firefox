@@ -19,18 +19,22 @@
 
 (function(){
 "use strict";
+var cbrowser;
 
-const browser_is_chrome = typeof browser === 'undefined';
-if (!browser) {
-    var browser = {};
-    browser.alarms = chrome.alarms;
-    browser.tabs = chrome.tabs;
-    browser.management = {
+const browser_is_chrome = typeof browser === 'undefined' || Object.getPrototypeOf(browser) !== Object.prototype;
+if (browser_is_chrome) {
+    console.log("install browser replacement");
+    cbrowser = {};
+    cbrowser.alarms = chrome.alarms;
+    cbrowser.tabs = chrome.tabs;
+    cbrowser.runtime = chrome.runtime;
+    cbrowser.management = {
         getSelf: () => {
             return new Promise((success) => chrome.management.getSelf(success));
         }
     };
-}
+} else
+    cbrowser = browser;
 
 var port;
 function port_default_error() { port = undefined; }
@@ -41,7 +45,7 @@ function pwvault_gateway(msg) {
     // Like this, we'll at least not trigger that until firefox closes.
 
     if (!port) {
-        port = browser.runtime.connectNative('no.ttyridal.pwvault_gateway');
+        port = cbrowser.runtime.connectNative('no.ttyridal.pwvault_gateway');
         port.onDisconnect.addListener(port_default_error);
     }
 
@@ -73,7 +77,7 @@ function pwvault_gateway(msg) {
 
 var _masterkey;
 const pw_retention_timer = 'pw_retention_timer';
-browser.alarms.onAlarm.addListener(a => {
+cbrowser.alarms.onAlarm.addListener(a => {
     if (a.name === pw_retention_timer) {
         _masterkey = undefined;
     }
@@ -84,7 +88,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
         if (changes.passwdtimeout.newValue == 0)
             _masterkey = undefined;
         if (changes.passwdtimeout.newValue <= 0)
-            browser.alarms.clear(pw_retention_timer);
+            cbrowser.alarms.clear(pw_retention_timer);
     }
 });
 
@@ -92,7 +96,7 @@ function temp_store_masterkey(k, keep_time) {
     if (!keep_time) return;
     if (keep_time > 0) {
         // create a new alarm with same name will automatically clear the old -> reset :)
-        browser.alarms.create(pw_retention_timer, {delayInMinutes: keep_time});
+        cbrowser.alarms.create(pw_retention_timer, {delayInMinutes: keep_time});
     }
     _masterkey = k;
 }
@@ -286,10 +290,10 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
 
 });
 
-Promise.all([browser.management.getSelf(), promised_storage_get(['releasenote_version'], true)])
+Promise.all([cbrowser.management.getSelf(), promised_storage_get(['releasenote_version'], true)])
 .then(c => {
     if (c[0].version !== c[1].releasenote_version) {
-        browser.tabs.create({
+        cbrowser.tabs.create({
             url: "/src/options/releasenote.html"
           });
         chrome.storage.local.set({releasenote_version: c[0].version});
