@@ -90,18 +90,21 @@ function resolve_mpw(masterkey) {
         ui.verify("Verify: " + mpw_session.sitepassword(".", 0, "nx"));
 
         var key_id = mpw_session.key_id();
+        let has_known_keyid = !!config.key_id;
 
-
-        // call masterkey_set to reset password timer
-        if (!config.key_id) {
+        if (!has_known_keyid) {
             config.set({ key_id: key_id});
-            masterkey_set(masterkey);
         }
         else if (key_id !== config.key_id) {
-            warn_keyid_not_matching();
-            masterkey_set(masterkey, true);
-        } else
-            masterkey_set(masterkey);
+            warn_keyid_not_matching(()=>{
+                config.set({ key_id });
+                masterkey_set(masterkey);
+                ui.clear_warning();
+                ui.user_info("ready");
+            });
+        }
+        // always call masterkey_set to reset password timer
+        masterkey_set(masterkey, has_known_keyid);
     })
     .catch(console.error);
 }
@@ -339,14 +342,14 @@ document.querySelector('#storedids_dropdown').addEventListener('click', function
     document.querySelector('#sitename').open();
 });
 
-function warn_keyid_not_matching()
+function warn_keyid_not_matching(ok_cb)
 {
     console.debug("keyids did not match!");
     let e = ui.user_warn("Master password possible mismatch! ");
     e = e.appendChild(document.createElement('button'));
-    e.id = 'change_keyid_ok';
     e.setAttribute('title', "set as new");
     e.textContent = "OK";
+    e.onclick = ok_cb;
 }
 
 document.querySelector('#main').addEventListener('change', function(ev){
@@ -422,14 +425,6 @@ document.querySelector('body').addEventListener('click', function(ev) {
         ui.user_info("Session destroyed");
         console.log("session destroyed");
         popup();
-    }
-    else if (ev.target.id === 'change_keyid_ok') {
-        mpw_promise.then(mpw_session => {
-            config.set({ key_id: mpw_session.key_id() });
-        })
-        .catch(console.error);
-        ui.clear_warning();
-        ui.user_info("ready");
     }
 });
 
