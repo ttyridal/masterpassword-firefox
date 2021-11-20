@@ -1,11 +1,9 @@
 /**
  * @jest-environment node
  */
-/* globals global */
 
 import {it, expect, jest, afterEach} from '@jest/globals'
-
-let sitestore;
+import {SiteStore} from './sitestore.js'
 
 class chromeMockStorage {
     constructor() {
@@ -19,14 +17,11 @@ afterEach(() => {
 });
 
 it('sitestorage.get should return array of sites from old format', async () => {
-    global.chrome = {
-        storage: {local:new chromeMockStorage(), sync: new chromeMockStorage()}
-    };
+    let storage = new chromeMockStorage();
 
-    jest.spyOn(global.chrome.storage.local, 'get').mockImplementation((lst, cb)=>cb({}));
-    jest.spyOn(global.chrome.storage.sync, 'get').mockImplementation((lst, cb)=>{
+    jest.spyOn(storage, 'get').mockImplementation((lst, cb)=>{
         console.log("storage.sync.get(",lst);
-        if (lst.includes('sites')) 
+        if (lst.includes('sites'))
             cb({
             "sites": {
             "url1.com": { "urla.no": { "generation": 1, "type": "l", "username": "" } },
@@ -37,16 +32,15 @@ it('sitestorage.get should return array of sites from old format', async () => {
             cb({});
     });
 
-
-  sitestore = (await import('./sitestore.js')).default;
+    let sitestore = new SiteStore(storage);
 
     let a = await sitestore.get("");
-    expect(global.chrome.storage.sync.get).toHaveBeenCalledWith(
-        expect.arrayContaining(['sites', 'sitedata']), 
+    expect(storage.get).toHaveBeenCalledWith(
+        expect.arrayContaining(['sites', 'sitedata']),
         expect.anything());
     expect(a).toEqual(expect.arrayContaining([
         {"sitename": "urla.no", "url": ["url1.com"], "generation": 1, "type": "l", "username": ""},
-        {"sitename": "urlb.com", "url": ["url2.co.uk"], "generation": 1, "type": "l", "username": ""}, 
+        {"sitename": "urlb.com", "url": ["url2.co.uk"], "generation": 1, "type": "l", "username": ""},
         {"sitename": "urlb.com", "url": ["url2.de"], "generation": 1, "type": "l", "username": ""}
     ]));
 });

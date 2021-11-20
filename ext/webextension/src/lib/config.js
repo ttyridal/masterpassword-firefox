@@ -50,6 +50,9 @@ class Config {
     get passwdtimeout() { if (typeof this._cache.passwdtimeout === 'undefined')
                         throw new Error("need get(['passwdtimeout'])");
                      else return this._cache.passwdtimeout; }
+    get use_sync() { if (typeof this._cache.use_sync === 'undefined')
+                        throw new Error("need get(['use_sync'])");
+                     else return this._cache.use_sync; }
 
     set(toset){
         if ('masterkey' in toset) throw new Error("key should never be stored on config");

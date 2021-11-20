@@ -17,7 +17,7 @@
 */
 /* globals browser, chrome, mpw */
 
-import sitestore from "../lib/sitestore.js";
+import {SiteStore} from "../lib/sitestore.js";
 import {Site} from "../lib/sites.js";
 import {defer, copy_to_clipboard} from "../lib/utils.js";
 import {parseUri} from "../lib/uritools.js";
@@ -26,6 +26,8 @@ import {ui} from "./ui.js";
 
 (function () {
 "use strict";
+
+let sitestore;
 
 const runtimeSendMessage = (typeof browser !== 'undefined' ?
                        browser.runtime.sendMessage :
@@ -175,6 +177,7 @@ function loadSites(domain) {
         return score >= significant_parts ? score : 0;
     };
 
+    sitestore = new SiteStore(config.use_sync ? chrome.storage.sync : chrome.storage.local);
     return sitestore.get()
     .then(sites => {
         const compare_score_then_name = (a, b) => {
@@ -288,7 +291,7 @@ function popup(masterkey) {
 }
 
 window.addEventListener('load', function () {
-    config.get(['username', 'key_id', 'defaulttype', 'pass_to_clipboard', 'pass_store', 'passwdtimeout'])
+    config.get(['username', 'key_id', 'defaulttype', 'pass_to_clipboard', 'pass_store', 'passwdtimeout', 'use_sync'])
     .then(v=>{
         return runtimeSendMessage({action: 'masterkey_get', use_pass_store: !!v.pass_store});
     })

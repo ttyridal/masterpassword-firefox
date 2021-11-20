@@ -15,9 +15,10 @@
     You should have received a copy of the GNU General Public License
     along with the software.  If not, see <http://www.gnu.org/licenses/>.
 */
+/* globals chrome */
 
 "use strict";
-import sitestore from "../lib/sitestore.js";
+import {SiteStore, NeedUpgradeError} from "../lib/sitestore.js";
 import mpw_utils from "../lib/mpw-utils.js";
 import config from "../lib/config.js";
 
@@ -30,6 +31,7 @@ function string_is_plain_ascii(s) {
 }
 
 var alg_min_version = 1;
+let sitestore;
 
 function passtype_to_str(type) {
     switch(type) {
@@ -75,10 +77,11 @@ function stored_sites_table_update(sites) {
     }
 }
 
-window.addEventListener('load', function() {
-    Promise.all([config.get('username'), sitestore.get()])
-    .then(values=>{
-        let [username, sites] = values;
+window.addEventListener('load', async function() {
+    try {
+        let {username, use_sync} = await config.get(['username', 'use_sync']);
+        sitestore = new SiteStore(use_sync ? chrome.storage.sync : chrome.storage.local);
+        let sites = await sitestore.get();
 
         let sites_max_version = Math.max(...(sites.map(s => s.required_alg_version(1))));
         alg_min_version = Math.max(sites_max_version, string_is_plain_ascii(username) ? 1 : 3);
@@ -89,11 +92,10 @@ window.addEventListener('load', function() {
 
         if (sitestore.need_upgrade())
             document.querySelector('.upgrade_datastore').style.display='';
-    })
-    .catch((err) => {
+    } catch (err) {
         console.error("Failed loading sites on load", err);
         messagebox("Failed loading sites");
-    });
+    }
 });
 
 function dragover_enter(e){
@@ -125,8 +127,9 @@ document.querySelector('#stored_sites').addEventListener('change', function(e) {
     try {
         sitestore.update(sitename, {url});
     } catch (er) {
-        if (er instanceof sitestore.NeedUpgradeError)
+        if (er instanceof NeedUpgradeError)
             messagebox(er.message);
+        else console.error(er);
         e.target.value = oldurl;
     }
 
@@ -143,8 +146,9 @@ document.querySelector('#stored_sites').addEventListener('click', function(e) {
         sitestore.remove(sitename);
         t.parentNode.removeChild(t);
     } catch (er) {
-        if (er instanceof sitestore.NeedUpgradeError)
+        if (er instanceof NeedUpgradeError)
             messagebox(er.message);
+        else console.error(er);
     }
 });
 

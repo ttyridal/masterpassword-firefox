@@ -22,39 +22,38 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 */
-/* globals chrome */
 
 "use strict";
 import {Site} from "./sites.js";
 
-class NeedUpgradeError extends Error {
+export class NeedUpgradeError extends Error {
   constructor() {
     super("Need data upgrade");
     this.name = "NeedUpgradeError";
   }
 }
 
-export default (function() {
-
-let sitedata_needs_upgrade = false;
-const browser_is_chrome = typeof browser === 'undefined';
-const store = (browser_is_chrome ? chrome.storage.sync : chrome.storage.local);
-
-function need_upgrade() {
-    return sitedata_needs_upgrade;
+export class SiteStore {
+constructor(store) {
+    this._needs_upgrade = false;
+    this.store = store;
 }
 
-function get() {
-    return get_nowrap().then(sites => sites.map(e => new Site(e)));
+need_upgrade() {
+    return this._needs_upgrade;
 }
 
-function get_nowrap() {
+get() {
+    return this.get_nowrap().then(sites => sites.map(e => new Site(e)));
+}
+
+get_nowrap() {
     return new Promise(resolve => {
-        store.get(['sites', 'sitedata'], d => {
+        this.store.get(['sites', 'sitedata'], d => {
             if ('sitedata' in d)
                 resolve(d.sitedata);
             else if ('sites' in d) {
-                sitedata_needs_upgrade = true;
+                this._needs_upgrade = true;
                 let result = [];
                 for (const [domain, sitedict] of Object.entries(d.sites)) {
                     for (const [sitename, props] of Object.entries(sitedict)) {
@@ -70,13 +69,13 @@ function get_nowrap() {
     });
 }
 
-function addOrReplace(site) {
-    if (sitedata_needs_upgrade) {
+addOrReplace(site) {
+    if (this._needs_upgrade) {
         console.error("need upgrade before addOrReplace");
         throw new NeedUpgradeError();
     }
     return new Promise(resolve => {
-        get()
+        this.get()
         .then(sites=>{
             const siteidx = sites.findIndex(e => e.sitename == site.sitename);
             console.log("addOrReplace", site.sitename, siteidx);
@@ -85,24 +84,24 @@ function addOrReplace(site) {
             else
                 sites[siteidx] = site;
 
-            store.set({'sitedata': sites}, ()=>resolve());
+            this.store.set({'sitedata': sites}, ()=>resolve());
         })
     });
 }
 
-function set(sites) {
+set(sites) {
     return new Promise(resolve => {
-        store.set({'sitedata': sites}, ()=>resolve());
+        this.store.set({'sitedata': sites}, ()=>resolve());
     });
 }
 
-function update(sitename, params) {
-    if (sitedata_needs_upgrade) {
+update(sitename, params) {
+    if (this._needs_upgrade) {
         console.error("need upgrade before update");
         throw new NeedUpgradeError();
     }
     return new Promise((resolve, fail) => {
-        get()
+        this.get()
         .then(sites=>{
             const siteidx = sites.findIndex(e => e.sitename == sitename);
             if (siteidx == -1) {
@@ -111,14 +110,14 @@ function update(sitename, params) {
             }
 
             Object.assign(sites[siteidx], params);
-            store.set({'sitedata': sites}, ()=>resolve());
+            this.store.set({'sitedata': sites}, ()=>resolve());
         })
     });
 }
 
-function addurl(sitename, url) {
+addurl(sitename, url) {
     return new Promise((resolve, fail) => {
-        get()
+        this.get()
         .then(sites=>{
             const siteidx = sites.findIndex(e => e.sitename == sitename);
             if (siteidx == -1) {
@@ -129,18 +128,18 @@ function addurl(sitename, url) {
             let urls = new Set(sites[siteidx].url);
             urls.add(url);
             sites[siteidx].url = Array.from(urls);
-            store.set({'sitedata': sites}, ()=>resolve());
+            this.store.set({'sitedata': sites}, ()=>resolve());
         });
     });
 }
 
-function remove(sitename, url) {
-    if (sitedata_needs_upgrade) {
+remove(sitename, url) {
+    if (this._needs_upgrade) {
         console.error("need upgrade before remove");
         throw new NeedUpgradeError();
     }
     return new Promise((resolve, fail) => {
-        get()
+        this.get()
         .then(sites=>{
             const siteidx = sites.findIndex(e => e.sitename == sitename);
             if (siteidx == -1) {
@@ -157,20 +156,8 @@ function remove(sitename, url) {
             if (!url || urls.size == 0)
                 sites.splice(siteidx, 1);
 
-            store.set({'sitedata': sites}, ()=>resolve());
+            this.store.set({'sitedata': sites}, ()=>resolve());
         });
     });
 }
-
-return {
-    get,
-    set,
-    addOrReplace,
-    addurl,
-    remove,
-    update,
-    need_upgrade,
-    NeedUpgradeError
 }
-
-})();
