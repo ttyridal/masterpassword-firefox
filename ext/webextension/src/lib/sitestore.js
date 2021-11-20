@@ -115,24 +115,6 @@ export class SiteStore {
         });
     }
 
-    addurl(sitename, url) {
-        return new Promise((resolve, fail) => {
-            this.get()
-            .then(sites=>{
-                const siteidx = sites.findIndex(e => e.sitename == sitename);
-                if (siteidx == -1) {
-                    fail(new Error("Not found"));
-                    return;
-                }
-
-                let urls = new Set(sites[siteidx].url);
-                urls.add(url);
-                sites[siteidx].url = Array.from(urls);
-                this.store.set({'sitedata': sites}, ()=>resolve());
-            });
-        });
-    }
-
     remove(sitename, url) {
         if (this._needs_upgrade) {
             console.error("need upgrade before remove");
