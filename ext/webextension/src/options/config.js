@@ -196,12 +196,12 @@ function resolveConflict(site, existing, AB) {
 }
 
 
-document.querySelector('#importinput').addEventListener('change', () => {
+document.querySelector('#importinput').addEventListener('change', (ev) => {
     var fr=new FileReader();
     fr.onload=function(){
         import_mpsites(fr.result);
     }
-    fr.readAsText(this.files[0]);
+    fr.readAsText(ev.target.files[0]);
 });
 
 document.addEventListener('drop', function(e) {
