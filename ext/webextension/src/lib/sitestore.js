@@ -49,6 +49,29 @@ function storage_to_site(s) {
                      url: s.u});
 }
 
+function store_get(store, lst) {
+    return new Promise(resolve => {
+        store.get(lst, resolve);
+    });
+}
+
+function store_set(store, obj) {
+    return new Promise(resolve => {
+        store.set(obj, () => resolve);
+    });
+}
+
+function hashFnv32a(str, seed) {
+    let i, l,
+        hval = (seed === undefined) ? 0x811c9dc5 : seed;
+
+    for (i = 0, l = str.length; i < l; i++) {
+        hval ^= str.charCodeAt(i);
+        hval += (hval << 1) + (hval << 4) + (hval << 7) + (hval << 8) + (hval << 24);
+    }
+    return (hval >>> (32-7)).toString(); //get a 7-bit value
+}
+
 export class SiteStore {
     constructor(store) {
         this._needs_upgrade = false;
@@ -65,9 +88,16 @@ export class SiteStore {
 
     get_nowrap() {
         return new Promise(resolve => {
-            this.store.get(['sites', 'sitedata'], d => {
-                if ('sitedata' in d)
+            const bins = [...Array(2**7)].map((_,i) => "sd"+(i+0));
+            this.store.get(['sites', ...bins], d => {
+                if (Object.keys(d).some(e => bins.includes(e))) {
+                    d.sitedata = [];
+                    bins.forEach(k => {
+                        d.sitedata.push(... (d[k] || []))
+                    });
+
                     resolve(d.sitedata);
+                }
                 else if ('sites' in d) {
                     this._needs_upgrade = true;
                     let result = [];
@@ -93,24 +123,32 @@ export class SiteStore {
             console.error("need upgrade before addOrReplace");
             throw new NeedUpgradeError();
         }
-        return new Promise(resolve => {
-            this.get_nowrap()
-            .then(sites=>{
-                const siteidx = sites.findIndex(e => e.s == site.sitename);
-                console.log("addOrReplace", site.sitename, siteidx);
-                if (siteidx == -1)
-                    sites.push(site_to_storage(site))
-                else
-                    sites[siteidx] = site_to_storage(site);
 
-                this.store.set({'sitedata': sites}, ()=>resolve());
-            })
+        let binname = 'sd' + hashFnv32a(site.sitename);
+        let getkey = {};
+        getkey[binname] = [];
+
+        return store_get(this.store, getkey)
+        .then(sitebins=>{
+            const siteidx = sitebins[binname].findIndex(e => e.s == site.sitename);
+            if (siteidx == -1)
+                sitebins[binname].push(site_to_storage(site))
+            else
+                sitebins[binname][siteidx] = site_to_storage(site);
+
+            return store_set(this.store, sitebins);
         });
     }
 
     set(sites) {
         return new Promise(resolve => {
-            this.store.set({'sitedata': sites.map(site_to_storage)}, ()=>resolve());
+            let d = {}
+            sites.forEach(s => {
+                let binname = 'sd' + hashFnv32a(s.sitename);
+                if (!d[binname]) d[binname] = [];
+                d[binname].push(site_to_storage(s))
+            });
+            this.store.set(d, ()=>resolve());
         });
     }
 
@@ -119,17 +157,19 @@ export class SiteStore {
             console.error("need upgrade before update");
             throw new NeedUpgradeError();
         }
-        return new Promise((resolve, fail) => {
-            this.get_nowrap()
-            .then(sites=>{
-                const siteidx = sites.findIndex(e => e.s == sitename);
-                if (siteidx == -1) {
-                    fail(new Error("Not found"));
-                    return;
-                }
-                Object.assign(sites[siteidx], site_to_storage(params));
-                this.store.set({'sitedata': sites}, ()=>resolve());
-            })
+
+        let binname = 'sd' + hashFnv32a(sitename);
+        let getkey = {};
+        getkey[binname] = [];
+
+        return store_get(this.store, getkey)
+        .then(sitebins=>{
+            const siteidx = sitebins[binname].findIndex(e => e.s == sitename);
+            if (siteidx == -1)
+                throw new Error("Not found");
+
+            Object.assign(sitebins[binname][siteidx], site_to_storage(params));
+            return store_set(this.store, sitebins);
         });
     }
 
@@ -138,18 +178,21 @@ export class SiteStore {
             console.error("need upgrade before remove");
             throw new NeedUpgradeError();
         }
-        return new Promise((resolve, fail) => {
-            this.get_nowrap()
-            .then(sites=>{
-                const siteidx = sites.findIndex(e => e.s == sitename);
-                if (siteidx == -1) {
-                    fail(new Error("Not found"));
-                    return;
-                }
-                sites.splice(siteidx, 1);
 
-                this.store.set({'sitedata': sites}, ()=>resolve());
-            });
+        let binname = 'sd' + hashFnv32a(sitename);
+        let getkey = {};
+        getkey[binname] = [];
+
+        return store_get(this.store, getkey)
+        .then(sitebins=>{
+            const siteidx = sitebins[binname].findIndex(e => e.s == sitename);
+            if (siteidx == -1) {
+                console.error("remove ERROR",sitename,"from bin", binname,"index",siteidx);
+                throw new Error("Not found");
+            }
+
+            sitebins[binname].splice(siteidx, 1);
+            return store_set(this.store, sitebins);
         });
     }
 }

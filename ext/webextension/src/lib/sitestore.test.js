@@ -35,9 +35,7 @@ it('sitestorage.get should return array of sites from old format', async () => {
     let sitestore = new SiteStore(storage);
 
     let a = await sitestore.get("");
-    expect(storage.get).toHaveBeenCalledWith(
-        expect.arrayContaining(['sites', 'sitedata']),
-        expect.anything());
+    expect(storage.get).toHaveBeenCalled();
     expect(a).toEqual(expect.arrayContaining([
         {"sitename": "urla.no", "url": ["url1.com"], "generation": 1, "type": "l", "username": ""},
         {"sitename": "urlb.com", "url": ["url2.co.uk"], "generation": 1, "type": "l", "username": ""},
