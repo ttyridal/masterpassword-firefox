@@ -186,7 +186,7 @@ it('selects the best match', async () => {
 });
 
 
-it.skip('prefers matching sitename', async () => {
+it('prefers matching sitename', async () => {
     jest.spyOn(MockSiteStore.prototype, 'get').mockResolvedValueOnce([
         new Site({sitename: "empty.no", url:['something.else.no'], type:'x'}),
         new Site({sitename: "test.no", url:['test.no'], type:'x'}),

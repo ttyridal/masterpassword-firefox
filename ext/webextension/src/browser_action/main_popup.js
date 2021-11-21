@@ -174,6 +174,14 @@ function loadSites(domain) {
         for (const u of site.url) {
             score = Math.max(score, num_equal_elements(domain_parts_r, u.split('.').reverse()));
         }
+        try {
+            let sitenameurl = site.sitename.split('@');
+            sitenameurl = sitenameurl[sitenameurl.length - 1];
+
+            score = Math.max(score, num_equal_elements(domain_parts_r, sitenameurl.split('.').reverse()));
+        } catch (e) {
+            console.log("failed to score sitename against url", e);
+        }
         return score >= significant_parts ? score : 0;
     };
 
