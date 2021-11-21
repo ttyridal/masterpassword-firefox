@@ -365,7 +365,7 @@ button#siteconfig_show {
 }
 #messagebox.visible > div.progress {
     width:0;
-    transition: width 3s linear;
+    transition: width 5s linear;
 }
 #messagebox_text {
     margin: 0.5em;

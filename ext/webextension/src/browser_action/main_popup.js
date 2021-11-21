@@ -392,11 +392,11 @@ document.querySelector('#main').addEventListener('change', function(ev){
         ui.siteconfig(site.type, site.generation, site.username);
 
     if (domain !== '' && !chrome.extension.inIncognitoContext) {
-        try {
-            sitestore.addOrReplace(site);
-        } catch (e) {
-            ui.user_warn(e.message);
-        }
+        sitestore.addOrReplace(site)
+        .catch(e => {
+            console.error(e);
+            ui.user_warn("save failed: "+e.message);
+        });
     }
 
     // TODO: remove default site from stored_sites if it exists and it's not the one we're changing

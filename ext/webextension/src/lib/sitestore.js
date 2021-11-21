@@ -56,8 +56,13 @@ function store_get(store, lst) {
 }
 
 function store_set(store, obj) {
-    return new Promise(resolve => {
-        store.set(obj, () => resolve);
+    return new Promise((resolve, fail) => {
+        store.set(obj, () => {
+            if (chrome.runtime.lastError)
+                fail(chrome.runtime.lastError);
+            else
+                resolve();
+        });
     });
 }
 
@@ -121,7 +126,7 @@ export class SiteStore {
     addOrReplace(site) {
         if (this._needs_upgrade) {
             console.error("need upgrade before addOrReplace");
-            throw new NeedUpgradeError();
+            return Promise.reject(new NeedUpgradeError());
         }
 
         let binname = 'sd' + hashFnv32a(site.sitename);
@@ -141,21 +146,19 @@ export class SiteStore {
     }
 
     set(sites) {
-        return new Promise(resolve => {
-            let d = {}
-            sites.forEach(s => {
-                let binname = 'sd' + hashFnv32a(s.sitename);
-                if (!d[binname]) d[binname] = [];
-                d[binname].push(site_to_storage(s))
-            });
-            this.store.set(d, ()=>resolve());
+        let d = {}
+        sites.forEach(s => {
+            let binname = 'sd' + hashFnv32a(s.sitename);
+            if (!d[binname]) d[binname] = [];
+            d[binname].push(site_to_storage(s))
         });
+        return store_set(this.store, d);
     }
 
     update(sitename, params) {
         if (this._needs_upgrade) {
             console.error("need upgrade before update");
-            throw new NeedUpgradeError();
+            return Promise.reject(new NeedUpgradeError());
         }
 
         let binname = 'sd' + hashFnv32a(sitename);
@@ -176,7 +179,7 @@ export class SiteStore {
     remove(sitename) {
         if (this._needs_upgrade) {
             console.error("need upgrade before remove");
-            throw new NeedUpgradeError();
+            return Promise.reject(new NeedUpgradeError());
         }
 
         let binname = 'sd' + hashFnv32a(sitename);

@@ -124,14 +124,16 @@ document.querySelector('#stored_sites').addEventListener('change', function(e) {
         sitename = t.querySelector('td:nth-child(1)').textContent;
 
     const url = Array.from(new Set(newurl.split(',')))
-    try {
-        sitestore.update(sitename, {url});
-    } catch (er) {
+    sitestore.update(sitename, {url})
+    .catch (er => {
         if (er instanceof NeedUpgradeError)
             messagebox(er.message);
-        else console.error(er);
+        else {
+            console.error(er.message, er);
+            messagebox("Save failed " + er.message);
+        }
         e.target.value = oldurl;
-    }
+    });
 
     console.debug('Change',t,url,oldurl);
     e.target.setAttribute('data-old', newurl);
@@ -142,14 +144,16 @@ document.querySelector('#stored_sites').addEventListener('click', function(e) {
     let t = find_parent('TR', e.target);
     let sitename = t.querySelector('td:nth-child(1)').textContent;
 
-    try {
-        sitestore.remove(sitename);
-        t.parentNode.removeChild(t);
-    } catch (er) {
+    sitestore.remove(sitename)
+    .then(()=>t.parentNode.removeChild(t))
+    .catch(er => {
         if (er instanceof NeedUpgradeError)
             messagebox(er.message);
-        else console.error(er);
-    }
+        else {
+            console.error(er.message, er);
+            messagebox("Save failed " + er.message);
+        }
+    });
 });
 
 
@@ -246,7 +250,13 @@ async function import_mpsites(data) {
 
     sites = await mpw_utils.merge_sites(sites, imported_sites, (a,b)=>resolveConflict(a,b,false));
 
-    sitestore.set(sites);
+    try {
+        await sitestore.set(sites);
+    } catch (er) {
+        console.error(er.message, er);
+        messagebox("Save failed " + er.message);
+        return;
+    }
     stored_sites_table_update(sites);
 
     const site_not_compatible = (site) => (site.passalgo < 2 && !string_is_plain_ascii(site.sitename))
