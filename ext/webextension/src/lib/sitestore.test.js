@@ -3,7 +3,7 @@
  */
 
 import {it, expect, jest, afterEach} from '@jest/globals'
-import {SiteStore} from './sitestore.js'
+import {site_to_storage, SiteStore} from './sitestore.js'
 
 class chromeMockStorage {
     constructor() {
@@ -45,3 +45,10 @@ it('sitestorage.get should return array of sites from old format', async () => {
     ]));
 });
 
+it('should convert any legal site to storage keying', () => {
+    let x = site_to_storage({username:'username', sitename:'sitename', garbage:'aeger', generation:1, type:'l', url:['url']});
+    expect(x).toEqual({n:'username', s:'sitename', c:1, t:'l', u:['url']});
+
+    x = site_to_storage({url:['url']});
+    expect(x).toEqual({u:['url']});
+});

@@ -33,6 +33,22 @@ export class NeedUpgradeError extends Error {
   }
 }
 
+// quota on sync data is quite strict, so trying to minimize
+const site_to_storage_map = {sitename:'s', generation: 'c', username:'n', type:'t', url:'u'};
+export function site_to_storage(site) {
+    return Object.keys(site).reduce((obj, k) => {
+        if (k in site_to_storage_map) obj[site_to_storage_map[k]] = site[k];
+        return obj;
+    }, {});
+}
+function storage_to_site(s) {
+    return new Site({sitename: s.s,
+                     generation: s.c,
+                     type: s.t,
+                     username: s.n,
+                     url: s.u});
+}
+
 export class SiteStore {
     constructor(store) {
         this._needs_upgrade = false;
@@ -44,7 +60,7 @@ export class SiteStore {
     }
 
     get() {
-        return this.get_nowrap().then(sites => sites.map(e => new Site(e)));
+        return this.get_nowrap().then(sites => sites.map(storage_to_site));
     }
 
     get_nowrap() {
@@ -57,9 +73,12 @@ export class SiteStore {
                     let result = [];
                     for (const [domain, sitedict] of Object.entries(d.sites)) {
                         for (const [sitename, props] of Object.entries(sitedict)) {
-                            props.sitename = sitename;
-                            props.url = [domain];
-                            result.push(props);
+                            result.push({
+                                s:sitename,
+                                c:props.generation,
+                                n:props.username,
+                                t:props.type,
+                                u:[domain]});
                         }
                     }
                     resolve(result);
@@ -75,14 +94,14 @@ export class SiteStore {
             throw new NeedUpgradeError();
         }
         return new Promise(resolve => {
-            this.get()
+            this.get_nowrap()
             .then(sites=>{
-                const siteidx = sites.findIndex(e => e.sitename == site.sitename);
+                const siteidx = sites.findIndex(e => e.s == site.sitename);
                 console.log("addOrReplace", site.sitename, siteidx);
                 if (siteidx == -1)
-                    sites.push(site)
+                    sites.push(site_to_storage(site))
                 else
-                    sites[siteidx] = site;
+                    sites[siteidx] = site_to_storage(site);
 
                 this.store.set({'sitedata': sites}, ()=>resolve());
             })
@@ -91,7 +110,7 @@ export class SiteStore {
 
     set(sites) {
         return new Promise(resolve => {
-            this.store.set({'sitedata': sites}, ()=>resolve());
+            this.store.set({'sitedata': sites.map(site_to_storage)}, ()=>resolve());
         });
     }
 
@@ -101,42 +120,33 @@ export class SiteStore {
             throw new NeedUpgradeError();
         }
         return new Promise((resolve, fail) => {
-            this.get()
+            this.get_nowrap()
             .then(sites=>{
-                const siteidx = sites.findIndex(e => e.sitename == sitename);
+                const siteidx = sites.findIndex(e => e.s == sitename);
                 if (siteidx == -1) {
                     fail(new Error("Not found"));
                     return;
                 }
-
-                Object.assign(sites[siteidx], params);
+                Object.assign(sites[siteidx], site_to_storage(params));
                 this.store.set({'sitedata': sites}, ()=>resolve());
             })
         });
     }
 
-    remove(sitename, url) {
+    remove(sitename) {
         if (this._needs_upgrade) {
             console.error("need upgrade before remove");
             throw new NeedUpgradeError();
         }
         return new Promise((resolve, fail) => {
-            this.get()
+            this.get_nowrap()
             .then(sites=>{
-                const siteidx = sites.findIndex(e => e.sitename == sitename);
+                const siteidx = sites.findIndex(e => e.s == sitename);
                 if (siteidx == -1) {
                     fail(new Error("Not found"));
                     return;
                 }
-
-                let urls = new Set(sites[siteidx].url);
-                if (url) {
-                    urls.delete(url);
-                    sites[siteidx].url = Array.from(urls);
-                }
-
-                if (!url || urls.size == 0)
-                    sites.splice(siteidx, 1);
+                sites.splice(siteidx, 1);
 
                 this.store.set({'sitedata': sites}, ()=>resolve());
             });
