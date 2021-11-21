@@ -382,6 +382,7 @@ document.querySelector('#main').addEventListener('change', function(ev){
         }
     } else {
         site.url = Array.from(new Set([...site.url, domain]));
+        Object.assign(site, ui.siteconfig());
         // place it at the very top
         session_store.stored_sites.splice(siteidx, 1);
         session_store.stored_sites.unshift(site);
