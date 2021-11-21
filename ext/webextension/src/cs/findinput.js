@@ -22,11 +22,9 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 */
-// jshint esversion: 6, bitwise: true, eqeqeq: true, freeze: true, futurehostile: true, nonbsp: true
-// jshint singleGroups: true, strict: true, undef: true, unused: true, varstmt: true
-// jshint browser: true
 /* globals chrome */
 
+// eslint-disable-next-line no-extra-semi
 ;(function() {
 "use strict";
 
