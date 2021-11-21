@@ -142,7 +142,7 @@ function recalculate() {
 
         if (config.pass_to_clipboard)
             copy_to_clipboard("text/plain", pass);
-        update_page_password_input(pass, siteconfig.username);
+        update_page_password_input(pass, siteconfig.username || config.username);
         //if (hide_after_copy) {
         //    addon.port.emit('close');
         //}
@@ -235,9 +235,9 @@ function updateUIForDomainSettings(combined)
     if (domain) {
         let first = session_store.stored_sites[0];
         ui.sitename(first.sitename);
-        ui.siteconfig(first.type, first.generation, first.username || '');
+        ui.siteconfig(first.type, first.generation, first.username || '', config.defaultname);
     } else
-         ui.siteconfig(config.defaulttype, 1, '');
+         ui.siteconfig(config.defaulttype, 1, '', config.defaultname);
 }
 
 function extractDomainFromUrl(url) {
@@ -299,7 +299,7 @@ function popup(masterkey) {
 }
 
 window.addEventListener('load', function () {
-    config.get(['username', 'key_id', 'defaulttype', 'pass_to_clipboard', 'pass_store', 'passwdtimeout', 'use_sync'])
+    config.get(['username', 'key_id', 'defaulttype', 'pass_to_clipboard', 'pass_store', 'passwdtimeout', 'use_sync', 'defaultname'])
     .then(v=>{
         return runtimeSendMessage({action: 'masterkey_get', use_pass_store: !!v.pass_store});
     })
@@ -389,7 +389,7 @@ document.querySelector('#main').addEventListener('change', function(ev){
     }
 
     if (target_is_sitename_select)
-        ui.siteconfig(site.type, site.generation, site.username);
+        ui.siteconfig(site.type, site.generation, site.username, config.defaultname);
 
     if (domain !== '' && !chrome.extension.inIncognitoContext) {
         sitestore.addOrReplace(site)

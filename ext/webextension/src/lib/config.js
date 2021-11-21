@@ -41,6 +41,9 @@ class Config {
     get defaulttype() { if (typeof this._cache.defaulttype === 'undefined')
                         throw new Error("need get(['defaulttype'])");
                      else return this._cache.defaulttype; }
+    get defaultname() { if (typeof this._cache.defaultname === 'undefined')
+                        throw new Error("need get(['defaultname'])");
+                     else return this._cache.defaultname; }
     get pass_to_clipboard() { if (typeof this._cache.pass_to_clipboard === 'undefined')
                         throw new Error("need get(['pass_to_clipboard'])");
                      else return this._cache.pass_to_clipboard; }
@@ -128,6 +131,7 @@ class Config {
             // set some default values if they are not on store
             // need them to not be undefined, or cache above will fail
             if (lst.includes('defaulttype')) result.defaulttype = result.defaulttype || 'l';
+            if (lst.includes('defaultname')) result.defaultname = result.defaultname || '';
             if (lst.includes('key_id')) result.key_id = result.key_id || '';
             if (lst.includes('pass_to_clipboard')) result.pass_to_clipboard = !!result.pass_to_clipboard;
             if (lst.includes('username')) result.username = result.username || '';

@@ -283,6 +283,10 @@ button#siteconfig_show {
   height: auto;
 }
 
+.configgroup {
+    columns: 2;
+}
+
 .configitem > label {
     margin-left: 1em;
     font-size: 0.8em;
@@ -300,6 +304,10 @@ button#siteconfig_show {
     width: 8em;
     height: 1.8em;
     border: 0;
+}
+.configitem > input[type=checkbox] {
+    margin-left: -2em;
+    margin-top:0.2em;
 }
 
 #stored_sites {
