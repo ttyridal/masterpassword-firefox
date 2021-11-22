@@ -40,6 +40,9 @@
           "strict_min_version":"75.0"
       }
   },
+  "options_ui":     {
+      "page": "src/options/options.html"
+  },
   "permissions": [
     "activeTab",
     "clipboardWrite",
