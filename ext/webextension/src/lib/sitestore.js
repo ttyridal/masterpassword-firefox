@@ -92,37 +92,48 @@ export class SiteStore {
         return this.get_nowrap().then(sites => sites.map(storage_to_site));
     }
 
-    get_nowrap() {
-        return new Promise(resolve => {
-            const bins = [...Array(2**7)].map((_,i) => "sd"+(i+0));
-            this.store.get(['sites', ...bins], d => {
-                if (Object.keys(d).some(e => bins.includes(e))) {
-                    d.sitedata = [];
-                    bins.forEach(k => {
-                        d.sitedata.push(... (d[k] || []))
-                    });
+    async get_nowrap() {
+        const bins = [...Array(2**7)].map((_,i) => "sd"+(i+0));
+        let d = await store_get(this.store, ['sites', ...bins])
 
-                    resolve(d.sitedata);
-                }
-                else if ('sites' in d) {
-                    this._needs_upgrade = true;
-                    let result = [];
-                    for (const [domain, sitedict] of Object.entries(d.sites)) {
-                        for (const [sitename, props] of Object.entries(sitedict)) {
-                            result.push({
-                                s:sitename,
-                                c:props.generation,
-                                n:props.username,
-                                t:props.type,
-                                u:[domain]});
-                        }
-                    }
-                    resolve(result);
-                } else
-                    resolve([]);
+        if (Object.keys(d).some(e => {return (typeof d[e] !== 'undefined') && bins.includes(e)})) {
+            d.sitedata = [];
+            bins.forEach(k => {
+                d.sitedata.push(... (d[k] || []))
             });
-        });
+            return d.sitedata;
+        } else if ('sites' in d && typeof d.sites !== 'undefined') {
+            this._needs_upgrade = true;
+
+            if (typeof(d.sites) === 'number') {
+                // handle
+                const subkeys = [...Array(d.sites)].map((_,i) => "sites"+(i+0));
+                let subsites = await store_get(this.store, subkeys);
+                d.sites = JSON.parse(
+                    subkeys.reduce(
+                        (acc, cv) => {acc.push(subsites[cv]);return acc}, []
+                    ).join('')
+                );
+            }
+
+            let result = [];
+            for (const [domain, sitedict] of Object.entries(d.sites)) {
+                for (const [sitename, props] of Object.entries(sitedict)) {
+                    result.push({
+                        s:sitename,
+                        c:props.generation,
+                        n:props.username,
+                        t:props.type,
+                        u:[domain]});
+                }
+            }
+            return result;
+        } else {
+            console.log("have nothing");
+            return [];
+        }
     }
+
 
     addOrReplace(site) {
         if (this._needs_upgrade) {

@@ -13,6 +13,7 @@ export function mockStorageGet(possibleValues) {
             key = [key];
 
         for (let k of key)
+            if (k in possibleValues)
             res[k] = typeof possibleValues[k] !== 'undefined' ? possibleValues[k] : res[k];
 
         cb(res);
