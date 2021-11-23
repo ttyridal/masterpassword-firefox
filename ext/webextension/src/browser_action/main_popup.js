@@ -48,7 +48,7 @@ function masterkey_clear() {
 
 function get_active_tab_url() {
     var ret = new Promise(resolve => {
-        chrome.tabs.query({active:true,windowType:"normal",currentWindow:true}, function(tabres){
+        chrome.tabs.query({active:true,currentWindow:true}, function(tabres){
         if (tabres.length !== 1) {
             ui.user_warn("Error: bug in tab selector");
             console.log(tabres);
