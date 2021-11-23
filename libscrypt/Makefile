@@ -14,7 +14,7 @@
 
 
 .PHONY: main
-main: scrypt.js
+main: scrypt-asm.js
 
 scrypt.js: scrypt.c
 	emcc scrypt.c crypto_scrypt-nosse.c sha256.c -o scrypt.js -O3 \
@@ -24,6 +24,9 @@ scrypt.js: scrypt.c
 		-s "EXTRA_EXPORTED_RUNTIME_METHODS=['ccall']" \
 		-s NO_BROWSER=1 \
 		-s ASSERTIONS=0
+
+scrypt-asm.js: scrypt.js
+	echo "window.Module = Module" | cat scrypt.js - >scrypt-asm.js
 
 for_test: scrypt.c
 	gcc -Wall -Wextra -pedantic scrypt.c crypto_scrypt-nosse.c sha256.c -o for_test -DFORTEST
