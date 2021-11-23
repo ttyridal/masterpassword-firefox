@@ -2,5 +2,9 @@
 /ext/webextension/icons/*
 /ext/chromeext/icons
 /ext/chromeext/src
-/*.zip
+/builds
 node_modules/
+scrypt.js
+scrypt-asm.js
+*.msi
+*.exe
