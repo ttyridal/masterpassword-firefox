@@ -1,7 +1,8 @@
-build docker container in libscrypt/docker
+build docker container in libscrypt/docker:
+cat libscrypt/docker/Dockerfile | docker build -t mpw-emcc:1.35.10 -
 
 (in /libscrypt)
-docker run --rm -v $(pwd):/src -u $(id -u):$(id -g) emcc make
+docker run --rm -v $(pwd):/src -u $(id -u):$(id -g) mpw-emcc:1.35.10 make
 
-copy resulting scrypt.js to /ext/webextension/src/lib/scrypt-asm.js
+copy resulting scrypt-asm.js to /ext/webextension/src/lib/scrypt-asm.js
 

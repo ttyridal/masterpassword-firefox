@@ -1,13 +1,4 @@
-#~# emcc -v
-#emcc (Emscripten GCC-like replacement + linker emulating GNU ld ) 1.29.0
-#clang version 3.4 
-#Target: x86_64-unknown-linux-gnu
-#	Thread model: posix
-#Found candidate GCC installation: /usr/lib/gcc/x86_64-linux-gnu/4.8
-#	Found candidate GCC installation: /usr/lib/gcc/x86_64-linux-gnu/4.8.2
-#Selected GCC installation: /usr/lib/gcc/x86_64-linux-gnu/4.8
-#	INFO     root: (Emscripten: Running sanity checks)
-#WARNING  root: java does not seem to exist, required for closure compiler, which is optional (define JAVA in ~/.emscripten if you want it)
+# see ../README.build for instructions on environment
 
 #libscrypt retrieved from https://github.com/technion/libscrypt
 #at commit 4df2c4c703367
