@@ -284,7 +284,13 @@ button#siteconfig_show {
 }
 
 .configgroup {
-    columns: 2;
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+}
+
+.configsubgroup.left {
+    padding-right:5em;
 }
 
 .configitem > label {
