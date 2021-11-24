@@ -65,6 +65,20 @@
                     <label class="w3-label w3-small w3-text-white" for="defaultname">Default username:</label>
                     <input class="w3-select w3-small w3-border" id="defaultname">
                 </div>
+                <div class="configitem">
+                    <label class="w3-label w3-small w3-text-white" for="treat_as_same_site">Override as same site</label>
+                    <textarea class="w3-label w3-small w3-text-white" id="treat_as_same_site"></textarea>
+                    <p class="w3-label w3-small w3-text-white">
+                        - Enter overrides above, one per line<br />
+                        - lines must start with a . (period)<br />
+                        - lines that cannot be parsed are ignored<br />
+                        - <b>*</b> is wildcard, will match anything except . (period)<br />
+                        - Example:<br />
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>.net.*</b> will treat <i>x.net.nz</i> as a site,<br />
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;instead of ignoring <i>x</i> and using <i>net.nz</i> as the site
+                    </p>
+                </div>
+
             </div>
             <div class="configsubgroup right">
                 <div class="configitem">

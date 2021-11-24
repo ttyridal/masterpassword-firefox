@@ -58,6 +58,9 @@ document.querySelector('#auto_submit_username').addEventListener('change', funct
 document.querySelector('#pass_store').addEventListener('change', function() {
     config.set({pass_store: this.checked});
 });
+document.querySelector('#treat_as_same_site').addEventListener('change', function() {
+    config.set({treat_as_same_site: this.value});
+});
 document.querySelector('#use_sync').addEventListener('change', async function() {
     let oldstore = (this.checked?chrome.storage.local:chrome.storage.sync);
     let newstore = (!this.checked?chrome.storage.local:chrome.storage.sync);
@@ -158,6 +161,7 @@ window.addEventListener('load', function() {
         'auto_submit_pass',
         'auto_submit_username',
         'pass_store',
+        'treat_as_same_site',
         'use_sync',
     ])
     .then(data => {
@@ -172,6 +176,7 @@ window.addEventListener('load', function() {
         document.querySelector('#auto_submit_pass').checked = data.auto_submit_pass;
         document.querySelector('#auto_submit_username').checked = data.auto_submit_username;
         document.querySelector('#pass_store').checked = data.pass_store;
+        document.querySelector('#treat_as_same_site').value = data.treat_as_same_site;
         document.querySelector('#use_sync').checked = data.use_sync;
     });
 });

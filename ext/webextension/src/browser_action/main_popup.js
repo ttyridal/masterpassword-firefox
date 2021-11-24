@@ -19,7 +19,7 @@
 
 import {SiteStore} from "../lib/sitestore.js";
 import {Site} from "../lib/sites.js";
-import {defer, copy_to_clipboard} from "../lib/utils.js";
+import {defer, copy_to_clipboard, regexpEscape} from "../lib/utils.js";
 import {parseUri} from "../lib/uritools.js";
 import config from "../lib/config.js";
 import {ui} from "./ui.js";
@@ -241,21 +241,54 @@ function updateUIForDomainSettings(combined)
 }
 
 function extractDomainFromUrl(url) {
-    if (!url || url.startsWith('about:')
-        || url.startsWith('resource:')
-        || url.startsWith('moz-extension:')
-        || url.startsWith('chrome-extension:')
-        || url.startsWith('chrome:'))
-        url = '';
-    let domain_parts = parseUri(url).domain.split(".");
-    let significant_parts = 2;
-    const common_slds = ['co','com','gov','govt','net','org','edu','priv','ac'];
-    let second_level_domain = domain_parts[domain_parts.length-2].toLowerCase();
-    if (domain_parts.length > 2 && common_slds.includes(second_level_domain))
-        significant_parts = 3;
+    if (!url)
+        throw "extractDomainFromUrl: No url provided!";
 
-    let significant_domain = domain_parts.slice(-significant_parts)
-    return [domain_parts, significant_domain];
+    var urlParsed = parseUri(url);
+    {
+        let protocolsIgnored = ["about", "resource", "moz-extension", "chrome-extension", "chrome", "edge", "brave"];
+        if (protocolsIgnored.includes(urlParsed.protocol)) 
+            throw "extractDomainFromUrl: Invalid url protocol provided";
+    }
+
+    let rxDomainMatchers = [
+        /([^\.]+\.[^\.]+)$/i,   // Default matcher matches two-part domain names (.* pattern) i.e. github.com
+    ];
+    
+    config.treat_as_same_site.split('\n').forEach(function(pattern) {
+        pattern = pattern.trim();
+        if (pattern.length == 0) return;
+        if (!pattern.startsWith('.')) return;
+        if (pattern.endsWith('.')) return;
+        //FIXME: More strict domain character parsing
+        //       (should actually be config done at entry time)
+        pattern = '*' + pattern;
+        pattern = regexpEscape(pattern);
+        pattern = pattern.replace(/\\\*/g, '[^\.]+');
+        rxDomainMatchers.push(new RegExp(pattern, 'i'));
+    });
+
+    let domainMatched = null;
+
+    rxDomainMatchers.forEach(function(rx) {
+        let rxResult = rx.exec(urlParsed.domain);
+        if (!rxResult) return;
+
+        if (domainMatched == null)
+            return domainMatched = rxResult[0];
+        
+        // Select domain with most parts that match
+        let domainMatchedParts = domainMatched.split('.');
+        let domainThisParts = rxResult[0].split('.');
+
+        if (domainThisParts.length > domainMatchedParts.length) 
+            domainMatched = rxResult[0];
+    });
+
+    if (domainMatched == null) 
+        throw 'extractDomainFromUrl: Could not match any sites! Check your configuration settings!';
+
+    return [urlParsed.domain.split('.'), domainMatched.split('.')];
 }
 
 function showSessionSetup() {
@@ -310,6 +343,7 @@ window.addEventListener('load', function () {
         'passwdtimeout',
         'use_sync',
         'defaultname',
+        'treat_as_same_site',
     ])
     .then(v=>{
         return runtimeSendMessage({action: 'masterkey_get', use_pass_store: !!v.pass_store});

@@ -90,6 +90,7 @@ button:focus, input:focus, mp-combobox:focus-within {
 input,
 select,
 mp-combobox,
+textarea,
 no-op {
     background: #1b1d23;
     color: #d7dae0;
@@ -307,6 +308,7 @@ no-op {
 .configitem > input,
 .configitem > select,
 .configitem > option,
+.configitem > textarea,
 no-op {
     margin-top:1.5em;
     margin-left:-8em;
@@ -319,6 +321,25 @@ no-op {
 .configitem > input[type=checkbox] {
     margin-left: -2em;
     margin-top:0.2em;
+}
+
+.configitem > textarea#treat_as_same_site {
+    width: 11.5em;
+    height: 13em;
+    font-size: 0.7em;
+    margin-left: -11.5em;
+    margin-top: 2em;
+    white-space: nowrap;
+}
+
+/* FIXME: I don't understand how the left alignment of inputs works here, 
+          using negative margins and wrapping - so I just manually margin-left
+          by eye to line up - however it would be better to align this p
+          the same way as the input it is annotating */
+.configitem > textarea#treat_as_same_site + p {
+    font-size: 0.6em;
+    margin-left: 6.7em;
+    line-height: normal;
 }
 
 #stored_sites {

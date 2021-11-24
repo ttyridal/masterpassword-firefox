@@ -53,6 +53,9 @@ class Config {
     get passwdtimeout() { if (typeof this._cache.passwdtimeout === 'undefined')
                         throw new Error("need get(['passwdtimeout'])");
                      else return this._cache.passwdtimeout; }
+    get treat_as_same_site() { if (typeof this._cache.treat_as_same_site === 'undefined')
+                        throw new Error("need get(['treat_as_same_site'])");
+                     else return this._cache.treat_as_same_site; }
     get use_sync() { if (typeof this._cache.use_sync === 'undefined')
                         throw new Error("need get(['use_sync'])");
                      else return this._cache.use_sync; }
@@ -137,7 +140,7 @@ class Config {
             if (lst.includes('username')) result.username = result.username || '';
             if (lst.includes('pass_store')) result.pass_store = !!result.pass_store;
             if (lst.includes('passwdtimeout')) result.passwdtimeout = isNaN(result.passwdtimeout) ? -1 : result.passwdtimeout;
-
+            if (lst.includes('treat_as_same_site')) result.treat_as_same_site = result.treat_as_same_site || [ '.ac.*', '.co.*', '.com.*', '.edu.*', '.geek.*', '.gov.*', '.govt.*', '.net.*', '.org.*', '.school.*' ].join('\n');
             Object.assign(this._cache, result);
 
             return singlekey ? result[lst[0]] : result;

@@ -46,3 +46,8 @@ export function copy_to_clipboard(mimetype, data) {
     document.execCommand("Copy", false, null);
     document.oncopy=null;
 }
+
+export function regexpEscape(string) {
+    // https://stackoverflow.com/a/6969486
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+}
