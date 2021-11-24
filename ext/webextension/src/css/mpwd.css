@@ -87,7 +87,10 @@ button:focus, input:focus, mp-combobox:focus-within {
   outline-style: auto;
 }
 
-input, select, mp-combobox {
+input,
+select,
+mp-combobox,
+no-op {
     background: #1b1d23;
     color: #d7dae0;
     height: 2em;
@@ -198,7 +201,8 @@ button#siteconfig_show {
 }
 #siteconfig > input,
 #siteconfig > select,
-#siteconfig > option {
+#siteconfig > option,
+no-op {
     font-size: 1em;
     font-weight: normal;
     width: 6em;
@@ -302,7 +306,8 @@ button#siteconfig_show {
 
 .configitem > input,
 .configitem > select,
-.configitem > option {
+.configitem > option,
+no-op {
     margin-top:1.5em;
     margin-left:-8em;
     font-size: 1em;
