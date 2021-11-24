@@ -150,14 +150,16 @@ document.querySelector('#use_sync').addEventListener('change', async function() 
 });
 
 window.addEventListener('load', function() {
-    config.get(['defaulttype',
-         'defaultname',
-         'passwdtimeout',
-         'pass_to_clipboard',
-         'auto_submit_pass',
-         'auto_submit_username',
-         'pass_store',
-         'use_sync'])
+    config.get([
+        'defaulttype',
+        'defaultname',
+        'passwdtimeout',
+        'pass_to_clipboard',
+        'auto_submit_pass',
+        'auto_submit_username',
+        'pass_store',
+        'use_sync',
+    ])
     .then(data => {
         data = Object.assign({defaulttype: 'l', passwdtimeout: 0, pass_to_clipboard: true,
                  defaultname: '',

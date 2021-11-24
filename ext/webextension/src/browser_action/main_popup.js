@@ -301,7 +301,16 @@ function popup(masterkey) {
 }
 
 window.addEventListener('load', function () {
-    config.get(['username', 'key_id', 'defaulttype', 'pass_to_clipboard', 'pass_store', 'passwdtimeout', 'use_sync', 'defaultname'])
+    config.get([
+        'username',
+        'key_id',
+        'defaulttype',
+        'pass_to_clipboard',
+        'pass_store',
+        'passwdtimeout',
+        'use_sync',
+        'defaultname',
+    ])
     .then(v=>{
         return runtimeSendMessage({action: 'masterkey_get', use_pass_store: !!v.pass_store});
     })
