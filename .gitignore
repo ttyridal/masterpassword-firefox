@@ -8,3 +8,4 @@ scrypt.js
 scrypt-asm.js
 *.msi
 *.exe
+/libscrypt/crypto_scrypt-nosse-nommap.c
