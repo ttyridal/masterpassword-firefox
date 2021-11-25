@@ -1,0 +1,35 @@
+# Developer instructions
+
+## Unit testing
+Node.js and jest is used for testing.
+-- run `npm install` in the ext/webextension folder (where packages.json resides).
+Afterwards `npm run test` to run all tests.
+
+Test coverage is not the greatest at the moment.
+Also some (most) code is rather unaccessible to testing (thanks to being hidden in iife's)
+but we'll get there with time.. And some is better than nothing :)
+
+
+## Building the libscrypt dependency
+build docker container in libscrypt/docker:
+
+`cd libscrypt; cat docker/Dockerfile | docker build -t mpw-emcc:1.35.10 -`
+
+use the docker container to build libscrypt as a asm.js module:
+
+`docker run --rm -v $(pwd):/src -u $(id -u):$(id -g) mpw-emcc:1.35.10 make`
+
+copy resulting scrypt-asm.js to /ext/webextension/src/lib/scrypt-asm.js
+
+(you could also just copy the required scrypt-asm.js file from a release)
+
+## Building icons
+run `makeicons.sh` in the gfx folder.  The script needs imagemagik and will copy all icons to the correct location (/ext/webextension/icons)
+
+(again you could just extract the files from a release)
+
+## Browsers
+The source supports both Chrome and Firefox, with separate manifest.json.
+It's suggested to symlink `src` into the chromeext folder for easy parallell testing.  Another solution is to copy the one you want into ext/webextension.
+
+
