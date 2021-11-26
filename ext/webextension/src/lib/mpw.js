@@ -16,8 +16,8 @@
     along with the software.  If not, see <http://www.gnu.org/licenses/>.
 */
 // jshint browser: true, nonstandard: true
-/* global Module */
-(function(){
+import {Module} from './scrypt-asm.js'
+export default (function(){
     "use strict";
     const
         NSgeneral = "com.lyndir.masterpassword",
@@ -122,7 +122,7 @@
             hmac);
     }
 
-window.mpw=function(name, password, version){
+function mpw(name, password, version){
     version = typeof version !== 'undefined' ? version : 3;
     var key,
         lenoverride = version < 3 ? name.length : 0;
@@ -140,5 +140,7 @@ window.mpw=function(name, password, version){
         key_id : function() { return sha256_digest(key); },
         v2_compatible : function() { return name.length === encode_utf8(name).length; }
     };
-};
+}
+
+return mpw;
 }());

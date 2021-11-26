@@ -21,7 +21,7 @@ crypto_scrypt-nosse-nommap.c: crypto_scrypt-nosse.c
 	patch -p0 -o crypto_scrypt-nosse-nommap.c <crypto_scrypt-nosse.c.patch
 
 scrypt-asm.js: scrypt.js
-	echo "window.Module = Module" | cat scrypt.js - >scrypt-asm.js
+	echo "export {Module};" | cat scrypt.js - >scrypt-asm.js
 
 for_test: scrypt.c
 	gcc -Wall -Wextra -pedantic scrypt.c crypto_scrypt-nosse.c sha256.c -o for_test -DFORTEST

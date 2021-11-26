@@ -15,13 +15,14 @@
     You should have received a copy of the GNU General Public License
     along with the software.  If not, see <http://www.gnu.org/licenses/>.
 */
-/* globals browser, chrome, mpw */
+/* globals browser, chrome */
 
 import {SiteStore} from "../lib/sitestore.js";
 import {Site} from "../lib/sites.js";
 import {defer, copy_to_clipboard} from "../lib/utils.js";
 import {parseUri} from "../lib/uritools.js";
 import config from "../lib/config.js";
+import mpw from "../lib/mpw.js";
 import {ui} from "./ui.js";
 
 (function () {

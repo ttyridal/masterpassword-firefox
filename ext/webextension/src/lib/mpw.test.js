@@ -1,19 +1,14 @@
 /**
  * @jest-environment jsdom
  */
-/* globals mpw */
 
-import {expect, it, beforeAll} from '@jest/globals'
+import {expect, it} from '@jest/globals'
+import mpw from './mpw.js'
 
-beforeAll(async () => {
-    await import('./scrypt-asm.js');
-    await import('./mpw.js');
-
-});
 
 it('mpw craete object with correct keyid', async ()=>{
     let pwtime = Date.now();
-    const pw = window.mpw('Robert Lee Mitchell','banana colored duckling');
+    const pw = mpw('Robert Lee Mitchell','banana colored duckling');
     pwtime = Date.now() - pwtime;
 
     expect(pw).toBeDefined();
@@ -22,7 +17,7 @@ it('mpw craete object with correct keyid', async ()=>{
     expect(pw.key_id()).toBe('98eef4d1df46d849574a82a03c3177056b15dffca29bb3899de4628453675302');
 });
 it('mpw test vectors', async ()=>{
-    let pw = window.mpw('Robert Lee Mitchell','banana colored duckling');
+    let pw = mpw('Robert Lee Mitchell','banana colored duckling');
 
     expect('Jejr5[RepuSosp').toEqual(pw.sitepassword('masterpasswordapp.com',1,'l'));
     expect('LiheCuwhSerz6)').toEqual(pw.sitepassword('⛄',1,'l'));
@@ -40,18 +35,18 @@ it('mpw test vectors', async ()=>{
     expect(pw.key_id()).toEqual('1717aa1f9bf5ba56cd0965cda3d78e6d2e6a1ea8c067a8ea621f3ddad4a87eb8');
     expect('NopaDajh8=Fene').toEqual(pw.sitepassword('masterpasswordapp.com',1,'l'));
 
-    pw = window.mpw('Robert Lee Mitchell','⛄');
+    pw = mpw('Robert Lee Mitchell','⛄');
     expect(pw.key_id()).toEqual('351432b8528a5abecab768ca95015097de76fe14c41e10af36c67dcfb8917e08');
     expect('QesuHirv5-Xepl').toEqual(pw.sitepassword('masterpasswordapp.com',1,'l'));
 });
 
 it('mpw thows on bad key or seed', async ()=>{
     expect(()=>{
-        window.mpw('.'.repeat(500),'.'); //keyfail
+        mpw('.'.repeat(500),'.'); //keyfail
     }).toThrow()
 
     expect(()=>{
-        window.mpw.sitepassword('.'.repeat(500),1,'l'); //seed fail
+        mpw.sitepassword('.'.repeat(500),1,'l'); //seed fail
     }).toThrow()
 });
 
