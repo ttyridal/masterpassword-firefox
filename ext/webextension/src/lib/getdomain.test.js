@@ -1,8 +1,38 @@
+/* globals global */
 "use strict";
-import {jest, it, expect, beforeEach} from '@jest/globals'
-import {getDomain} from './getdomain.js'
+import {it, expect} from '@jest/globals'
+import {PslLookup} from './getdomain.js'
+import fs from 'fs';
+import {PNG} from 'pngjs3'
+// import { sync as PNGSync } from 'pngjs3';
+import { URL } from 'url';
 
-it('gets the correct domain from url', () => {
+function pngPixels(url) {
+    const url_abspath = new URL(url, import.meta.url).pathname;
+    const data = fs.readFileSync(url_abspath);
+
+    return new Promise(resolve=>{
+        new PNG().parse(data, function (error, data) {
+            resolve(data.data);
+        });
+    });
+}
+
+class MockBlob {
+    constructor(data/*, params*/) {
+        let txt = data.toString("utf8");
+        this.text = ()=>{return Promise.resolve(txt)};
+    }
+}
+global.Blob = MockBlob;
+
+it('gets the correct domain from url', async () => {
+
+
+    const psl = new PslLookup({tableLoader: pngPixels});
+    await psl.waitTableReady()
+    const getDomain = psl.getDomain.bind(psl);
+
     expect(getDomain('example.com')).toBe('example.com');
     expect(getDomain('amazon.com')).toBe('amazon.com');
     expect(getDomain('show.amazon.com')).toBe('amazon.com');

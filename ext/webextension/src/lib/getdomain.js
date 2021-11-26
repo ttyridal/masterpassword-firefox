@@ -1,36 +1,67 @@
-import {tldlookup, tldcommon} from './getdomain_lut.js'
+function loadImage(url) {
+    let img = new Image();
+    return new Promise(res=>{
+        img.onload = ()=>{
+            res(img);
+        }
+        img.src = url;
+    });
+}
 
-export function getDomain(url) {
-    //TODO decode Punycodeed urls (RFC 3492 and RFC 5891) 
-    const parts = url.split('.').reverse();
-    let res = [];
-    let lut = tldlookup;
-    let v;
+async function getPixels(url) {
+    let img = await loadImage(url);
+    let canvas = document.createElement('canvas');
+    canvas.height = img.height;
+    canvas.width = img.width;
+    let context = canvas.getContext('2d');
+    context.drawImage(img, 0, 0);
+    return context.getImageData(0, 0, img.width, img.height).data;
+}
 
-    for (v=0; v < parts.length; v++) {
-        const part = parts[v];
-        if (!lut) break;
-        if (part in lut) {
-            res.push(part);
-            lut = lut[part]
-        } 
-        else if ('*' in lut) {
-            res.push(e);
-            lut = null;
-        } else
-            break;
+
+function pixeldata_to_json(pixeldata) {
+    pixeldata = pixeldata.filter((_,i)=> i%4 ==0);
+    const blob = new Blob([pixeldata], {type: 'text/plain; charset=utf-8'});
+    return blob.text();
+}
+
+export class PslLookup {
+    constructor(args) {
+        args = args || {};
+        args = Object.assign({tableLoader: getPixels, tableurl: "./getdomain.json.png"}, args);
+        this.psltable = args.tableLoader(args.tableurl)
+        .then(pixeldata_to_json)
+        .then(JSON.parse)
+        .catch(e=>{console.log("something is failing",e)});
     }
-    if (v < parts.length)
-        res.push(parts[v]);
 
-    if (parts.length > 2 && parts[1] in tldcommon
-        && tldcommon[parts[1]].includes(parts[0]) && res.length < 3) {
-        res = parts.slice(0, 3);
+    async waitTableReady() {
+        let lut = await this.psltable;
+        this.psltable = lut;
     }
-    
-    v = parts.indexOf('blogspot');
-    if (v >= 0)
-        res = parts.slice(0, v + 2);
 
-    return res.reverse().join('.');
+    getDomain(url) {
+        let lut = this.psltable;
+        const parts = url.split('.').reverse();
+        let res = [];
+        let v;
+
+        for (v=0; v < parts.length; v++) {
+            const part = parts[v];
+            if (!lut) break;
+            if (part in lut) {
+                res.push(part);
+                lut = lut[part]
+            }
+            else if ('*' in lut) {
+                res.push(part);
+                lut = null;
+            } else
+                break;
+        }
+        if (v < parts.length)
+            res.push(parts[v]);
+
+        return res.reverse().join('.');
+    }
 }

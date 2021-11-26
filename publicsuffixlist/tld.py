@@ -19,8 +19,11 @@ common = {
         }
 tree = lambda: defaultdict(tree)
 
+def is_ascii(s): return all(ord(c) < 128 for c in s)
+
 others = tree()
 
+#get from  https://publicsuffix.org/list/public_suffix_list.dat
 for l in open("public_suffix_list.dat"):
     l = l.strip()
     if not l or l[0] == '/' or '.' not in l: continue
@@ -29,31 +32,60 @@ for l in open("public_suffix_list.dat"):
 
     if l[0]=='!': continue  ## deal with those later
 
-    if 'blogspot' in x:  ## special case them.. always x.blogspot....
-        pass
-    elif len(x) == 2 and x[-2] in common:
-        common[x[-2]].append(x[-1])
+    if 0: pass
+##    if 'blogspot' in x:  ## special case them.. always x.blogspot....
+##        pass
+##     elif len(x) == 2 and x[-2] in common:
+##         common[x[-2]].append(x[-1])
     else:
         x = x[::-1]
         d = others
         for q in x:
+            if not is_ascii(q):
+                q = "xn-"+q.encode('punycode').decode('ascii')
             d = d[q]
 
-def walk(d, dst,lvl=0):
+def walk(d, dst,lvl=0, printer=lambda x,y: None):
     for k,v in d.items():
         if v:
-            print((" "*lvl)+k)
+            printer(lvl,k)
             dst[k] = dict()
-            walk(v, dst[k],lvl+1)
+            walk(v, dst[k],lvl+1,printer)
         else:
-            print((" "*lvl)+k)
+            printer(lvl,k)
             dst[k] = 0
 
 
 table=dict()
-walk(others, table)
-## print("export const tldlookup =", json.dumps(table),";")
-## print("export const tldcommon =", json.dumps(common),";")
+caparr=[]
+
+def printer(lvl, k):
+    global caparr
+    if not is_ascii(k):
+        k = 'xn-' + k.encode('punycode').decode('ascii')
+
+    caparr.append((" "*lvl)+k+'?')
+
+walk(others, table,0,printer)
+
+
+def pgmdump(s):
+    rows = int(len(s) / 4096) + 1
+    cols =  int(len(s)/rows) + 1
+    padding = rows*cols - len(s)
+
+    print("P5")
+    print(cols)
+    print(rows)
+    print(255)
+    print(s, end='')
+    print(" "*padding)
+
+#pgmdump("".join(caparr))
+
+s = json.dumps(table).replace(' ','')
+pgmdump(s)
+
 sys.exit(0)
 def lookup(url, d):
     k = url.split('.')[::-1]
