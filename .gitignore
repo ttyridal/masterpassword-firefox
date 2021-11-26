@@ -11,3 +11,4 @@ scrypt-asm.js
 *.msi
 *.exe
 /libscrypt/crypto_scrypt-nosse-nommap.c
+publicsuffixlist/public_suffix_list.dat
