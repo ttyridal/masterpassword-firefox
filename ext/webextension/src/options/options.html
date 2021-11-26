@@ -8,7 +8,6 @@ body { max-width: 30em; }
 div.item {
     break-inside: avoid;
     width:100%;
-    height:3em;
     display:flex;
     justify-content: space-between;
     align-items: center;
@@ -26,7 +25,9 @@ label {
 
 input,
 select,
-option {
+option,
+textarea,
+no-op {
     display:block;
     border: 0;
     width: 14em;
@@ -35,6 +36,11 @@ option {
 select > option { background: white}
 input[type=checkbox] {
     width:1em;
+}
+#treat_as_same_site {
+    height: 15em;
+    white-space: nowrap;
+    overflow: auto;
 }
 
 </style>
@@ -70,6 +76,11 @@ input[type=checkbox] {
     <div class="item">
         <label for="defaultname">Default username</label>
             <input id="defaultname">
+    </div>
+    <div class="item">
+        <label for="treat_as_same_site">Override as same site</label>
+        <textarea id="treat_as_same_site"></textarea>
+
     </div>
     <div class="item">
         <label for="pass_to_clipboard">Copy password to clipboard</label>

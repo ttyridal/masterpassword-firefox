@@ -34,59 +34,73 @@
         <h2 class="accordion_toggle">Global settings</h2>
         <div class="configgroup">
             <div class="configsubgroup left">
-            <div class="configitem">
-                <label class="w3-label w3-small w3-text-white" for="passwdtype">Default password type:</label>
-                 <select class="w3-select w3-small w3-border" id="passwdtype">
-                    <option value="x">Maximum
-                    <option value="l">Long
-                    <option value="m">Medium
-                    <option value="b">Basic
-                    <option value="s">Short
-                    <option value="i">Pin
-                    <option value="n">Name
-                    <option value="p">Phrase
-                    <option value="nx">Name [V]
-                    <option value="px">Phrase [V]
-                </select>
-            </div>
-            <div class="configitem">
-                <label class="w3-label w3-small w3-text-white" for="passwdtimeout">Remember password:</label>
-                <select class="w3-select w3-small w3-border" id="passwdtimeout">
-                    <option value="0">Never
-                    <option value="5">5 minutes
-                    <option value="15">15 minutes
-                    <option value="30">30 minutes
-                    <option value="60">1 hour
-                    <option value="480">8 hours
-                    <option value="-1">Until closed
-                </select>
-            </div>
-            <div class="configitem">
-                <label class="w3-label w3-small w3-text-white" for="defaultname">Default username:</label>
-                <input class="w3-select w3-small w3-border" id="defaultname">
-            </div>
+                <div class="configitem">
+                    <label class="w3-label w3-small w3-text-white" for="passwdtype">Default password type:</label>
+                    <select class="w3-select w3-small w3-border" id="passwdtype">
+                        <option value="x">Maximum
+                        <option value="l">Long
+                        <option value="m">Medium
+                        <option value="b">Basic
+                        <option value="s">Short
+                        <option value="i">Pin
+                        <option value="n">Name
+                        <option value="p">Phrase
+                        <option value="nx">Name [V]
+                        <option value="px">Phrase [V]
+                    </select>
+                </div>
+                <div class="configitem">
+                    <label class="w3-label w3-small w3-text-white" for="passwdtimeout">Remember password:</label>
+                    <select class="w3-select w3-small w3-border" id="passwdtimeout">
+                        <option value="0">Never
+                        <option value="5">5 minutes
+                        <option value="15">15 minutes
+                        <option value="30">30 minutes
+                        <option value="60">1 hour
+                        <option value="480">8 hours
+                        <option value="-1">Until closed
+                    </select>
+                </div>
+                <div class="configitem">
+                    <label class="w3-label w3-small w3-text-white" for="defaultname">Default username:</label>
+                    <input class="w3-select w3-small w3-border" id="defaultname">
+                </div>
+                <div class="configitem">
+                    <label class="w3-label w3-small w3-text-white" for="treat_as_same_site">Override as same site</label>
+                    <textarea class="w3-label w3-small w3-text-white" id="treat_as_same_site"></textarea>
+                    <p class="w3-label w3-small w3-text-white">
+                        - Enter overrides above, one per line<br />
+                        - lines must start with a . (period)<br />
+                        - lines that cannot be parsed are ignored<br />
+                        - <b>*</b> is wildcard, will match anything except . (period)<br />
+                        - Example:<br />
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>.net.*</b> will treat <i>x.net.nz</i> as a site,<br />
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;instead of ignoring <i>x</i> and using <i>net.nz</i> as the site
+                    </p>
+                </div>
+
             </div>
             <div class="configsubgroup right">
-            <div class="configitem">
-                <label for="pass_to_clipboard">Copy password to clipboard</label>
-                <input id="pass_to_clipboard" type="checkbox"/>
-            </div>
-            <div class="configitem">
-                <label for="auto_submit_pass">Submit after password inject</label>
-                <input id="auto_submit_pass" type="checkbox"/>
-            </div>
-            <div class="configitem">
-                <label for="auto_submit_username">Inject username</label>
-                <input id="auto_submit_username" type="checkbox"/>
-            </div>
-            <div class="configitem">
-                <label for="pass_store">Use OS' password store</label>
-                <input id="pass_store" type="checkbox"/>
-            </div>
-            <div class="configitem">
-                <label for="use_sync">Let browser sync site data</label>
-                <input id="use_sync" type="checkbox"/>
-            </div>
+                <div class="configitem">
+                    <label for="pass_to_clipboard">Copy password to clipboard</label>
+                    <input id="pass_to_clipboard" type="checkbox"/>
+                </div>
+                <div class="configitem">
+                    <label for="auto_submit_pass">Submit after password inject</label>
+                    <input id="auto_submit_pass" type="checkbox"/>
+                </div>
+                <div class="configitem">
+                    <label for="auto_submit_username">Inject username</label>
+                    <input id="auto_submit_username" type="checkbox"/>
+                </div>
+                <div class="configitem">
+                    <label for="pass_store">Use OS' password store</label>
+                    <input id="pass_store" type="checkbox"/>
+                </div>
+                <div class="configitem">
+                    <label for="use_sync">Let browser sync site data</label>
+                    <input id="use_sync" type="checkbox"/>
+                </div>
             </div>
         </div>
     </div>
