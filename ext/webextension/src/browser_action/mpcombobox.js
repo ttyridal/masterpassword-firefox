@@ -344,7 +344,8 @@ class ComboBox extends HTMLElement {
     }
 
     handleBlur() {
-        this.inputNode.value = this.original_value;
+        if (this.inputNode.value != this.original_value)
+            this.setValue(this.inputNode.value);
         setTimeout(this.listbox.open.bind(this.listbox, false), 300);
     }
 
@@ -382,7 +383,7 @@ class ComboBox extends HTMLElement {
                     event.stopPropagation();
                 }
                 break;
-            case 'Escape':
+            case 'Escape':  // doesn't work on firefox https://bugzilla.mozilla.org/show_bug.cgi?id=1443758
                 this.inputNode.value = this.original_value;
                 this.listbox.open(false);
                 this.inputNode.blur();
