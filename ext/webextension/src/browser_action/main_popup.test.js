@@ -15,6 +15,11 @@ jest.unstable_mockModule('../lib/sitestore.js', () => {
     return { SiteStore: MockSiteStore };
 });
 
+jest.unstable_mockModule('../lib/mpw.js', () => {
+    return { default: jest.fn().mockResolvedValue({sitepassword:calcpasswd,
+                                              key_id: ()=>{return "yyyy"}}) };
+});
+
 jest.unstable_mockModule('../lib/config.js', () => {
     return {
         default: {
@@ -33,6 +38,7 @@ jest.unstable_mockModule('../lib/config.js', () => {
 
 let sitename;
 let mainpopup;
+let libmpw;
 let calcpasswd = jest.fn().mockReturnValue('xxxxx');
 const real_setTimeout = setTimeout;
 
@@ -45,6 +51,7 @@ beforeAll(async ()=>{
     };
     await import('../lib/sitestore.js');
     await import('../lib/config.js');
+    libmpw = await import('../lib/mpw.js');
 
     document.body.innerHTML =
     '<div>' +
@@ -70,8 +77,6 @@ beforeAll(async ()=>{
     ui.verify = jest.fn();
     ui.focus = jest.fn();
     chrome.tabs.query = jest.fn((lst,cb)=>{cb([{url: 'http://www.test.no'}])});
-    window.mpw = jest.fn().mockResolvedValue({sitepassword:calcpasswd,
-                                              key_id: ()=>{return "yyyy"}});
 
     sitename = document.querySelector('#sitename');
     sitename.clearOptions = jest.fn();
@@ -83,17 +88,14 @@ beforeAll(async ()=>{
     await flushPromises();
 });
 
-beforeEach(()=>{
-    window.dispatchEvent(new window.Event('test_reset'));
-});
-
 afterEach(() => {
     jest.useRealTimers();
 });
 
 beforeEach(() => {
+    window.dispatchEvent(new window.Event('test_reset'));
     jest.restoreAllMocks();
-    window.mpw.mockClear();
+    libmpw.default.mockClear();
     calcpasswd.mockClear();
     sitename.addOption.mockClear();
     chrome.runtime.sendMessage.mockClear();
@@ -120,7 +122,9 @@ it('main_popup.js login with in memory masterkey', async () => {
     expect(chrome.tabs.query).toHaveBeenCalled();
     expect(sitename.addOption).toHaveBeenCalledWith("test.no");
     expect(sitename.value).toEqual("test.no");
+    console.log("wait some");
     await flushPromises();
+    console.log("check calcpass called");
     expect(calcpasswd).toHaveBeenCalledWith("test.no", 1, 'l');
 });
 
@@ -134,7 +138,7 @@ it('main_popup.js requests login', async () => {
     jest.runOnlyPendingTimers()
 
     expect(chrome.runtime.sendMessage).toHaveBeenCalled();
-    expect(window.mpw).toHaveBeenCalledTimes(0);
+    expect(libmpw.default).toHaveBeenCalledTimes(0);
     expect(sitename.value).toEqual("test.no");
 
     expect(ui.focus).toHaveBeenCalledWith('#masterkey');
