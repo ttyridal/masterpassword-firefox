@@ -20,6 +20,7 @@
 
 const template = document.createElement('template');
 template.innerHTML = `
+<link href="../css/font-awesome.min.css" rel="stylesheet"/>
 <style>
 :root {
 }
@@ -35,18 +36,40 @@ template.innerHTML = `
   text-align:left;
   width: inherit;
   height: inherit;
-  background: inherit;
-  color: inherit;
-  vertical-align: inherit;
+  background: var(--main-bg-color);
   padding: .2em 0;
 
 }
+.horz_flex {
+  display:flex;
+  width: inherit;
+  align-items: center;
+  justify-content: center;
+}
+button {
+  margin-left:.5em;
+  margin-right: -0.5em;
+  color: #969eac;
+  background-color: var(--header-bg-color);
+  background-image: linear-gradient(lighten(#383e48, 2%), var(--header-bg-color));
+  min-width: 1.8em;
+  min-height: 1.8em;
+  border: 1px solid #181a1f;
+  display: inline-block;
+  padding: 3px 8px;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
 input {
 box-sizing: border-box;
   font-size: var(--cb-input-font, inherit);
   width: inherit;
+  flex-grow: 1;
   vertical-align: middle;
-  height: inherit;
+  height: var(--cb-input-height);
   color: inherit;
   margin: 0;
   padding: var(--cb-padding, 0);
@@ -64,11 +87,12 @@ ul[role="listbox"] {
   padding-left: 0.3em;
   position: absolute;
   left: 0;
-  top: calc(var(--cb-input-font) + 1.75em);
+  top: calc(var(--cb-input-font) + 1em);
   list-style: none;
   background:  var(--cb-background, inherit);
   display: none;
   box-sizing: border-box;
+  min-height: 8em;
   max-height: 12em;
   width: inherit;
   overflow: scroll;
@@ -122,6 +146,7 @@ ul[role="listbox"] li[role="option"].hidden {display:none;}
 }
 </style>
 <div class="combobox combobox-list">
+   <div class="horz_flex">
      <input id="cb1-input"
            class="cb_edit"
            type="text"
@@ -129,10 +154,12 @@ ul[role="listbox"] li[role="option"].hidden {display:none;}
            aria-autocomplete="list"
            aria-expanded="false"
            aria-controls="cb1-listbox">
-     <ul id="cb1-listbox" tabindex="-1"
+     <button id="cb1-btn" style="display:none"><i class="fa fa-chevron-down fa-2" aria-hidden="true"></i></button>
+   </div>
+   <ul id="cb1-listbox" tabindex="-1"
       role="listbox"
       aria-label="">
-     </ul>
+   </ul>
 </div>
 `
 
@@ -335,6 +362,8 @@ class ComboBox extends HTMLElement {
         }
 
         this.listbox.allOptions.push(li);
+        if (this.listbox.allOptions.length == 2)
+            this.domNode.querySelector('#cb1-btn').style.display='';
     }
 
     clearOptions() {
@@ -374,6 +403,11 @@ class ComboBox extends HTMLElement {
 
     handleMouseDown(event) {
         if (event.target == this.inputNode) return;
+        if (event.target.tagName == 'I' || event.target.tagName == 'BUTTON') {
+            this.listbox.open(!this.listbox.isOpen());
+            this.inputNode.focus();
+        }
+
         // for all others.. prevent input node from loosing focus
         event.preventDefault();
     }
@@ -387,7 +421,7 @@ class ComboBox extends HTMLElement {
             this.listbox.open(false);
             this.setValue(this.option.textContent);
         } else {
-            this.listbox.open(!this.listbox.isOpen());
+            //this.listbox.open(!this.listbox.isOpen());
         }
     }
 

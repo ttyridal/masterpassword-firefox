@@ -3,9 +3,12 @@ html{box-sizing:border-box}*,*:before,*:after{box-sizing:inherit}
     --cb-border: 0;
     --text-color: #abb2b6;
     --main-bg-color: #21252b;
+    --input-bg-color: #1b1d23;
+    --cb-background: #1b1d23;
     --header-bg-color: #373d47;
     --default-padding: 0.2rem;
     --font-size-big: 1.4rem;
+    --cb-input-height: 2rem;
 }
 header,main,div,body,html,h1,h2,h3,h4,p,img,span,button,input,select,textarea,form {margin:0;padding:0;border:0;}
 h1,h2,h3,h4,h5,h6 {font-weight: normal;}
@@ -83,17 +86,16 @@ button {
 
 button:focus, input:focus, mp-combobox:focus-within {
   outline-color: #6696e7;
-  outline-width: thin;
-  outline-style: auto;
+  outline-width: 2px;
+  outline-style: solid; /*auto;*/
 }
 
 input,
 select,
 mp-combobox,
 no-op {
-    background: #1b1d23;
     color: #d7dae0;
-    height: 2em;
+    height: var(--cb-input-height);
     --cb-padding: 0 0.3em;
     --cb-dropdown-fontsize: 0 0.3em;
     --cb-input-font: var(--font-size-big);
@@ -103,6 +105,7 @@ no-op {
     width:100%;
 }
 input, select {
+    background: var(--input-bg-color);
     font-size: var(--font-size-big);
 }
 

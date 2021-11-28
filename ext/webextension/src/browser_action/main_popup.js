@@ -88,7 +88,7 @@ function get_active_tab_url() {
 function update_page_password_input(pass, username) {
     config.get(['auto_submit_pass', 'auto_submit_username'])
     .then(v => {
-        const url_has_single_site = !ui.is_visible('#storedids_dropdown');
+        const url_has_single_site = session_store.num_related_sites == 1;
         let allow_submit = url_has_single_site && v.auto_submit_pass;
         if (!v.auto_submit_username)
             username = '';
@@ -229,8 +229,7 @@ function onDataLoadedUpdateUI(activeurl, sites)
         d.value = basedomain;
 
     ui.setStoredIds(stored_sites);
-    if (num_related > 1)
-        ui.show('#storedids_dropdown');
+    session_store.num_related_sites = num_related;
 
     if (basedomain) { // expects there to be atleast one related site.. saved or default
         let first = stored_sites[0];
@@ -376,10 +375,6 @@ document.querySelector('#sessionsetup > form').addEventListener('submit', functi
         ui.show('#main');
         resolve_mpw(masterkey);
     }
-});
-
-document.querySelector('#storedids_dropdown').addEventListener('click', function(){
-    document.querySelector('#sitename').open();
 });
 
 function warn_keyid_not_matching(ok_cb)
