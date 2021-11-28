@@ -289,7 +289,6 @@ class ComboBox extends HTMLElement {
     static observedAttributes = ["value", "placeholder"];
 
     attributeChangedCallback(name, oldvalue, newvalue) {
-        console.log("attrchange", name, newvalue);
         if (name=='value' && newvalue != this._value)
             this.value = newvalue;
         else if (name=='placeholder') {
