@@ -76,6 +76,7 @@ beforeAll(async ()=>{
     ui.masterkey = jest.fn();
     ui.verify = jest.fn();
     ui.focus = jest.fn();
+    ui.domain = jest.fn().mockReturnValue('');
     chrome.tabs.query = jest.fn((lst,cb)=>{cb([{url: 'http://www.test.no'}])});
 
     sitename = document.querySelector('#sitename');
@@ -122,9 +123,7 @@ it('main_popup.js login with in memory masterkey', async () => {
     expect(chrome.tabs.query).toHaveBeenCalled();
     expect(sitename.addOption).toHaveBeenCalledWith("test.no");
     expect(sitename.value).toEqual("test.no");
-    console.log("wait some");
     await flushPromises();
-    console.log("check calcpass called");
     expect(calcpasswd).toHaveBeenCalledWith("test.no", 1, 'l');
 });
 
@@ -221,4 +220,28 @@ it('prefers matching sitename', async () => {
     expect(sitename.value).toEqual("www.test.no");
     await flushPromises();
     expect(calcpasswd).toHaveBeenCalledWith("www.test.no", 1, 'x');
+});
+
+it('scoreSiteByDomain', () => {
+    let test_no = {sitename:"test.no", url:["test.no"]};
+    let www_test_no = {sitename:"test.no", url:["www.test.no"]};
+    let wrongsite_no = {sitename:"test.no", url:["unrelated.no"]};
+    let unrelated_no = {sitename:"unrelated.no", url:["unrelated.no"]};
+
+    let domain = ["no", "test", "www"];
+
+    //matching the base domain
+    expect(mainpopup.scoreSiteByDomain(test_no, domain, 2)).toBe(2);
+    //also matching private subdomain is "better"
+    expect(mainpopup.scoreSiteByDomain(www_test_no, domain, 2)).toBe(3);
+    //matching sitename but non-matching url should still pass
+    expect(mainpopup.scoreSiteByDomain(wrongsite_no, domain, 2)).toBe(2);
+    //no match (only TLD, not good enough)
+    expect(mainpopup.scoreSiteByDomain(unrelated_no, domain, 2)).toBe(0);
+
+    //TODO: need to decide on how to handle this case..
+    //is mismatch on the private subdomain disqualifying?
+    //let different_prefix = {sitename:"api.test.no", url:["api.test.no"]};
+    //expect(mainpopup.scoreSiteByDomain(different_prefix, domain, 2)).toBe(0);
+
 });

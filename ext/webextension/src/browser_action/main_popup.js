@@ -25,6 +25,30 @@ import config from "../lib/config.js";
 import mpw from "../lib/mpw.js";
 import {ui} from "./ui.js";
 
+
+const zip = (a, b) => Array.from(Array(Math.max(b.length, a.length)), (_, i) => [a[i], b[i]]);
+function arrayEqualElements(a,b) {
+    const z = zip(a,b)
+    let i = 0;
+    for (i = 0; i < z.length; i++)
+        if (z[i][0] != z[i][1]) break;
+    return i
+}
+
+export function scoreSiteByDomain(site, domainSplitReversed, minScore) {
+    const siteurls = site.url.map(u => u.split('.').reverse());
+
+    let score = Math.max(siteurls.map(u => arrayEqualElements(u, domainSplitReversed)));
+
+    // strip any "name@" if it exists
+    // and score on sitename even if not matching on url
+    let sitenameurl = site.sitename.replace(/[^@]*(?=@)@?(.*)$/, '$1');
+    sitenameurl = sitenameurl.split('.').reverse();
+    score = Math.max(score, arrayEqualElements(sitenameurl, domainSplitReversed));
+
+    return score >= minScore ? score : 0;
+}
+
 (function () {
 "use strict";
 
@@ -155,108 +179,79 @@ function recalculate() {
     .catch(console.error);
 }
 
-function loadSites(domain) {
-    const [domain_parts, significant_domain] = domain;
-    const domain_parts_r = [...domain_parts].reverse()
-    const significant_parts = significant_domain.length;
+function prepareSitelist(sites, domain, basedomain)
+{
+    const domainSplitReversed = domain.split('.').reverse();
+    const minScoreForRelated = basedomain.split('.').length;
 
-    const zip = (a, b) => Array.from(Array(Math.max(b.length, a.length)), (_, i) => [a[i], b[i]]);
+    let scoredSites = sites.map(s=>[scoreSiteByDomain(s, domainSplitReversed, minScoreForRelated),s]);
 
-    const num_equal_elements = (a,b) => {
-        const z = zip(a,b)
-        let i = 0;
-        for (i = 0; i < z.length; i++)
-            if (z[i][0] != z[i][1]) break;
-        return i
+    scoredSites.sort((a,b) => {
+        if (a[0] > b[0]) { return -1; }
+        if (a[0] < b[0]) { return 1; }
+        if (a[1].sitename < b[1].sitename) { return -1; }
+        return 1;
+    });
+
+    let num_related = scoredSites.findIndex(s=>s[0]==0);
+    if (num_related == -1) num_related=scoredSites.length;
+
+    if (!num_related && basedomain) {
+        console.log("insert default site");
+        scoredSites.unshift([1, new Site({
+            url:[basedomain],
+            sitename:basedomain,
+            generation: 1,
+            username: '',
+            type: config.defaulttype})]);
+        num_related++;
     }
 
-    const url_match_score = (site) => {
-        let score = 0;
-        for (const u of site.url) {
-            score = Math.max(score, num_equal_elements(domain_parts_r, u.split('.').reverse()));
-        }
-        try {
-            let sitenameurl = site.sitename.split('@');
-            sitenameurl = sitenameurl[sitenameurl.length - 1];
+    // insert a horizontal split in StoredIds separating related from unrelated sites
+    if (basedomain)
+        scoredSites.splice(num_related, 0, [0, null]);
 
-            score = Math.max(score, num_equal_elements(domain_parts_r, sitenameurl.split('.').reverse()));
-        } catch (e) {
-            console.log("failed to score sitename against url", e);
-        }
-        return score >= significant_parts ? score : 0;
-    };
-
-    sitestore = new SiteStore(config.use_sync ? chrome.storage.sync : chrome.storage.local);
-    return sitestore.get()
-    .then(sites => {
-        const compare_score_then_name = (a, b) => {
-            if (a[0] > b[0]) { return -1; }
-            if (a[0] < b[0]) { return 1; }
-            if (a[1].sitename < b[1].sitename) { return -1; }
-            return 1;
-        }
-
-        let url_scored_sites = sites.map(s=>[url_match_score(s), s]).sort(compare_score_then_name);
-        let num_related=-1;
-        let domain = significant_domain.join('.');
-
-        sites = url_scored_sites.map((el,i) => { if (el[0]>=significant_parts) num_related=i; return el[1];});
-        num_related++;
-
-        if (!num_related && domain) {
-            console.log("insert default site");
-            sites.unshift(new Site({
-                url:[domain],
-                sitename:domain,
-                generation: 1,
-                username: '',
-                type: config.defaulttype}));
-            num_related++;
-        }
-        if (domain)
-            sites.splice(num_related, 0, null);
-
-        session_store.stored_sites = sites;
-
-        return [domain, num_related];
-    });
+    return [scoredSites.map(s=>s[1]), num_related];
 }
 
-function updateUIForDomainSettings(combined)
+function onDataLoadedUpdateUI(activeurl, sites)
 {
-    const [domain, num_related] = combined;
+    const urlParsed = parseUri(activeurl);
+    const protocolsIgnored = ["", "about", "resource", "moz-extension", "chrome-extension", "chrome", "edge", "brave"];
+    const domain = protocolsIgnored.includes(urlParsed.protocol) ? '' : urlParsed.domain;
+    const basedomain = getBaseDomain(domain);
+
+    let [stored_sites, num_related] = prepareSitelist(sites, domain, basedomain);
+    session_store.stored_sites = stored_sites;
 
     for (let d of document.querySelectorAll('.domain'))
-        d.value = domain;
+        d.value = basedomain;
 
-    ui.setStoredIds(session_store.stored_sites);
+    ui.setStoredIds(stored_sites);
     if (num_related > 1)
         ui.show('#storedids_dropdown');
 
-    if (domain) {
-        let first = session_store.stored_sites[0];
+    if (basedomain) { // expects there to be atleast one related site.. saved or default
+        let first = stored_sites[0];
         ui.sitename(first.sitename);
         ui.siteconfig(first.type, first.generation, first.username || '', config.defaultname);
     } else
          ui.siteconfig(config.defaulttype, 1, '', config.defaultname);
 }
 
-function extractDomainFromUrl(url) {
-    if (!url || url.startsWith('about:')
-        || url.startsWith('resource:')
-        || url.startsWith('moz-extension:')
-        || url.startsWith('chrome-extension:')
-        || url.startsWith('chrome:'))
-        url = '';
-    let domain_parts = parseUri(url).domain.split(".");
+// The baseDomain is also known as "eTLD+1", eg www.example.com -> example.com
+// and shop.amazon.co.uk -> amazon.co.uk
+function getBaseDomain(domain) {
+    if (!domain) return '';
+
+    let domain_parts = domain.split(".");
     let significant_parts = 2;
     const common_slds = ['co','com','gov','govt','net','org','edu','priv','ac'];
     let second_level_domain = domain_parts[domain_parts.length-2].toLowerCase();
     if (domain_parts.length > 2 && common_slds.includes(second_level_domain))
         significant_parts = 3;
 
-    let significant_domain = domain_parts.slice(-significant_parts)
-    return [domain_parts, significant_domain];
+    return domain_parts.slice(-significant_parts).join('.');
 }
 
 function showSessionSetup() {
@@ -290,19 +285,28 @@ function popup(masterkey) {
         ui.user_warn("failed to get tab url");
         setTimeout(()=>{ui.clear_warning()}, 2000);
         return '';
-    })
-    .then(extractDomainFromUrl)
-    .then(loadSites)
-    .then(updateUIForDomainSettings)
+    });
+
+
+    sitestore = new SiteStore(config.use_sync ? chrome.storage.sync : chrome.storage.local);
+    let sites = sitestore.get()
+    .catch(x=>{
+        console.error('sitestore.get failed',x);
+        ui.user_warn("failed to get sites");
+        setTimeout(()=>{ui.clear_warning()}, 2000);
+        return [];
+    });
+
+    let dataloaded = Promise.all([urlpromise,  sites])
+    .then((x)=>onDataLoadedUpdateUI(x[0], x[1]))
     .catch(err => console.error(err));
 
-    Promise.all([mpw_promise, urlpromise])
+    Promise.all([mpw_promise, dataloaded])
     .then(recalculate)
     .catch(err => console.error(err));
 }
 
 window.addEventListener('test_reset', () => {
-    console.log("test reset");
     mpw_promise = defer();
     session_store = {};
 });
@@ -397,6 +401,7 @@ document.querySelector('#main').addEventListener('change', function(ev){
 
     if (!site) {
         if (!target_is_sitename_select) {
+            // we would get here if the default-insert is not in stored_sites though...
             console.log("impossible condition?");
             let props = {sitename: sitename, url:[domain]};
             Object.assign(props, ui.siteconfig());
