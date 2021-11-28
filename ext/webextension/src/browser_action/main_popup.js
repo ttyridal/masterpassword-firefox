@@ -167,7 +167,8 @@ function recalculate() {
 
         if (config.pass_to_clipboard)
             copy_to_clipboard("text/plain", pass);
-        update_page_password_input(pass, siteconfig.username || config.username);
+        if (ui.domain() !== '')
+            update_page_password_input(pass, siteconfig.username || config.username);
         //if (hide_after_copy) {
         //    addon.port.emit('close');
         //}
