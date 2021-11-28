@@ -77,6 +77,28 @@ ul[role="listbox"] {
   z-index:100;
 }
 
+.unhider {
+    display:block;
+    width:100%;
+    color:gray;
+    display: flex;
+    font-size: 0.7em;
+    flex-direction: row;
+}
+.unhider:before, .unhider:after{
+  content: "";
+  flex: 1 1;
+  border-bottom: 1px solid;
+  margin: auto;
+}
+.unhider:before {
+  margin-right: 5px
+}
+.unhider:after {
+  margin-left: 5px
+}
+
+
 ul[role="listbox"] li[role="option"] {
   font-size: var(--cb-drop-font, inherit);
   border-top: 1px solid transparent;
@@ -85,6 +107,8 @@ ul[role="listbox"] li[role="option"] {
   margin: 0;
   padding: 0.1em 0.3em;
 }
+ul[role="listbox"] li[role="option"].hidden {display:none;}
+
 [role="listbox"] li[role="option"]:hover {
     color: #000;
     background-color: var(--text-color);
@@ -154,12 +178,15 @@ class ListBox {
     }
 
     countOptions() {
-        return this.domNode.querySelectorAll('li:not(.sep)').length;
+        return this.domNode.querySelectorAll('li:not(.sep),li:not(.unhide)').length;
     }
 
     getNextItem(cur) {
         let r = cur.nextElementSibling;
         if (!r) return this.getFirstItem();
+        if (r.classList.contains('unhide')) {
+            return this.getFirstItem();
+        }
         if (r.classList.contains('sep')) return this.getNextItem(r);
         return r;
     }
@@ -174,7 +201,12 @@ class ListBox {
         return this.domNode.firstElementChild;
     }
     getLastItem() {
-        return this.domNode.lastElementChild;
+        let l = this.domNode.lastElementChild;
+
+        while(l && (l.classList.contains('hidden') || l.classList.contains('unhide')))
+            l=l.previousElementSibling;
+
+        return l;
     }
 
     setSelected(opt) {
@@ -195,12 +227,19 @@ class ListBox {
         for (let li of this.allOptions) {
             if (li.classList.contains('sep') && cnt)
                 this.domNode.appendChild(li);
-            
+
             if ((filter != '') && !(li.innerText.toLowerCase().includes(filter)))
                 continue;
             cnt++;
             this.domNode.appendChild(li);
         }
+    }
+
+    unhideOptions() {
+        let l = this.domNode.querySelector('.unhide');
+        l.innerHTML = '<hr>';
+        l.classList.replace('unhide', 'sep');
+        Array.prototype.map.call(this.domNode.querySelectorAll('.hidden'), e=>e.classList.remove('hidden'));
     }
 }
 
@@ -212,6 +251,7 @@ class ComboBox extends HTMLElement {
         this.handleKeydown = this.handleKeydown.bind(this);
         this.handleKeyup = this.handleKeyup.bind(this);
         this.handleClick = this.handleClick.bind(this);
+        this.handleMouseDown = this.handleMouseDown.bind(this);
         this.handleFocus = this.handleFocus.bind(this);
         this.handleBlur = this.handleBlur.bind(this);
         this.handleSlotchange = this.handleSlotchange.bind(this);
@@ -228,10 +268,11 @@ class ComboBox extends HTMLElement {
         this.inputNode.value = this._value;
         this.inputNode.placeholder = this.placeholder || '';
         this.listbox = new ListBox(this.shadowRoot.querySelector('[role="listbox"]'));
-        
+
         this.domNode.addEventListener('keydown', this.handleKeydown);
         this.domNode.addEventListener('keyup',   this.handleKeyup);
         this.domNode.addEventListener('click',   this.handleClick);
+        this.domNode.addEventListener('mousedown',   this.handleMouseDown);
         this.inputNode.addEventListener('focus',   this.handleFocus);
         this.inputNode.addEventListener('blur',    this.handleBlur);
     }
@@ -239,6 +280,7 @@ class ComboBox extends HTMLElement {
         this.domNode.removeEventListener('keydown', this.handleKeydown);
         this.domNode.removeEventListener('keyup',   this.handleKeyup);
         this.domNode.removeEventListener('click',   this.handleClick);
+        this.domNode.removeEventListener('mousedown',   this.handleMouseDown);
         this.inputNode.removeEventListener('focus',   this.handleFocus);
         this.inputNode.removeEventListener('blur',    this.handleBlur);
     }
@@ -277,10 +319,15 @@ class ComboBox extends HTMLElement {
     addOption(txt, opts) {
         let li = document.createElement('li');
         if (opts && opts.separator) {
-            li.innerHTML = '<hr>';
-            li.classList.add('sep');
+            li.innerHTML = '<span class="unhider">show unrelated too</span>';
+            li.classList.add('unhide');
+//             li.innerHTML = '<hr>';
+//             li.classList.add('sep');
+            this.separator_inserted = true;
         } else {
             li.setAttribute('role', "option");
+            if (this.separator_inserted)
+                li.classList.add('hidden');
             li.innerText = txt;
         }
         if (opts && opts.selected) {
@@ -326,8 +373,17 @@ class ComboBox extends HTMLElement {
 
     handleSlotchange() { }
 
+    handleMouseDown(event) {
+        if (event.target == this.inputNode) return;
+        // for all others.. prevent input node from loosing focus
+        event.preventDefault();
+    }
+
     handleClick(event) {
-        if ((event.target.tagName == 'LI') && event.target.getAttribute('role') == 'option') {
+        if (event.target.tagName == 'SPAN') {
+            this.listbox.unhideOptions();
+        }
+        else if ((event.target.tagName == 'LI') && event.target.getAttribute('role') == 'option') {
             this.option = event.target;
             this.listbox.open(false);
             this.setValue(this.option.textContent);
