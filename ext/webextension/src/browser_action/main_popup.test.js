@@ -32,6 +32,7 @@ jest.unstable_mockModule('../lib/config.js', () => {
 });
 
 let sitename;
+let mainpopup;
 let calcpasswd = jest.fn().mockReturnValue('xxxxx');
 const real_setTimeout = setTimeout;
 
@@ -63,12 +64,12 @@ beforeAll(async ()=>{
     ui.warn = jest.fn();
     ui.clear_warning = jest.fn();
     ui.user_info = jest.fn();
-    ui.user_warn = jest.fn();
+    ui.user_warn = jest.fn().mockReturnValue({appendChild: (e)=>e});
     ui.username = jest.fn();
     ui.masterkey = jest.fn();
     ui.verify = jest.fn();
     ui.focus = jest.fn();
-    chrome.tabs.query = jest.fn((lst,cb)=>{cb([{url: 'www.test.no'}])});
+    chrome.tabs.query = jest.fn((lst,cb)=>{cb([{url: 'http://www.test.no'}])});
     window.mpw = jest.fn().mockResolvedValue({sitepassword:calcpasswd,
                                               key_id: ()=>{return "yyyy"}});
 
@@ -76,13 +77,20 @@ beforeAll(async ()=>{
     sitename.clearOptions = jest.fn();
     sitename.addOption = jest.fn();
 
-    await import('./main_popup.js');
+    global.running_under_test = 1;
+    mainpopup = await import('./main_popup.js');
+    // wait here for the first load event to fire..
+    await flushPromises();
+});
+
+beforeEach(()=>{
+    window.dispatchEvent(new window.Event('test_reset'));
 });
 
 afterEach(() => {
     jest.useRealTimers();
-    document.querySelector('#btnlogout').dispatchEvent(new Event('click', {bubbles: true, cancelable: true}));
 });
+
 beforeEach(() => {
     jest.restoreAllMocks();
     window.mpw.mockClear();
@@ -91,7 +99,7 @@ beforeEach(() => {
     chrome.runtime.sendMessage.mockClear();
 });
 
-const flushPromises = () => new Promise(r=>real_setTimeout(r,1));
+const flushPromises = () => new Promise(r=>real_setTimeout(r,3));
 
 it('main_popup.js loads without error', async () => {
 //     await import('./main_popup.js');
@@ -103,6 +111,7 @@ it('main_popup.js login with in memory masterkey', async () => {
     jest.useFakeTimers();
     jest.spyOn(global, 'setTimeout');
 
+    window.dispatchEvent(new window.Event('load'));
     await flushPromises();
 
     jest.runOnlyPendingTimers()

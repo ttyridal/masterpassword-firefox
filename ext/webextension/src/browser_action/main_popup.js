@@ -301,7 +301,19 @@ function popup(masterkey) {
     .catch(err => console.error(err));
 }
 
+window.addEventListener('test_reset', () => {
+    console.log("test reset");
+    mpw_promise = defer();
+    session_store = {};
+});
+
 window.addEventListener('load', function () {
+    if (window.running_under_test)
+    {
+        window.running_under_test = undefined;
+        return;
+    }
+
     config.get([
         'username',
         'key_id',
