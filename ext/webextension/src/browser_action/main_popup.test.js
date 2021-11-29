@@ -8,7 +8,12 @@ import {Site} from '../lib/sites.js'
 import {ui} from './ui.js'
 
 class MockSiteStore {
-    get() { return Promise.resolve([]); }
+    get() { return Promise.resolve([
+        new Site({sitename: "empty.no", url:['something.else.no'], type:'l'}),
+        new Site({sitename: "test.no", url:['test.no'], type:'x'}),
+        new Site({sitename: "www.test.no", url:['test.no'], type:'x'})
+
+    ]); }
     addOrReplace() { return Promise.resolve([]); }
 }
 
@@ -63,10 +68,10 @@ beforeAll(async ()=>{
     '<input class="domain" id="domain">' +
     '<input id="sitename">' +
     '<button id="siteconfig_show"></button>' +
-    '<button id="copypass"></button></div>' +
+    '<button id="copypass"></button>' +
     '<input id="passwdtype">' +
     '<input id="passwdgeneration">' +
-    '<input id="loginname">' +
+    '<input id="loginname"></div>' +
     '<button class="btnlogout" id="btnlogout"></button>' +
     '</div>';
 
@@ -112,6 +117,7 @@ it('main_popup.js loads without error', async () => {
 
 it('main_popup.js login with in memory masterkey', async () => {
     chrome.runtime.sendMessage.mockImplementationOnce((lst,cb)=>{cb({masterkey: 'test'})});
+    jest.spyOn(MockSiteStore.prototype, 'get').mockResolvedValueOnce([]);
 
     jest.useFakeTimers();
     jest.spyOn(global, 'setTimeout');
@@ -130,6 +136,7 @@ it('main_popup.js login with in memory masterkey', async () => {
 });
 
 it('main_popup.js requests login', async () => {
+    jest.spyOn(MockSiteStore.prototype, 'get').mockResolvedValueOnce([]);
     jest.useFakeTimers();
     jest.spyOn(global, 'setTimeout');
 
@@ -177,15 +184,12 @@ it('selects the matching site instead of default', async () => {
 
 it('selects the best match', async () => {
     jest.spyOn(MockSiteStore.prototype, 'get').mockResolvedValueOnce([
-        new Site({sitename: "empty.no", url:['something.else.no'], type:'x'}),
         new Site({sitename: "test.no", url:['test.no'], type:'x'}),
         new Site({sitename: "wwwtest.no", url:['www.test.no'], type:'x'})]);
     chrome.runtime.sendMessage.mockImplementationOnce((lst,cb)=>{cb({masterkey: 'test'})});
 
     jest.useFakeTimers();
     jest.spyOn(global, 'setTimeout');
-    sitename.addOption.mockClear();
-    calcpasswd.mockClear();
 
     window.dispatchEvent(new window.Event('load'));
     await flushPromises();
@@ -201,16 +205,10 @@ it('selects the best match', async () => {
 
 
 it('prefers matching sitename', async () => {
-    jest.spyOn(MockSiteStore.prototype, 'get').mockResolvedValueOnce([
-        new Site({sitename: "empty.no", url:['something.else.no'], type:'x'}),
-        new Site({sitename: "test.no", url:['test.no'], type:'x'}),
-        new Site({sitename: "www.test.no", url:['test.no'], type:'x'})]);
     chrome.runtime.sendMessage.mockImplementationOnce((lst,cb)=>{cb({masterkey: 'test'})});
 
     jest.useFakeTimers();
     jest.spyOn(global, 'setTimeout');
-    sitename.addOption.mockClear();
-    calcpasswd.mockClear();
 
     window.dispatchEvent(new window.Event('load'));
     await flushPromises();
@@ -226,18 +224,12 @@ it('prefers matching sitename', async () => {
 
 
 it('updates stored site when used on new domain', async () => {
-    jest.spyOn(MockSiteStore.prototype, 'get').mockResolvedValueOnce([
-        new Site({sitename: "empty.no", url:['something.else.no'], type:'l'}),
-        new Site({sitename: "test.no", url:['test.no'], type:'x'}),
-        new Site({sitename: "www.test.no", url:['test.no'], type:'x'})]);
     let addOrReplace = jest.spyOn(MockSiteStore.prototype, 'addOrReplace');
     jest.spyOn(ui, 'siteconfig');
     chrome.runtime.sendMessage.mockImplementationOnce((lst,cb)=>{cb({masterkey: 'test'})});
 
     jest.useFakeTimers();
     jest.spyOn(global, 'setTimeout');
-    sitename.addOption.mockClear();
-    calcpasswd.mockClear();
 
     window.dispatchEvent(new window.Event('load'));
     await flushPromises();
@@ -261,6 +253,40 @@ it('updates stored site when used on new domain', async () => {
         sitename:'empty.no',
         url:expect.arrayContaining(['something.else.no', 'test.no'])}));
 });
+
+it('does not update stored site on a subdomain', async () => {
+    jest.spyOn(MockSiteStore.prototype, 'get').mockResolvedValueOnce([
+        new Site({sitename: "test.no", url:['test.no'], type:'x'}),
+        new Site({sitename: "www.test.no", url:['www.test.no'], type:'x'})]);
+    const addOrReplace = jest.spyOn(MockSiteStore.prototype, 'addOrReplace');
+    chrome.runtime.sendMessage.mockImplementationOnce((lst,cb)=>{cb({masterkey: 'test'})});
+
+    jest.useFakeTimers();
+    jest.spyOn(global, 'setTimeout');
+
+    window.dispatchEvent(new window.Event('load'));
+    await flushPromises();
+
+    jest.runOnlyPendingTimers()
+
+    expect(sitename.addOption).toHaveBeenCalledWith("www.test.no");
+    expect(sitename.addOption).toHaveBeenCalledWith("test.no");
+    expect(sitename.value).toEqual("www.test.no");
+    await flushPromises();
+    expect(calcpasswd).toHaveBeenCalledWith("www.test.no", 1, 'x');
+
+    let pwtype = document.querySelector('#passwdtype');
+    expect(pwtype.value).toBe('x');
+    pwtype.value='s';
+    pwtype.dispatchEvent(new window.Event('change', { bubbles: true, cancelable: true }));
+    await flushPromises();
+    expect(calcpasswd).toHaveBeenCalledWith("www.test.no", 1, 's');
+    expect(addOrReplace).toHaveBeenCalledWith(expect.objectContaining({
+        type:'s',                // <- should change as requested
+        sitename:'www.test.no',
+        url:['www.test.no']}));  // <- should NOT change
+});
+
 
 it('scoreSiteByDomain', () => {
     let test_no = {sitename:"test.no", url:["test.no"]};

@@ -406,7 +406,9 @@ document.querySelector('#main').addEventListener('change', function(ev){
             site = new Site({sitename: sitename, url:[domain], type: config.defaulttype, generation: 1, username:''})
         }
     } else {
-        site.url = Array.from(new Set([...site.url, domain]));
+        let domainquery = new RegExp('^(.*\\.)?' + domain.replace('.', '\\.') + '$', 'i');
+        if (! site.url.map(u => domainquery.test(u)).some(e=>e))
+            site.url = Array.from(new Set([...site.url, domain]));
         if (!target_is_sitename_select)
             Object.assign(site, ui.siteconfig());
     }
