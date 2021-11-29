@@ -9,6 +9,7 @@ import {ui} from './ui.js'
 
 class MockSiteStore {
     get() { return Promise.resolve([]); }
+    addOrReplace() { return Promise.resolve([]); }
 }
 
 jest.unstable_mockModule('../lib/sitestore.js', () => {
@@ -32,6 +33,7 @@ jest.unstable_mockModule('../lib/config.js', () => {
             get use_sync() {return false},
             get key_id() {return 'yyyy'},
             get passwdtimeout() {return -1},
+            get defaultname() {return ''},
         }
     }
 });
@@ -56,9 +58,8 @@ beforeAll(async ()=>{
     document.body.innerHTML =
     '<div>' +
     '<div id="sessionsetup"><form></form></div>' +
-    '<button id="storedids_dropdown"></button>' +
-    '<div id="main"><div id="thepassword"></div>' + 
-    '<div id="sitename"></div>' + 
+    '<div id="main"><div id="thepassword"></div>' +
+    '<input id="sitename">' +
     '<button id="siteconfig_show"></button>' +
     '<button id="copypass"></button></div>' +
     '<input id="passwdtype">' +
@@ -142,7 +143,7 @@ it('main_popup.js requests login', async () => {
 
     expect(ui.focus).toHaveBeenCalledWith('#masterkey');
     expect(calcpasswd).toHaveBeenCalledTimes(0);
-    
+
     ui.username.mockReturnValueOnce('test');
     ui.masterkey.mockReturnValueOnce('test');
 
@@ -220,6 +221,39 @@ it('prefers matching sitename', async () => {
     expect(sitename.value).toEqual("www.test.no");
     await flushPromises();
     expect(calcpasswd).toHaveBeenCalledWith("www.test.no", 1, 'x');
+});
+
+
+it('updates stored site when used on new domain', async () => {
+    jest.spyOn(MockSiteStore.prototype, 'get').mockResolvedValueOnce([
+        new Site({sitename: "empty.no", url:['something.else.no'], type:'l'}),
+        new Site({sitename: "test.no", url:['test.no'], type:'x'}),
+        new Site({sitename: "www.test.no", url:['test.no'], type:'x'})]);
+    jest.spyOn(MockSiteStore.prototype, 'addOrReplace');
+    jest.spyOn(ui, 'siteconfig');
+    chrome.runtime.sendMessage.mockImplementationOnce((lst,cb)=>{cb({masterkey: 'test'})});
+
+    jest.useFakeTimers();
+    jest.spyOn(global, 'setTimeout');
+    sitename.addOption.mockClear();
+    calcpasswd.mockClear();
+
+    window.dispatchEvent(new window.Event('load'));
+    await flushPromises();
+
+    jest.runOnlyPendingTimers()
+
+    expect(sitename.addOption).toHaveBeenCalledWith("www.test.no");
+    expect(sitename.addOption).toHaveBeenCalledWith("test.no");
+    expect(sitename.value).toEqual("www.test.no");
+    await flushPromises();
+    expect(calcpasswd).toHaveBeenCalledWith("www.test.no", 1, 'x');
+
+    sitename.value='empty.no';
+    document.querySelector('#sitename').dispatchEvent(new window.Event('change', { bubbles: true, cancelable: true }));
+    await flushPromises();
+    expect(ui.siteconfig).toHaveBeenCalledWith('l',1,'', '');
+    expect(calcpasswd).toHaveBeenCalledWith("empty.no", 1, 'l');
 });
 
 it('scoreSiteByDomain', () => {

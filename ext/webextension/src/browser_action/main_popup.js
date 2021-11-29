@@ -390,7 +390,7 @@ function warn_keyid_not_matching(ok_cb)
 document.querySelector('#main').addEventListener('change', function(ev){
     let sitename = ui.sitename();
     let domain = ui.domain();
-    const target_is_sitename_select = ev.target == document.querySelector('mp-combobox');
+    const target_is_sitename_select = ev.target.id === 'sitename';
 
     const siteidx = session_store.stored_sites.findIndex(e => e ? e.sitename == sitename : false);
     let site = siteidx != -1 ? session_store.stored_sites[siteidx] : null;
@@ -407,12 +407,9 @@ document.querySelector('#main').addEventListener('change', function(ev){
         }
     } else {
         site.url = Array.from(new Set([...site.url, domain]));
-        Object.assign(site, ui.siteconfig());
-        // place it at the very top
-        session_store.stored_sites.splice(siteidx, 1);
-        session_store.stored_sites.unshift(site);
+        if (!target_is_sitename_select)
+            Object.assign(site, ui.siteconfig());
     }
-
     if (target_is_sitename_select)
         ui.siteconfig(site.type, site.generation, site.username, config.defaultname);
 
