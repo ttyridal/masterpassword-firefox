@@ -49,7 +49,8 @@ beforeAll(async ()=>{
     global.chrome = {
         storage: {local:{}, sync:{}},
         runtime: { sendMessage: jest.fn((lst,cb)=>{cb({})}) },
-        tabs: {}
+        tabs: {},
+        extension: {inIncognitoContext: false},
     };
     await import('../lib/sitestore.js');
     await import('../lib/config.js');
@@ -59,6 +60,7 @@ beforeAll(async ()=>{
     '<div>' +
     '<div id="sessionsetup"><form></form></div>' +
     '<div id="main"><div id="thepassword"></div>' +
+    '<input class="domain" id="domain">' +
     '<input id="sitename">' +
     '<button id="siteconfig_show"></button>' +
     '<button id="copypass"></button></div>' +
@@ -77,7 +79,6 @@ beforeAll(async ()=>{
     ui.masterkey = jest.fn();
     ui.verify = jest.fn();
     ui.focus = jest.fn();
-    ui.domain = jest.fn().mockReturnValue('');
     chrome.tabs.query = jest.fn((lst,cb)=>{cb([{url: 'http://www.test.no'}])});
 
     sitename = document.querySelector('#sitename');
@@ -229,7 +230,7 @@ it('updates stored site when used on new domain', async () => {
         new Site({sitename: "empty.no", url:['something.else.no'], type:'l'}),
         new Site({sitename: "test.no", url:['test.no'], type:'x'}),
         new Site({sitename: "www.test.no", url:['test.no'], type:'x'})]);
-    jest.spyOn(MockSiteStore.prototype, 'addOrReplace');
+    let addOrReplace = jest.spyOn(MockSiteStore.prototype, 'addOrReplace');
     jest.spyOn(ui, 'siteconfig');
     chrome.runtime.sendMessage.mockImplementationOnce((lst,cb)=>{cb({masterkey: 'test'})});
 
@@ -254,6 +255,11 @@ it('updates stored site when used on new domain', async () => {
     await flushPromises();
     expect(ui.siteconfig).toHaveBeenCalledWith('l',1,'', '');
     expect(calcpasswd).toHaveBeenCalledWith("empty.no", 1, 'l');
+
+    expect(addOrReplace).toHaveBeenCalledWith(expect.objectContaining({
+        type:'l',
+        sitename:'empty.no',
+        url:expect.arrayContaining(['something.else.no', 'test.no'])}));
 });
 
 it('scoreSiteByDomain', () => {
