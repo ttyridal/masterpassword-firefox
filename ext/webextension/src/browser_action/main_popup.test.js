@@ -107,6 +107,7 @@ beforeEach(() => {
     calcpasswd.mockClear();
     sitename.addOption.mockClear();
     chrome.runtime.sendMessage.mockClear();
+    chrome.extension.inIncognitoContext = false;
 });
 
 const flushPromises = () => new Promise(r=>real_setTimeout(r,3));
@@ -204,9 +205,8 @@ it('selects the best match', async () => {
 });
 
 
-it('prefers matching sitename', async () => {
+async function run_to_popup_loaded() {
     chrome.runtime.sendMessage.mockImplementationOnce((lst,cb)=>{cb({masterkey: 'test'})});
-
     jest.useFakeTimers();
     jest.spyOn(global, 'setTimeout');
 
@@ -220,27 +220,14 @@ it('prefers matching sitename', async () => {
     expect(sitename.value).toEqual("www.test.no");
     await flushPromises();
     expect(calcpasswd).toHaveBeenCalledWith("www.test.no", 1, 'x');
-});
+}
 
 
 it('updates stored site when used on new domain', async () => {
     let addOrReplace = jest.spyOn(MockSiteStore.prototype, 'addOrReplace');
     jest.spyOn(ui, 'siteconfig');
-    chrome.runtime.sendMessage.mockImplementationOnce((lst,cb)=>{cb({masterkey: 'test'})});
 
-    jest.useFakeTimers();
-    jest.spyOn(global, 'setTimeout');
-
-    window.dispatchEvent(new window.Event('load'));
-    await flushPromises();
-
-    jest.runOnlyPendingTimers()
-
-    expect(sitename.addOption).toHaveBeenCalledWith("www.test.no");
-    expect(sitename.addOption).toHaveBeenCalledWith("test.no");
-    expect(sitename.value).toEqual("www.test.no");
-    await flushPromises();
-    expect(calcpasswd).toHaveBeenCalledWith("www.test.no", 1, 'x');
+    await run_to_popup_loaded();
 
     sitename.value='empty.no';
     document.querySelector('#sitename').dispatchEvent(new window.Event('change', { bubbles: true, cancelable: true }));
@@ -254,26 +241,31 @@ it('updates stored site when used on new domain', async () => {
         url:expect.arrayContaining(['something.else.no', 'test.no'])}));
 });
 
+
+it('does NOT save if in private browsing', async () => {
+    jest.spyOn(ui, 'siteconfig');
+    const addOrReplace = jest.spyOn(MockSiteStore.prototype, 'addOrReplace');
+    chrome.extension.inIncognitoContext = true;
+
+    await run_to_popup_loaded();
+
+    sitename.value='empty.no';
+    document.querySelector('#sitename').dispatchEvent(new window.Event('change', { bubbles: true, cancelable: true }));
+    await flushPromises();
+    expect(ui.siteconfig).toHaveBeenCalledWith('l',1,'', '');
+    expect(calcpasswd).toHaveBeenCalledWith("empty.no", 1, 'l');
+
+    expect(addOrReplace).not.toHaveBeenCalled();
+});
+
+
 it('does not update stored site on a subdomain', async () => {
     jest.spyOn(MockSiteStore.prototype, 'get').mockResolvedValueOnce([
         new Site({sitename: "test.no", url:['test.no'], type:'x'}),
         new Site({sitename: "www.test.no", url:['www.test.no'], type:'x'})]);
     const addOrReplace = jest.spyOn(MockSiteStore.prototype, 'addOrReplace');
-    chrome.runtime.sendMessage.mockImplementationOnce((lst,cb)=>{cb({masterkey: 'test'})});
 
-    jest.useFakeTimers();
-    jest.spyOn(global, 'setTimeout');
-
-    window.dispatchEvent(new window.Event('load'));
-    await flushPromises();
-
-    jest.runOnlyPendingTimers()
-
-    expect(sitename.addOption).toHaveBeenCalledWith("www.test.no");
-    expect(sitename.addOption).toHaveBeenCalledWith("test.no");
-    expect(sitename.value).toEqual("www.test.no");
-    await flushPromises();
-    expect(calcpasswd).toHaveBeenCalledWith("www.test.no", 1, 'x');
+    await run_to_popup_loaded();
 
     let pwtype = document.querySelector('#passwdtype');
     expect(pwtype.value).toBe('x');
