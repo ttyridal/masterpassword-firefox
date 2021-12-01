@@ -7,8 +7,11 @@ import {mockStorageGet} from '../../mocks/chromestorage.js'
 
 beforeEach(()=>{
     config.reset();
-    global.chrome = {storage:{local:{get:jest.fn()},
-                              sync:{get:jest.fn()}}};
+    global.chrome = {storage:{local:{get:jest.fn().mockImplementation(mockStorageGet()),
+                                     set:jest.fn().mockImplementation((_,e)=>e())},
+                              sync:{get:jest.fn().mockImplementation(mockStorageGet()),
+                                     set:jest.fn().mockImplementation((_,e)=>e())},
+                              }};
 });
 
 
@@ -78,3 +81,66 @@ it('loads a basic config chrome-style with sync on', async () => {
     expect(c).toEqual(expect.objectContaining({'username':'username','key_id':'key_id'}));
 });
 
+it('saves config default', async () => {
+    // chrome default
+    global.browser = undefined;
+
+    await config.set({'username':'user', 'key_id':'123', 'pass_store':true, 'passwdtimeout':0});
+    expect(global.chrome.storage.sync.set).toHaveBeenCalledWith(
+        {'username':'user', 'key_id':'123'}, expect.anything());
+    expect(global.chrome.storage.local.set).toHaveBeenCalledWith(
+        {'pass_store':true, 'passwdtimeout':0}, expect.anything());
+
+    global.chrome.storage.local.set.mockClear();
+    global.chrome.storage.sync.set.mockClear();
+    config.reset();
+
+    // firefox default
+    global.browser = {};
+    await config.set({'username':'user', 'key_id':'123', 'pass_store':true, 'passwdtimeout':0});
+    expect(global.chrome.storage.local.set).toHaveBeenCalledWith(
+        {'username':'user', 'key_id':'123', 'pass_store':true, 'passwdtimeout':0}, expect.anything());
+});
+
+it('saves config sync on', async () => {
+    global.browser = undefined;
+    // sync on
+    global.chrome.storage.local.get.mockImplementation(mockStorageGet({'use_sync': true}));
+
+    await config.set({'username':'user', 'key_id':'123', 'pass_store':true, 'passwdtimeout':0});
+    expect(global.chrome.storage.sync.set).toHaveBeenCalledWith(
+        {'username':'user', 'key_id':'123'}, expect.anything());
+    expect(global.chrome.storage.local.set).toHaveBeenCalledWith(
+        {'pass_store':true, 'passwdtimeout':0}, expect.anything());
+
+
+    global.chrome.storage.local.set.mockClear();
+    global.chrome.storage.sync.set.mockClear();
+    config.reset();
+    global.browser = {};
+    await config.set({'username':'user', 'key_id':'123', 'pass_store':true, 'passwdtimeout':0});
+    expect(global.chrome.storage.sync.set).toHaveBeenCalledWith(
+        {'username':'user', 'key_id':'123'}, expect.anything());
+    expect(global.chrome.storage.local.set).toHaveBeenCalledWith(
+        {'pass_store':true, 'passwdtimeout':0}, expect.anything());
+});
+
+
+it('saves config sync off', async () => {
+    global.browser = undefined;
+    // sync on
+    global.chrome.storage.local.get.mockImplementation(mockStorageGet({'use_sync': false}));
+
+    await config.set({'username':'user', 'key_id':'123', 'pass_store':true, 'passwdtimeout':0});
+    expect(global.chrome.storage.local.set).toHaveBeenCalledWith(
+        {'username':'user', 'key_id':'123', 'pass_store':true, 'passwdtimeout':0}, expect.anything());
+
+
+    global.chrome.storage.local.set.mockClear();
+    global.chrome.storage.sync.set.mockClear();
+    config.reset();
+    global.browser = {};
+    await config.set({'username':'user', 'key_id':'123', 'pass_store':true, 'passwdtimeout':0});
+    expect(global.chrome.storage.local.set).toHaveBeenCalledWith(
+        {'username':'user', 'key_id':'123', 'pass_store':true, 'passwdtimeout':0}, expect.anything());
+});

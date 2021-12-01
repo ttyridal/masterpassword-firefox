@@ -23,6 +23,12 @@ function promised_storage_get(storage, keys) {
         storage.get(keys, itms => { resolve(itms); });
     });
 }
+function promised_storage_set(storage, obj) {
+    return new Promise(resolve => {
+        storage.set(obj, () => { resolve(); });
+    });
+}
+
 
 class Config {
     constructor() {
@@ -55,35 +61,33 @@ class Config {
                      else return this._cache.use_sync; }
 
     set(toset){
-        if ('masterkey' in toset) throw new Error("key should never be stored on config");
-        const store = (this.browser_is_chrome ? chrome.storage.sync : chrome.storage.local)
+        if ('masterkey' in toset) return Promise.reject(new Error("key should never be stored on config"));
 
-        const isEmptyObject = (o) => {for (let i in o) return false; return true;};
+        Object.apply(this._cache, toset);
 
-        return new Promise(res => {
-            Object.apply(this._cache, toset);
+        return (typeof this._cache.use_sync === 'undefined'
+            ? promised_storage_get(chrome.storage.local, {'use_sync': this.browser_is_chrome})
+            : Promise.resolve(this._cache.use_sync))
+        .then(values => {
+            this._cache.use_sync = values.use_sync;
 
-            if (store === chrome.storage.sync) {
+            let localset = {};
+            if (this._cache.use_sync) {
                 let obj = {...toset};
-                let localset = {};
                 for (const x of ['pass_store', 'passwdtimeout', 'use_sync']) {
                     if (x in obj) {
                         localset[x] = obj[x];
                         delete obj[x];
                     }
                 }
-                if (!isEmptyObject(localset))
-                    chrome.storage.local.set(localset, ()=>{
-                        if (!isEmptyObject(obj))
-                            store.set(obj, ()=>{ res() });
-                        else
-                            res();
-                    });
-                else
-                    store.set(toset, ()=>{ res() });
+                return Promise.all([promised_storage_set(chrome.storage.sync, obj), Promise.resolve(localset)]);
             } else {
-                store.set(toset, ()=>{ res() });
+                return Promise.all([Promise.resolve(null), toset]);
             }
+        })
+        .then(values => {
+            let [_, localset] = values; // eslint-disable-line no-unused-vars
+            return promised_storage_set(chrome.storage.local, localset);
         });
     }
 
