@@ -43,9 +43,6 @@ document.querySelector('#passwdtimeout').addEventListener('change', function() {
     let v = parseInt(this.value);
     config.set({passwdtimeout: v});
 });
-document.querySelector('#defaultname').addEventListener('change', function() {
-    config.set({defaultname: this.value});
-});
 document.querySelector('#pass_to_clipboard').addEventListener('change', function() {
     config.set({pass_to_clipboard: this.checked});
 });

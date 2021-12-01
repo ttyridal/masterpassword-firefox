@@ -97,7 +97,7 @@ export const ui = {
         return r;
     },
 
-    siteconfig: function(type, generation, username, defaultname) {
+    siteconfig: function(type, generation, username) {
         let t = document.querySelector('#passwdtype'),
             g = document.querySelector('#passwdgeneration'),
             n = document.querySelector('#loginname');
@@ -106,7 +106,7 @@ export const ui = {
             t.value = type;
             g.value = generation;
             n.value = username;
-            n.placeholder = defaultname || "[user name]";
+            n.placeholder = "[user name]";
         }
         return ret;
     },

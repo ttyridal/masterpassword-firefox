@@ -232,7 +232,7 @@ it('updates stored site when used on new domain', async () => {
     sitename.value='empty.no';
     document.querySelector('#sitename').dispatchEvent(new window.Event('change', { bubbles: true, cancelable: true }));
     await flushPromises();
-    expect(ui.siteconfig).toHaveBeenCalledWith('l',1,'', '');
+    expect(ui.siteconfig).toHaveBeenCalledWith('l',1,'');
     expect(calcpasswd).toHaveBeenCalledWith("empty.no", 1, 'l');
 
     expect(addOrReplace).toHaveBeenCalledWith(expect.objectContaining({
@@ -252,7 +252,7 @@ it('does NOT save if in private browsing', async () => {
     sitename.value='empty.no';
     document.querySelector('#sitename').dispatchEvent(new window.Event('change', { bubbles: true, cancelable: true }));
     await flushPromises();
-    expect(ui.siteconfig).toHaveBeenCalledWith('l',1,'', '');
+    expect(ui.siteconfig).toHaveBeenCalledWith('l',1,'');
     expect(calcpasswd).toHaveBeenCalledWith("empty.no", 1, 'l');
 
     expect(addOrReplace).not.toHaveBeenCalled();
