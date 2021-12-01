@@ -164,7 +164,6 @@ window.addEventListener('load', function() {
 
         document.querySelector('#passwdtype').value = data.defaulttype;
         document.querySelector('#passwdtimeout').value = data.passwdtimeout;
-        document.querySelector('#defaultname').value = data.defaultname;
         document.querySelector('#pass_to_clipboard').checked = data.pass_to_clipboard;
         document.querySelector('#auto_submit_pass').checked = data.auto_submit_pass;
         document.querySelector('#auto_submit_username').checked = data.auto_submit_username;
