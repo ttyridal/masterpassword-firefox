@@ -262,10 +262,11 @@ no-op {
 
 /* Options page styles */
 .accordion {
-  width: 50em;
   margin-bottom:1em;
   box-shadow:0 2px 4px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12)!important;
   margin-left: 1em;
+  min-width: 40em;
+  margin-right: 2em;
   padding-bottom: 1em;
   overflow: hidden;
 }
@@ -327,6 +328,17 @@ no-op {
 #stored_sites {
     width:100%;
     text-align: center;
+}
+#stored_sites > tbody > tr > td:first-child {
+    text-align: left;
+    text-overflow:ellipsis;
+}
+#stored_sites > tbody > tr > td:nth-child(2) {
+    min-width:17em;
+}
+
+#stored_sites input {
+    text-overflow:ellipsis;
 }
 
 #stored_sites input {

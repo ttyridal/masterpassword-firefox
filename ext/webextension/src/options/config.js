@@ -75,6 +75,7 @@ function stored_sites_table_update(sites) {
             site.generation,
             ""+site.required_alg_version(alg_min_version));
     }
+    Array.prototype.map.call(document.querySelectorAll('#stored_sites input'), fitText);
 }
 
 window.addEventListener('load', async function() {
@@ -345,5 +346,28 @@ function messagebox(txt) {
     document.querySelector("#messagebox").classList.add('visible');
     document.querySelector("#messagebox_text").innerHTML = txt;
 }
+
+
+function fitText(el) {
+    const isOverflown = e => e.scrollWidth > e.clientWidth;
+    const minFontSize = 12;
+
+    if (isOverflown(el)) {
+        let fontsize = parseFloat(window.getComputedStyle(el, null).getPropertyValue('font-size'));
+        while (isOverflown(el) && fontsize > minFontSize ){
+            fontsize-=0.3;
+            el.style.fontSize = fontsize + 'px';
+        }
+    } else {
+        let fontsize = parseFloat(window.getComputedStyle(document.querySelector("#stored_sites"), null).getPropertyValue('font-size'));
+        el.style.fontSize = fontsize + 'px';
+        while (isOverflown(el) && fontsize > minFontSize ){
+            fontsize-=0.3;
+            el.style.fontSize = fontsize + 'px';
+        }
+    }
+}
+
+document.querySelector('#stored_sites').addEventListener('input', ev => fitText(ev.target));
 
 }());
