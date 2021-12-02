@@ -275,6 +275,7 @@ class ComboBox extends HTMLElement {
     constructor() {
         super();
         this.attachShadow({ mode: 'open' });
+        this.handleInput = this.handleInput.bind(this);
         this.handleKeydown = this.handleKeydown.bind(this);
         this.handleKeyup = this.handleKeyup.bind(this);
         this.handleClick = this.handleClick.bind(this);
@@ -293,9 +294,11 @@ class ComboBox extends HTMLElement {
         this.domNode  = this.shadowRoot.querySelector('.combobox');
         this.inputNode = this.shadowRoot.querySelector('[role="combobox"]');
         this.inputNode.value = this._value;
+        this.fitText(this.inputNode);
         this.inputNode.placeholder = this.placeholder || '';
         this.listbox = new ListBox(this.shadowRoot.querySelector('[role="listbox"]'));
 
+        this.domNode.addEventListener('input', this.handleInput);
         this.domNode.addEventListener('keydown', this.handleKeydown);
         this.domNode.addEventListener('keyup',   this.handleKeyup);
         this.domNode.addEventListener('click',   this.handleClick);
@@ -359,6 +362,7 @@ class ComboBox extends HTMLElement {
         if (opts && opts.selected) {
             this.option = li;
             this.inputNode.value = txt;
+            this.fitText(this.inputNode);
         }
 
         this.listbox.allOptions.push(li);
@@ -382,7 +386,10 @@ class ComboBox extends HTMLElement {
     }
 
     set value(v) {
-        if (this.inputNode) this.inputNode.value = v;
+        if (this.inputNode) {
+            this.inputNode.value = v;
+            this.fitText(this.inputNode);
+        }
         this._value = v;
         this.setAttribute('value', v);
     }
@@ -441,6 +448,7 @@ class ComboBox extends HTMLElement {
     setOption(opt) {
         this.option = opt;
         this.inputNode.value = opt.textContent;
+        this.fitText(this.inputNode);
         this.listbox.setSelected(opt);
     }
 
@@ -536,7 +544,52 @@ class ComboBox extends HTMLElement {
             }
         }
     }
+
+    handleInput() {
+        this.fitText(this.inputNode);
+    }
+
+    fitText(el) {
+        const minSize = 12;
+        el.removeAttribute('style');
+        const fontWeight = getCssStyle(el, 'font-weight') || 'normal';
+        let fontSize = parseFloat(getCssStyle(el, 'font-size') || '16px');
+        if (!this._original_font_size) this._original_font_size = fontSize;
+
+        const fontFamily = getCssStyle(el, 'font-family') || 'Times New Roman';
+        const width = el.clientWidth;
+        const height = el.clientHeight;
+        if (!width || !height) return;
+        let txtwidth;
+        try { // not supported on firefox mobile. so just ignore..
+            txtwidth = getTextWidth(el.value, `${fontWeight} ${fontSize}px ${fontFamily}`);
+        } catch (err) {return;}
+
+        while(txtwidth < width && fontSize < this._original_font_size) {
+            fontSize += 0.3;
+            txtwidth = getTextWidth(el.value, `${fontWeight} ${fontSize}px ${fontFamily}`);
+        }
+        while(txtwidth > width && fontSize > minSize) {
+            fontSize -= 0.3;
+            txtwidth = getTextWidth(el.value, `${fontWeight} ${fontSize}px ${fontFamily}`);
+        }
+        el.style.fontSize = fontSize + 'px';
+    }
 }
+
+function getTextWidth(text, font) {
+  // re-use canvas object for better performance
+  const canvas = getTextWidth.canvas || (getTextWidth.canvas = document.createElement("canvas"));
+  const context = canvas.getContext("2d");
+  context.font = font;
+  const metrics = context.measureText(text);
+  return metrics.width;
+}
+
+function getCssStyle(element, prop) {
+    return window.getComputedStyle(element, null).getPropertyValue(prop);
+}
+
 
 customElements.define('mp-combobox', ComboBox);
 })();
