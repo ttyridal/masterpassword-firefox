@@ -95,16 +95,17 @@ select,
 mp-combobox,
 no-op {
     color: #d7dae0;
-    height: var(--cb-input-height);
+    --height-pad: 0.2em;
+    width:100%;
+    height: calc(var(--cb-input-height) + 2 * var(--height-pad));
     --cb-padding: 0 0.3em;
-    --cb-dropdown-fontsize: 0 0.3em;
     --cb-input-font: var(--font-size-big);
     --cb-drop-font: 1.1em;
-    padding: var(--cb-padding);
     vertical-align: middle;
-    width:100%;
+    padding: var(--height-pad) 0;
 }
 input, select {
+    padding: 0.2em 0.3em;
     background: var(--input-bg-color);
     font-size: var(--font-size-big);
 }
@@ -195,6 +196,7 @@ button#siteconfig_show {
 }
 #siteconfig {
     overflow:hidden;
+    padding-bottom: 0.5em;
 }
 #siteconfig > label {
     margin-left: 1em;

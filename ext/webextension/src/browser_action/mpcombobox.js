@@ -26,6 +26,7 @@ template.innerHTML = `
 }
 :host([hidden]) { display: none }
 .combobox-list {
+  box-sizing: border-box;
   font: inherit;
   position: relative;
   color: inherit;
@@ -34,29 +35,22 @@ template.innerHTML = `
   list-style-type:none;
   list-style:none;
   text-align:left;
-  width: inherit;
-  height: inherit;
   background: var(--main-bg-color);
-  padding: .2em 0;
 
 }
 .horz_flex {
   display:flex;
-  width: inherit;
+  width: 100%;
   align-items: center;
-  justify-content: center;
 }
 button {
   margin-left:.5em;
-  margin-right: -0.5em;
   color: #969eac;
   background-color: var(--header-bg-color);
   background-image: linear-gradient(lighten(#383e48, 2%), var(--header-bg-color));
-  min-width: 1.8em;
-  min-height: 1.8em;
+  width: 2.8em;
+  height: 2.3em;
   border: 1px solid #181a1f;
-  display: inline-block;
-  padding: 3px 8px;
   text-align: center;
   white-space: nowrap;
   vertical-align: middle;
@@ -64,7 +58,6 @@ button {
 }
 
 input {
-box-sizing: border-box;
   font-size: var(--cb-input-font, inherit);
   width: inherit;
   flex-grow: 1;
@@ -91,10 +84,9 @@ ul[role="listbox"] {
   list-style: none;
   background:  var(--cb-background, inherit);
   display: none;
-  box-sizing: border-box;
   min-height: 8em;
   max-height: 12em;
-  width: inherit;
+  width: 100%;
   overflow: scroll;
   overflow-x: hidden;
   font-size: 87.5%;
