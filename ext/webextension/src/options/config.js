@@ -298,14 +298,14 @@ document.querySelector('body').addEventListener('click', function(ev){
         Promise.all([config.get(['key_id', 'username']), sitestore.get()])
         .then(values => {
             let [{key_id, username}, sites] = values;
-            start_data_download(mpw_utils.make_mpsites(key_id, username, sites, alg_min_version, config.algorithm_version, true), 'firefox.mpjson');
+            start_data_download(mpw_utils.make_mpsites(key_id, username, sites, alg_min_version, config.algorithm_version, true), 'mpwbackup.mpjson');
         });
     }
     if (ev.target.classList.contains('export_mpsites')) {
         Promise.all([config.get(['key_id', 'username']), sitestore.get()])
         .then(values => {
             let [{key_id, username}, sites] = values;
-            start_data_download(mpw_utils.make_mpsites(key_id, username, sites, alg_min_version, config.algorithm_version, false), 'firefox.mpsites');
+            start_data_download(mpw_utils.make_mpsites(key_id, username, sites, alg_min_version, config.algorithm_version, false), 'mpwbackup.mpsites');
         });
     }
     if (ev.target.classList.contains('accordion_toggle')) {
