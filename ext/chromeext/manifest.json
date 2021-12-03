@@ -28,6 +28,14 @@
     "default_title": "MasterPassword",
     "default_popup": "src/browser_action/browser_action.html"
   },
+  "commands": {
+    "_execute_browser_action": {
+      "suggested_key": {
+         "default": "Alt+Shift+P",
+         "mac": "MacCtrl+Shift+P"
+      }
+    }
+  },
   "permissions": [
     "activeTab",
     "clipboardWrite",
