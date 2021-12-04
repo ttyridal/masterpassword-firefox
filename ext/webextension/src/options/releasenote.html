@@ -40,8 +40,18 @@
         <a name="details"></a>
         This version of MasterPassword changes the internal representation for sites. This is done for a couple
         of reasons. First, the export file can only represent a sitename once. The addon could previously have
-        a sitename with different configurations registered on different websites (ie. sitename google.com could
-        have different generation number when visiting google.co.uk and google.com).
+        a sitename with different configurations registered on different websites.<p>
+        Example:<br> You use your google account with the site-name set to google.com and generation set to 2.
+        You configured this when visiting gmail.com (the url you where at when opening masterpassword).<br> At a
+        later time, you visit youtube.com and you want to login with your google account.<br>
+        Previously you would have to enter the settings again. google.com at gmail.com and youtube.com was
+        considered two unrelated things. This is no longer the case. There can only be <i>one</i> google.com
+        site-name, and when you change the site-name to google.com (when visiting youtube) masterpassword will give
+        you that the correct setting, with the generation correctly set to 2. And, if you update the generation to 3,
+        it will change in all places where you use google.com as a site-name.<br>You can observe in the
+        configuration/stored-sites, that google.com will be matched to both youtube.com and gmail.com.<br>
+        You can of course still have multiple google accounts, user1@google.com, user2@google.com etc.
+
         <p>
         Furthermore, the new representation is better suited for working around storage limitations imposed by
         the browser.
