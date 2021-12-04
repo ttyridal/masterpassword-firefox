@@ -36,6 +36,22 @@ if (browser_is_chrome) {
 } else
     cbrowser = browser;
 
+chrome.runtime.onInstalled.addListener(details=>{
+    switch (details.reason) {
+        case "install":
+        case "update":
+            chrome.storage.local.get('use_sync', settings=>{
+                if (typeof settings.use_sync === "undefined") {
+                    console.log("plugin "+details.reason+". setting default values");
+                    chrome.storage.local.set({use_sync: browser_is_chrome});
+                }
+            });
+            break;
+        default:
+    }
+});
+
+
 var port;
 function port_default_error() { port = undefined; }
 function pwvault_gateway(msg) {
