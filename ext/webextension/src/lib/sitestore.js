@@ -164,6 +164,7 @@ export class SiteStore {
             if (!d[binname]) d[binname] = [];
             d[binname].push(site_to_storage(s))
         });
+        this._needs_upgrade = false;
         return store_set(this.store, d);
     }
 
