@@ -67,7 +67,7 @@ class Config {
 
         return (typeof this._cache.use_sync === 'undefined'
             ? promised_storage_get(chrome.storage.local, {'use_sync': this.browser_is_chrome})
-            : Promise.resolve(this._cache.use_sync))
+            : Promise.resolve({use_sync: this._cache.use_sync}))
         .then(values => {
             this._cache.use_sync = values.use_sync;
 
