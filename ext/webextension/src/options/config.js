@@ -275,8 +275,9 @@ document.querySelector('body').addEventListener('click', function(ev){
     }
     if (ev.target.classList.contains('upgrade_datastore_now')) {
         document.querySelector('#preupgrade').style.display='none';
-        sitestore.get().then(sites => mpw_utils.merge_sites([], sites, (a,b)=>resolveConflict(a,b,true))).then(x => {
-            let [sites, _] = x; // eslint-disable-line no-unused-vars
+        sitestore.get()
+        .then(sites => mpw_utils.merge_sites([], sites, (a,b)=>resolveConflict(a,b,true)))
+        .then(sites => {
             sitestore.set(sites);
             messagebox("Upgrade complete");
             stored_sites_table_update(sites);
