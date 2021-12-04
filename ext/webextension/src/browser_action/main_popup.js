@@ -368,7 +368,7 @@ document.querySelector('#sessionsetup > form').addEventListener('submit', functi
     else {
         ui.masterkey('');
 
-        config.set({username: username});
+        config.set({username});
 
         ui.hide('#sessionsetup');
         ui.show('#main');

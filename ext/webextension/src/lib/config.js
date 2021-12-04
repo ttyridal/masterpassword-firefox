@@ -63,7 +63,7 @@ class Config {
     set(toset){
         if ('masterkey' in toset) return Promise.reject(new Error("key should never be stored on config"));
 
-        Object.apply(this._cache, toset);
+        Object.assign(this._cache, toset);
 
         return (typeof this._cache.use_sync === 'undefined'
             ? promised_storage_get(chrome.storage.local, {'use_sync': this.browser_is_chrome})
