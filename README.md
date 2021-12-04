@@ -14,7 +14,7 @@ accepted as long as they don't deteriorate the experence on desktop versions.
 # Compatible apps and what's about this "Spectre" thing
 The general idea behind masterpassword is to mathematically derive a unique password from a "master password".
 The idea and algorithm was published by Mr. Billemont as an open source MasterPasswordApp on iOS (android and
-others followed thereafter). The idea cought on and several **compatible** implementations emerged from
+others followed thereafter). The idea caught on and several **compatible** implementations emerged from
 various developers. typically because there was no app for their preferred environment. As is the reason
 for the existance of this project.
 
