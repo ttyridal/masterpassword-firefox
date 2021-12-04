@@ -204,6 +204,27 @@ it('selects the best match', async () => {
     expect(calcpasswd).toHaveBeenCalledWith("wwwtest.no", 1, 'x');
 });
 
+it('selects the best match2', async () => {
+    jest.spyOn(MockSiteStore.prototype, 'get').mockResolvedValueOnce([
+        new Site({sitename: "test.no", url:['test.no'], type:'x'}),
+        new Site({sitename: "mysite.com", url:['www.test.no','mysite.com'], type:'s'})]);
+    chrome.runtime.sendMessage.mockImplementationOnce((lst,cb)=>{cb({masterkey: 'test'})});
+
+    jest.useFakeTimers();
+    jest.spyOn(global, 'setTimeout');
+
+    window.dispatchEvent(new window.Event('load'));
+    await flushPromises();
+
+    jest.runOnlyPendingTimers()
+
+    expect(sitename.addOption).toHaveBeenCalledWith("mysite.com");
+    expect(sitename.addOption).toHaveBeenCalledWith("test.no");
+    expect(sitename.value).toEqual("mysite.com");
+    await flushPromises();
+    expect(calcpasswd).toHaveBeenCalledWith("mysite.com", 1, 's');
+});
+
 
 async function run_to_popup_loaded() {
     chrome.runtime.sendMessage.mockImplementationOnce((lst,cb)=>{cb({masterkey: 'test'})});

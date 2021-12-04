@@ -38,7 +38,7 @@ function arrayEqualElements(a,b) {
 export function scoreSiteByDomain(site, domainSplitReversed, minScore) {
     const siteurls = site.url.map(u => u.split('.').reverse());
 
-    let score = Math.max(siteurls.map(u => arrayEqualElements(u, domainSplitReversed)));
+    let score = Math.max(...siteurls.map(u => arrayEqualElements(u, domainSplitReversed)));
 
     // strip any "name@" if it exists
     // and score on sitename even if not matching on url
