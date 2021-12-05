@@ -1,4 +1,4 @@
-/* Copyright Torbjorn Tyridal 2015
+/* Copyright Torbjorn Tyridal 2015-2021
 
     This file is part of Masterpassword for Firefox (herby known as "the software").
 
@@ -15,8 +15,12 @@
     You should have received a copy of the GNU General Public License
     along with the software.  If not, see <http://www.gnu.org/licenses/>.
 */
-/*jshint browser:true, devel:true, nonstandard:true, -W055 */
 /* globals chrome */
+
+"use strict";
+import {SiteStore, NeedUpgradeError} from "../lib/sitestore.js";
+import mpw_utils from "../lib/mpw-utils.js";
+import config from "../lib/config.js";
 
 (function(){
 function encode_utf8(s) {
@@ -26,16 +30,8 @@ function string_is_plain_ascii(s) {
     return s.length === encode_utf8(s).length;
 }
 
- var stored_sites={},
-     username="",
-     key_id,
-     alg_max_version,
-     alg_min_version = 1;
-
-function save_sites_to_backend() {
-    browser.runtime.sendMessage({action: 'store_update', data: {sites: stored_sites} })
-    .catch(err=>{ console.log("BUG!",err); });
-}
+var alg_min_version = 1;
+let sitestore;
 
 function passtype_to_str(type) {
     switch(type) {
@@ -47,7 +43,7 @@ function passtype_to_str(type) {
         case 'i': return "Pin";
         case 'n': return "Name";
         case 'p': return "Phrase";
-        default: throw new Error("Unknown password type");
+        default: throw new Error("Unknown password type:"+type);
     }
 }
 
@@ -66,49 +62,41 @@ function stored_sites_table_append(domain, site, type, loginname, count, ver) {
     document.querySelector('#stored_sites > tbody').appendChild(tr);
 }
 
-function stored_sites_table_update(stored_sites) {
+function stored_sites_table_update(sites) {
     document.querySelector('#stored_sites > tbody').innerHTML = '';
-    Object.keys(stored_sites).forEach(function(domain){
-        Object.keys(stored_sites[domain]).forEach(function(site){
-            let settings = stored_sites[domain][site],
-                alg_version = alg_min_version;
 
-            if (alg_min_version < 3 && !string_is_plain_ascii(site))
-                alg_version = 2;
-            if (settings.username === undefined)
-                settings.username = "";
-            stored_sites_table_append(domain,
-                site,
-                settings.type,
-                settings.username,
-                settings.generation,
-                ""+alg_version);
-        });
-    });
+    sites.sort((a,b)=>(a.sitename > b.sitename ? 1 : -1));
+
+    for (const site of sites) {
+        stored_sites_table_append(site.url,
+            site.sitename,
+            site.type,
+            site.username,
+            site.generation,
+            ""+site.required_alg_version(alg_min_version));
+    }
+    Array.prototype.map.call(document.querySelectorAll('#stored_sites input'), fitText);
 }
 
-window.addEventListener('load', function() {
-    browser.runtime.sendMessage({action: 'store_get', keys:
-      ['sites', 'username', 'max_alg_version', 'key_id']})
-    .then(data => {
-        if (data.sites)
-            stored_sites = data.sites;
-        username = data.username;
-        key_id = data.key_id;
-        alg_max_version = data.max_alg_version;
+window.addEventListener('load', async function() {
+    try {
+        let {username, use_sync} = await config.get(['username', 'use_sync']);
+        sitestore = new SiteStore(use_sync ? chrome.storage.sync : chrome.storage.local);
+        let sites = await sitestore.get();
 
-        if (!string_is_plain_ascii(username)) {
-            alg_min_version = Math.min(3, alg_max_version);
-            if (alg_min_version > 2) {
-                document.querySelector('#ver3note').style.display = 'inherit';
-            }
-        }
+        let sites_max_version = Math.max(...(sites.map(s => s.required_alg_version(1))));
+        alg_min_version = Math.max(sites_max_version, string_is_plain_ascii(username) ? 1 : 3);
+        if (alg_min_version > 2)
+            document.querySelector('#ver3note').style.display = 'inherit';
 
-        stored_sites_table_update(stored_sites);
-    })
-    .catch(() => {
-        console.error("Failed loading state from background on popup");
-    });
+        stored_sites_table_update(sites);
+
+        if (sitestore.need_upgrade())
+            document.querySelector('.upgrade_datastore').style.display='';
+    } catch (err) {
+        console.error("Failed loading sites on load", err);
+        messagebox("Failed loading sites");
+    }
 });
 
 function dragover_enter(e){
@@ -132,61 +120,73 @@ function find_parent(name, node) {
 document.querySelector('#stored_sites').addEventListener('change', function(e) {
     if (!e.target.classList.contains('domainvalue')) return;
     let t = find_parent('TR', e.target),
-        domain = e.target.getAttribute('data-old'),
-        newdomain = e.target.value,
-        site = t.querySelector('td:nth-child(1)').textContent;
+        oldurl = e.target.getAttribute('data-old'),
+        newurl = e.target.value,
+        sitename = t.querySelector('td:nth-child(1)').textContent;
 
-    if (! (newdomain in stored_sites)) stored_sites[newdomain] = {};
-    stored_sites[newdomain][site] = stored_sites[domain][site];
-    delete stored_sites[domain][site];
-    save_sites_to_backend();
-    console.debug('Change',t,domain,newdomain);
-    e.target.setAttribute('data-old', newdomain);
+    const url = Array.from(new Set(newurl.split(',')))
+    sitestore.update(sitename, {url})
+    .catch (er => {
+        if (er instanceof NeedUpgradeError)
+            messagebox(er.message);
+        else {
+            console.error(er.message, er);
+            messagebox("Save failed " + er.message);
+        }
+        e.target.value = oldurl;
+    });
+
+    console.debug('Change',t,url,oldurl);
+    e.target.setAttribute('data-old', newurl);
 });
 
 document.querySelector('#stored_sites').addEventListener('click', function(e) {
     if (!e.target.classList.contains('delete')) return;
     let t = find_parent('TR', e.target);
+    let sitename = t.querySelector('td:nth-child(1)').textContent;
 
-    let sitesearch = t.querySelector('td:nth-child(2) > input').value,
-        sitename = t.querySelector('td:nth-child(1)').textContent;
-
-    delete stored_sites[sitesearch][sitename];
-    t.parentNode.removeChild(t);
-    save_sites_to_backend();
+    sitestore.remove(sitename)
+    .then(()=>t.parentNode.removeChild(t))
+    .catch(er => {
+        if (er instanceof NeedUpgradeError)
+            messagebox(er.message);
+        else {
+            console.error(er.message, er);
+            messagebox("Save failed " + er.message);
+        }
+    });
 });
 
 
-function get_sitesearch(sitename) {
-    let y = sitename.split("@");
-    if (y.length > 1)
-        return y[y.length-1];
-    else
-        return sitename;
-}
-
-function resolveConflict(site) {
-    return new Promise(function(resolve, reject){
-        let existing = stored_sites[site.sitesearch][site.sitename],
-            div = document.querySelector('#conflict_resolve');
+function resolveConflict(site, existing, AB) {
+    return new Promise(resolve => {
+        let div = document.querySelector('#conflict_resolve');
 
         div.querySelector('.sitename').textContent = site.sitename;
-        div.querySelector('.domainvalue').textContent = site.sitesearch;
+        div.querySelector('.domainvalue_existing').textContent = existing.url;
         div.querySelector('.existing_type').textContent = passtype_to_str(existing.type);
         div.querySelector('.existing_count').textContent = existing.generation;
         div.querySelector('.existing_username').textContent = existing.username;
 
-        div.querySelector('.new_type').textContent = passtype_to_str(site.passtype);
-        div.querySelector('.new_count').textContent = site.passcnt;
-        div.querySelector('.new_username').textContent = site.loginname;
+        div.querySelector('.domainvalue_new').textContent = site.url;
+        div.querySelector('.new_type').textContent = passtype_to_str(site.type);
+        div.querySelector('.new_count').textContent = site.generation;
+        div.querySelector('.new_username').textContent = site.username;
+
+        if (AB) {
+            div.querySelector('.existing').innerText = div.querySelector('.existing').innerText.replace(/existing/i, 'A');
+            div.querySelector('.importing').innerText = div.querySelector('.importing').innerText.replace(/importing/i, 'B');
+            div.querySelector('#existing').innerText = 'Keep A';
+            div.querySelector('#imported').innerText = 'Keep B';
+        }
 
         function click_handler(ev) {
             switch (ev.target.id) {
                 case 'existing':
-                    resolve(stored_sites[site.sitesearch][site.sitename]);
+                    resolve(existing);
                     break;
                 case 'imported':
-                    resolve({'generation': site.passcnt, 'type': site.passtype, 'username': site.loginname});
+                    resolve(site);
                     break;
                 default:
                     return;
@@ -200,91 +200,114 @@ function resolveConflict(site) {
     });
 }
 
+
+document.querySelector('#importinput').addEventListener('change', (ev) => {
+    var fr=new FileReader();
+    fr.onload=function(){
+        import_mpsites(fr.result);
+    }
+    fr.readAsText(ev.target.files[0]);
+});
+
 document.addEventListener('drop', function(e) {
     let dt = e.dataTransfer;
     dt.dropEffect='move';
     e.preventDefault();
     e.stopPropagation();
     if (dt.files.length !== 1) return;
-    if (! /.*\.mpsites$/gi.test(dt.files[0].name)) {
-        alert("need a .mpsites file");
+    if (! /.*\.(mpsites|mpjson)$/gi.test(dt.files[0].name)) {
+        messagebox("Error: need a .mpsites file");
         return;
     }
+
+    if (sitestore.need_upgrade()) {
+        messagebox("need data upgrade before import");
+        return;
+    }
+
     var fr = new FileReader();
     fr.onload=function(x){
-        var has_ver1_mb_sites = false;
-        try {
-            x = window.mpw_utils.read_mpsites(x.target.result, username, key_id, confirm);
-            if (!x) return;
-        } catch (e) {
-            if (e.name === 'mpsites_import_error') {
-                alert(e.message);
-                return;
-            }
-            else throw e;
-        }
-
-        var done = new Promise(function(all_done){
-            function popsite() {
-                if (! x.length) return false;
-
-                var p, site = x.shift();
-
-                site.sitesearch = get_sitesearch(site.sitename);
-                if (site.passalgo < 2 && !string_is_plain_ascii(site.sitename))
-                    has_ver1_mb_sites = true;
-
-                if (! (site.sitesearch in stored_sites)) stored_sites[site.sitesearch] = {};
-                if (site.sitename in stored_sites[site.sitesearch] &&
-                    (stored_sites[site.sitesearch][site.sitename].generation !== site.passcnt ||
-                        stored_sites[site.sitesearch][site.sitename].type !== site.passtype ||
-                        stored_sites[site.sitesearch][site.sitename].username !== site.loginname)) {
-
-                    p = resolveConflict(site);
-                } else {
-                    p = Promise.resolve({'generation': site.passcnt, 'type': site.passtype, 'username': site.loginname}, undefined);
-                }
-
-                p.then(function(cfg, nextanswer){
-                    stored_sites[site.sitesearch][site.sitename] = cfg;
-                    if (!popsite())
-                        all_done();
-                })
-                .catch(function(reason){
-                    console.error("popsite failed", reason);
-                });
-
-                return true;
-            }
-
-            if (!popsite())
-                all_done();
-        });
-
-
-        done.then(function(){
-            stored_sites_table_update(stored_sites);
-
-            if (has_ver1_mb_sites)
-                alert("Version mismatch\n\nYour file contains site names with non ascii characters from "+
-                      "an old masterpassword version. This addon can not reproduce these passwords");
-            else
-                console.debug('Import successful');
-
-            save_sites_to_backend();
-        })
-        .catch(function(err){
-            console.error(err);
-        });
-
-    };
+        import_mpsites(x.target.result);
+    }
     fr.readAsText(dt.files[0]);
-
 });
 
+async function import_mpsites(data) {
+    let imported_sites;
+
+    let {key_id, username} = await config.get(['key_id', 'username']);
+    try {
+        imported_sites = mpw_utils.read_mpsites(data, username, key_id, confirm);
+        if (!imported_sites) return;
+    } catch (e) {
+        if (e instanceof mpw_utils.MPsitesImportError) {
+            messagebox("Error: "+e.message);
+            return;
+        }
+        else throw e;
+    }
+
+    let sites = await sitestore.get();
+
+    sites = await mpw_utils.merge_sites(sites, imported_sites, (a,b)=>resolveConflict(a,b,false));
+
+    try {
+        await sitestore.set(sites);
+    } catch (er) {
+        console.error(er.message, er);
+        messagebox("Save failed " + er.message);
+        return;
+    }
+    stored_sites_table_update(sites);
+
+    const site_not_compatible = (site) => (site.passalgo < 2 && !string_is_plain_ascii(site.sitename))
+    if (imported_sites.some(site_not_compatible))
+        alert("Version mismatch\n\nYour file contains site names with non ascii characters from "+
+              "an old masterpassword version. This addon can not reproduce these passwords");
+    else {
+        messagebox('Import successful');
+    }
+}
+
 document.querySelector('body').addEventListener('click', function(ev){
+    if (ev.target.classList.contains('upgrade_datastore')) {
+        document.querySelector('#preupgrade').style.display='';
+    }
+    if (ev.target.classList.contains('upgrade_datastore_now')) {
+        document.querySelector('#preupgrade').style.display='none';
+        sitestore.get()
+        .then(sites => mpw_utils.merge_sites([], sites, (a,b)=>resolveConflict(a,b,true)))
+        .then(sites => {
+            sitestore.set(sites);
+            messagebox("Upgrade complete");
+            stored_sites_table_update(sites);
+            document.querySelector('.upgrade_datastore').style.display='none';
+        });
+    }
+    if (ev.target.classList.contains('hide_preupgrade')) {
+        document.querySelector('#preupgrade').style.display='none';
+    }
+    if (ev.target.classList.contains('import_mpsites')) {
+        if (sitestore.need_upgrade()) {
+            messagebox("need data upgrade before import");
+            return;
+        }
+        document.querySelector('#importinput').click();
+    }
+    if (ev.target.classList.contains('export_mpsites_json')) {
+
+        Promise.all([config.get(['key_id', 'username']), sitestore.get()])
+        .then(values => {
+            let [{key_id, username}, sites] = values;
+            start_data_download(mpw_utils.make_mpsites(key_id, username, sites, alg_min_version, config.algorithm_version, true), 'mpwbackup.mpjson');
+        });
+    }
     if (ev.target.classList.contains('export_mpsites')) {
-        start_data_download(window.mpw_utils.make_mpsites(key_id, username, stored_sites, alg_min_version, alg_max_version), 'firefox.mpsites');
+        Promise.all([config.get(['key_id', 'username']), sitestore.get()])
+        .then(values => {
+            let [{key_id, username}, sites] = values;
+            start_data_download(mpw_utils.make_mpsites(key_id, username, sites, alg_min_version, config.algorithm_version, false), 'mpwbackup.mpsites');
+        });
     }
     if (ev.target.classList.contains('accordion_toggle')) {
         let d = ev.target.parentNode;
@@ -304,11 +327,48 @@ document.querySelector('body').addEventListener('click', function(ev){
 });
 
 function start_data_download(stringarr,filename) {
-    let url = URL.createObjectURL(new Blob(stringarr, {type: 'text/plain'}));
-    let p = browser.downloads.download({url: url, filename: filename, saveAs: true});
-    p.catch(e=>{
-        console.error('browser.download failed',e);
-    });
+    let a = window.document.createElement('a');
+    a.href = window.URL.createObjectURL(new Blob(stringarr, {type: 'text/plain'}));
+    a.download = filename;
+
+    // Append anchor to body.
+    document.body.appendChild(a);
+    a.click();
+
+    // Remove anchor from body
+    document.body.removeChild(a);
 }
+
+document.querySelector('#messagebox > div.progress').addEventListener('transitionend', () => {
+    document.querySelector("#messagebox").classList.remove('visible');
+});
+
+function messagebox(txt) {
+    document.querySelector("#messagebox").classList.add('visible');
+    document.querySelector("#messagebox_text").innerHTML = txt;
+}
+
+
+function fitText(el) {
+    const isOverflown = e => e.scrollWidth > e.clientWidth;
+    const minFontSize = 12;
+
+    if (isOverflown(el)) {
+        let fontsize = parseFloat(window.getComputedStyle(el, null).getPropertyValue('font-size'));
+        while (isOverflown(el) && fontsize > minFontSize ){
+            fontsize-=0.3;
+            el.style.fontSize = fontsize + 'px';
+        }
+    } else {
+        let fontsize = parseFloat(window.getComputedStyle(document.querySelector("#stored_sites"), null).getPropertyValue('font-size'));
+        el.style.fontSize = fontsize + 'px';
+        while (isOverflown(el) && fontsize > minFontSize ){
+            fontsize-=0.3;
+            el.style.fontSize = fontsize + 'px';
+        }
+    }
+}
+
+document.querySelector('#stored_sites').addEventListener('input', ev => fitText(ev.target));
 
 }());

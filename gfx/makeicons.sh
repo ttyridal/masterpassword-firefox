@@ -2,7 +2,7 @@
 
 mkdir -p ../ext/webextension/icons
 
-for sizes in 16 32 48 64 128; do
+for sizes in 16 19 32 48 64 128; do
     convert -background transparent icon.svg -resize ${sizes}x${sizes} ../ext/webextension/icons/icon${sizes}.png
 done
 

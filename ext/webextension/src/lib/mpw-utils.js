@@ -1,4 +1,4 @@
-/* Copyright Torbjorn Tyridal 2015
+/* Copyright Torbjorn Tyridal 2015-2021
 
     This file is part of Masterpassword for Firefox (herby known as "the software").
 
@@ -17,14 +17,9 @@
 */
 /*jshint browser:true, jquery:true, devel:true, nonstandard:true, -W055 */
 
-(function(){
-
-function encode_utf8(s) {
-  return unescape(encodeURIComponent(s));
-}
-function string_is_plain_ascii(s) {
-    return s.length === encode_utf8(s).length;
-}
+"use strict";
+import {Site} from "./sites.js";
+export default (function() {
 
 function pad_left(len, s, chr) {
     chr = chr || ' ';
@@ -49,28 +44,94 @@ function pad_left(len, s, chr) {
     }
 }
 
-function mpsites_import_error(code, message) {
-    this.name = 'mpsites_import_error';
-    this.message = message || '';
-    this.code = code || 0;
-    this.stack = (new Error()).stack;
+class MPsitesImportError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "MPsitesImportError";
+  }
 }
-mpsites_import_error.prototype = Object.create(Error.prototype);
-mpsites_import_error.prototype.constructor = mpsites_import_error;
+
+function site_as_mpsites_line(site, alg_min_version) {
+    const last_used = '2015-03-23T13:06:35Z';
+    const use_count = '0';
+    const sp2 = '  ';
+    return [last_used, sp2,
+        pad_left(8, use_count), sp2,
+        pad_left(8, [site.type_as_code().toString(), ':', site.required_alg_version(alg_min_version), ':', site.generation]), sp2,
+        pad_left(25, site.username), '\t',
+        pad_left(25, site.sitename), '\t',
+        '\n'].join('');
+}
+
+function site_as_mpjson(site, alg_min_version) {
+    let o = {};
+    o[site.sitename] = {
+        "counter": site.generation,
+        "algorithm": site.required_alg_version(alg_min_version),
+        "type": site.type_as_code(),
+        //login_type: 30
+        "uses": 0,
+        "last_used": '2015-03-23T13:06:35Z',
+        "ext.browser.url": site.url,
+        "ext.browser.username": site.username
+        }
+    return o;
+}
 
 function read_mpsites(d, username, key_id, confirm_fn){
-    var ret=[],l,fheader={'format':-1, 'key_id':undefined, 'username':undefined};
+    let jsn;
+    try {
+        jsn = JSON.parse(d);
+    } catch (e) {
+        console.log("failed to parse json.. try legacy mpsites");
+        return read_mpsites_legacy(d, username, key_id, confirm_fn);
+    }
+    if (!('export' in jsn &&
+          'sites' in jsn &&
+          'user' in jsn &&
+          'format' in jsn['export'] &&
+          jsn['export']['format'] == 1)) {
+        throw new MPsitesImportError("Not a mpjson v1 file");
+    }
+    if (username && jsn.user['full_name'] && jsn.user['full_name'] !== username) {
+        if (!confirm_fn("Username mismatch!\n\nYou may still import this file, "+
+                "but passwords will be different from where you exported the file"))
+            return undefined;
+    } else if (key_id && jsn.user['key_id'] && jsn.user['key_id'] .toLowerCase() !== key_id.toLowerCase()) {
+        if (!confirm_fn("Key ID mismatch!\n\nYou may still import this file, "+
+                "but passwords will be different from where you exported the file"))
+            return undefined;
+    }
+
+    let ret = [];
+    for (const [sitename, siteprops] of Object.entries(jsn.sites)) {
+        ret.push(new Site({
+            sitename: sitename,
+            generation: siteprops.counter || 1,
+            type: siteprops.type,
+            passalgo: siteprops.algorithm,
+            lastused: siteprops.last_used,
+            timesused: siteprops.uses,
+            url: siteprops["ext.browser.url"] || [],
+            username: siteprops["ext.browser.username"]
+        }));
+    }
+    return ret;
+}
+
+function read_mpsites_legacy(d, username, key_id, confirm_fn){
+    let ret=[],l,fheader={'format':-1, 'key_id':undefined, 'username':undefined};
     const file_header = '# Master Password site export';
     d = d.split('\n');
-    d = d.map(function(cv, i, a) { return cv.replace(/^\s+|[\r\n]+$/gm,''); });
+    d = d.map(function(cv) { return cv.replace(/^\s+|[\r\n]+$/gm,''); });
 
     if ((l = d.shift()) !== file_header) {
         console.warn("header not as expected", l);
-        throw new mpsites_import_error(3, "Not a mpsites file");
+        throw new MPsitesImportError("Not a mpsites file");
     }
 
     while((l = d.shift()) !== '##'){
-        if (!d.length) throw new mpsites_import_error(3, "Not a mpsites file");
+        if (!d.length) throw new MPsitesImportError("Not a mpsites file");
     }
 
     while((l = d.shift()) !== '##'){
@@ -81,7 +142,7 @@ function read_mpsites(d, username, key_id, confirm_fn){
     }
     if (fheader.format !== 1) {
         console.log(fheader);
-        throw new mpsites_import_error(1, "Unsupported mpsites format");
+        throw new MPsitesImportError("Unsupported mpsites format");
     }
     if (username && fheader.username && fheader.username !== username) {
         if (!confirm_fn("Username mismatch!\n\nYou may still import this file, "+
@@ -101,36 +162,41 @@ function read_mpsites(d, username, key_id, confirm_fn){
             console.warn("Unexpected sites input", line);
             continue;
         }
-        switch(s[3]){
-          case '20': s[3]='s'; break;
-          case '16': s[3]='x'; break;
-          case '21': s[3]='i'; break;
-          case '19': s[3]='b'; break;
-          case '31': s[3]='p'; break;
-          case '30': s[3]='n'; break;
-          case '17': s[3]='l'; break;
-          case '18': s[3]='m'; break;
-          default:console.log('unknown password type, '+s[3]);
-        }
-        s={
+        ret.push(new Site({
             lastused: s[1],
             timesused: s[2],
-            passtype: s[3],
+            type: parseInt(s[3]),
             passalgo: parseInt(s[4],10),
-            passcnt: parseInt(s[5],10),
-            loginname: s[6],
+            generation: parseInt(s[5],10),
+            username: s[6],
             sitename: s[7],
             sitepass: s[8]
-          };
-        ret.push(s);
+        }));
     }
 
     return ret;
 }
 
+function make_mpsites(key_id, username, stored_sites, alg_min_version, alg_version, as_json) {
+    if (as_json) {
+        let sites = stored_sites.reduce((prev, cur) => Object.assign(prev, site_as_mpjson(cur, alg_min_version)), {});
+        return [JSON.stringify({
+            "export": {
+                "date": new Date().toISOString().slice(0,-2) +'Z',
+                "redacted": true,
+                "format": 1
+            },
+            "user": {
+                "avatar": 0,
+                "full_name": username,
+                "algorithm": alg_version,
+                "key_id": key_id.toUpperCase(),
+                "default_type": 17,
+            },
+            "sites": sites
+        }, null, 2)];
+    }
 
-
-function make_mpsites(key_id, username, stored_sites, alg_min_version, alg_version) {
     var a=[ '# Master Password site export\n',
         '#     Export of site names and stored passwords (unless device-private) encrypted with the master key.\n',
         '#\n',
@@ -150,41 +216,57 @@ function make_mpsites(key_id, username, stored_sites, alg_min_version, alg_versi
         '#               Last     Times  Password                      Login\t                     Site\tSite\n',
         '#               used      used      type                       name\t                     name\tpassword\n'];
 
-    Object.keys(stored_sites).forEach(function(domain){
-        Object.keys(stored_sites[domain]).forEach(function(site){
-            let settings = stored_sites[domain][site],
-                alg_version = alg_min_version,
-                typecode;
-            if (alg_min_version < 3 && !string_is_plain_ascii(site))
-                alg_version = 2;
 
-            switch(settings.type){
-                case 's': typecode = '20'; break;
-                case 'x': typecode = '16'; break;
-                case 'i': typecode = '21'; break;
-                case 'b': typecode = '19'; break;
-                case 'p': typecode = '31'; break;
-                case 'n': typecode = '30'; break;
-                case 'l': typecode = '17'; break;
-                case 'm': typecode = '18'; break;
-                default: throw "unknown password type";
-            }
 
-            a.push( ['2015-03-23T13:06:35Z',
-                     '  ', pad_left(8, '0'),
-                     '  ', pad_left(8, [typecode, ':', alg_version, ':', settings.generation]),
-                     '  ', pad_left(25, settings.username || ''),
-                     '\t', pad_left(25, site),
-                     '\t\n'].join(''));
-        });
-    });
+    for (const site of stored_sites) {
+        a.push(site_as_mpsites_line(site, alg_min_version));
+    }
+
     return a;
+}
+
+function get_sitesearch(sitename) {
+    let y = sitename.split("@");
+    if (y.length > 1)
+        return y[y.length-1];
+    else
+        return sitename;
+}
+
+async function merge_sites(sites, imported_sites, resolveConflict) {
+    let site_index = new Map(sites.map((e, i) => [e.sitename, i]));
+
+    for (let site of imported_sites) {
+        if (!site.url || site.url.length==0)
+            site.url = [get_sitesearch(site.sitename)];
+
+        let conflict_idx = site_index.get(site.sitename);
+
+        if (conflict_idx !== undefined) {
+            let asite = sites[conflict_idx];
+            if (site.equal(asite)) {
+                asite.url = Array.from(new Set([...site.url, ...asite.url]));
+                sites[conflict_idx] = asite;
+            } else {
+                let url = Array.from(new Set([...site.url, ...asite.url]));
+                site = await resolveConflict(site, asite);
+                site.url = url;
+                sites[conflict_idx] = site;
+            }
+        } else {
+            site_index.set(site.sitename, sites.length);
+            sites.push(site);
+        }
+    }
+    return sites;
 }
 
 
 
-window.mpw_utils = {
-    make_mpsites: make_mpsites,
-    read_mpsites: read_mpsites
+return {
+    make_mpsites,
+    read_mpsites,
+    merge_sites,
+    MPsitesImportError
 };
 }());

@@ -1,4 +1,4 @@
-/* Copyright Torbjorn Tyridal 2015
+/* Copyright Torbjorn Tyridal 2015-2021
 
     This file is part of Masterpassword for Firefox (herby known as "the software").
 
@@ -15,118 +15,65 @@
     You should have received a copy of the GNU General Public License
     along with the software.  If not, see <http://www.gnu.org/licenses/>.
 */
-/*jshint browser:true, devel:true */
-/* globals chrome, mpw */
+/* globals browser, chrome */
 
-(function () {
-    "use strict";
+import {SiteStore} from "../lib/sitestore.js";
+import {Site} from "../lib/sites.js";
+import {defer, copy_to_clipboard} from "../lib/utils.js";
+import {parseUri} from "../lib/uritools.js";
+import config from "../lib/config.js";
+import mpw from "../lib/mpw.js";
+import {ui} from "./ui.js";
 
-    function store_update(data) {
-        browser.runtime.sendMessage({action: 'store_update', data: data })
-        .catch(err=>{ console.log("BUG!",err); });
-    }
 
-function parse_uri(sourceUri){
-    // stolen with pride: http://blog.stevenlevithan.com/archives/parseuri-split-url
-    var uriPartNames = ["source","protocol","authority","domain","port","path","directoryPath","fileName","query","anchor"],
-    uriParts = new RegExp("^(?:([^:/?#.]+):)?(?://)?(([^:/?#]*)(?::(\\d*))?)((/(?:[^?#](?![^?#/]*\\.[^?#/.]+(?:[\\?#]|$)))*/?)?([^?#/]*))?(?:\\?([^#]*))?(?:#(.*))?").exec(sourceUri),
-    uri = {};
-    for(var i = 0; i < 10; i++)
-        uri[uriPartNames[i]] = uriParts[i] ? uriParts[i] : "";
-    if(uri.directoryPath.length > 0)
-        uri.directoryPath = uri.directoryPath.replace(/\/?$/, "/");
-    return uri;
+const zip = (a, b) => Array.from(Array(Math.max(b.length, a.length)), (_, i) => [a[i], b[i]]);
+function arrayEqualElements(a,b) {
+    const z = zip(a,b)
+    let i = 0;
+    for (i = 0; i < z.length; i++)
+        if (z[i][0] != z[i][1]) break;
+    return i
 }
 
-let ui = {
-    hide: function(el) {
-        if (typeof el === 'string')
-            el = document.querySelector(el);
-        el.style.display = 'none';
-    },
-    show: function(el) {
-        if (typeof el === 'string')
-            el = document.querySelector(el);
-        el.style.display = '';
-    },
+export function scoreSiteByDomain(site, domainSplitReversed, minScore) {
+    const siteurls = site.url.map(u => u.split('.').reverse());
 
-    is_visible: function(el) {
-        if (typeof el === 'string')
-            el = document.querySelector(el);
-        el = el.style;
-        return el.display !== 'none';
-    },
+    let score = Math.max(...siteurls.map(u => arrayEqualElements(u, domainSplitReversed)));
 
-    toggle: function(el) {
-        if (typeof el === 'string')
-            el = document.querySelector(el);
-        el = el.style;
-        el.display = el.display === 'none' ? '' : 'none';
-        return el.display === '';
-    },
+    // strip any "name@" if it exists
+    // and score on sitename even if not matching on url
+    let sitenameurl = site.sitename.replace(/[^@]*(?=@)@?(.*)$/, '$1');
+    sitenameurl = sitenameurl.split('.').reverse();
+    score = Math.max(score, arrayEqualElements(sitenameurl, domainSplitReversed));
 
-    user_warn: function(s) {
-        let e = document.querySelector('#usermessage');
-        e.className = 'warning_message';
-        e.textContent = s;
-        return e;
-    },
+    return score >= minScore ? score : 0;
+}
 
-    user_info: function(s) {
-        let e = document.querySelector('#usermessage');
-        e.className = 'info_message';
-        e.textContent = s;
-    },
+(function () {
+"use strict";
 
-    domain: function(v) {
-        return document.querySelector('#domain').value;
-    },
+let sitestore;
 
-    sitename: function(v) {
-        let e = document.querySelector('#sitename'),
-            r = e.value;
-        if (v !== undefined)
-            e.value = v;
-        return r;
-    },
+const runtimeSendMessage = (typeof browser !== 'undefined' ?
+                       browser.runtime.sendMessage :
+                       (msg) => new Promise(suc => chrome.runtime.sendMessage(msg, suc)));
 
-    siteconfig: function(type, generation, username) {
-        let t = document.querySelector('#passwdtype'),
-            g = document.querySelector('#passwdgeneration'),
-            n = document.querySelector('#loginname');
-        let ret = {type: t.value, generation: g.value, username: n.value};
-        if (type && generation && username !== undefined) {
-            t.value = type;
-            g.value = generation;
-            n.value = username;
-        }
-        return ret;
-    },
+function masterkey_set(masterkey, nosave) {
+    runtimeSendMessage({action: 'masterkey_set',
+                        masterkey: masterkey,
+                        use_pass_store: config.pass_store && !nosave,
+                        keep_time: config.passwdtimeout})
+    .catch(err=>{ console.log("BUG!",err); });
+}
 
-    thepassword: function(visible, real) {
-        let e = document.querySelector('#thepassword');
-        if (real)
-            e.setAttribute('data-pass', real);
-        if (e.getAttribute('data-visible') === 'true')
-            e.textContent = real || visible;
-        else {
-            e.innerHTML = '';
-            e = e.appendChild(document.createElement('a'));
-            e.href = '';
-            e.id = 'showpass';
-            e.textContent = visible;
-        }
-    },
-
-    verify: function(s) {
-        document.querySelector('#verify_pass_fld').textContent = s;
-    }
-
-};
+function masterkey_clear() {
+    runtimeSendMessage({action: 'masterkey_set', masterkey: null, use_pass_store: false })
+    .catch(err=>{ console.log("BUG!",err); });
+}
 
 function get_active_tab_url() {
-    var ret = new Promise(function(resolve, fail){
-        chrome.tabs.query({active:true,windowType:"normal",currentWindow:true}, function(tabres){
+    var ret = new Promise(resolve => {
+        chrome.tabs.query({active:true,currentWindow:true}, function(tabres){
         if (tabres.length !== 1) {
             ui.user_warn("Error: bug in tab selector");
             console.log(tabres);
@@ -138,168 +85,251 @@ function get_active_tab_url() {
     return ret;
 }
 
-function copy_to_clipboard(mimetype, data) {
-    document.oncopy = function(event) {
-        event.clipboardData.setData(mimetype, data);
-        event.preventDefault();
-    };
-    document.execCommand("Copy", false, null);
-    document.oncopy=null;
-}
 function update_page_password_input(pass, username) {
-    browser.runtime.sendMessage({action: 'update_page_password',
+    config.get(['auto_submit_pass', 'auto_submit_username'])
+    .then(v => {
+        const url_has_single_site = session_store.num_related_sites == 1;
+        let allow_submit = url_has_single_site && v.auto_submit_pass;
+        if (!v.auto_submit_username)
+            username = '';
+
+        return runtimeSendMessage({action: 'update_page_password',
         pass: pass,
         username: username,
         allow_subframe: true,
-        allow_submit: !ui.is_visible('#storedids_dropdown')})
+        allow_submit: allow_submit});
+    })
     .catch(e=>{
-        console.error(e);
+        console.info(e);
     });
 }
 
-var mpw_session,
+var mpw_promise = defer(),
     session_store = {};
 
-function recalculate(hide_after_copy, retry) {
-    ui.thepassword("(calculating..)");
-    ui.user_info("Please wait...");
-    var key_id_mismatch = false;
-
-    if (!mpw_session) {
-        mpw_session = mpw( session_store.username, session_store.masterkey, session_store.max_alg_version );
-
+function resolve_mpw(masterkey) {
+    mpw_promise.resolve(
+        mpw(
+            config.username,
+            masterkey,
+            config.algorithm_version));
+    mpw_promise.then(mpw_session => {
         ui.verify("Verify: " + mpw_session.sitepassword(".", 0, "nx"));
 
         var key_id = mpw_session.key_id();
-        if (session_store.key_id && key_id !== session_store.key_id) {
-            warn_keyid_not_matching();
-            key_id_mismatch = true;
-            store_update({
-                username: session_store.username,
-                masterkey: session_store.masterkey});
-        }
-        else {
-            session_store.key_id = key_id;
-            store_update({
-                username: session_store.username,
-                masterkey: session_store.masterkey,
-                key_id: key_id});
-        }
-    }
+        let has_known_keyid = !!config.key_id;
 
-    if (!ui.sitename()) {
-        ui.thepassword("(need a sitename!)");
-        if (!key_id_mismatch)
-            ui.user_info("need sitename");
-        return;
-    }
+        if (!has_known_keyid) {
+            config.set({ key_id: key_id});
+        }
+        else if (key_id !== config.key_id) {
+            warn_keyid_not_matching(()=>{
+                config.set({ key_id });
+                masterkey_set(masterkey);
+                ui.clear_warning();
+                ui.user_info("ready");
+            });
+        }
+        // always call masterkey_set to reset password timer
+        masterkey_set(masterkey, has_known_keyid);
+    })
+    .catch(console.error);
+}
 
+function recalculate() {
     let siteconfig = ui.siteconfig();
     siteconfig.generation = parseInt(siteconfig.generation, 10);
 
-    console.debug("calc password " +
-            ui.sitename() +
-            " . " +
-            siteconfig.generation +
-            " . " +
-            siteconfig.type);
+    mpw_promise.then(mpw_session => {
+        if (!ui.sitename()) {
+            ui.thepassword("(need a sitename!)");
+            ui.user_info("need sitename");
+            return;
+        } else {
+            ui.thepassword("(calculating..)");
+            ui.user_info("Please wait...");
+        }
 
-    var i,
-        pass = mpw_session.sitepassword(
+        console.debug("calc password " +
+                ui.sitename() +
+                " . " +
+                siteconfig.generation +
+                " . " +
+                siteconfig.type, ui.sitename(), !!ui.sitename());
+
+
+        let pass = mpw_session.sitepassword(
                 ui.sitename(),
                 siteconfig.generation,
                 siteconfig.type);
 
         ui.thepassword(Array(pass.length+1).join("\u00B7"), pass); // &middot;
 
-        if (session_store.pass_to_clipboard)
+        if (config.pass_to_clipboard)
             copy_to_clipboard("text/plain", pass);
-        update_page_password_input(pass, siteconfig.username);
-        if (hide_after_copy) {
-            addon.port.emit('close');
-        }
-        if (!key_id_mismatch) {
-            if (session_store.pass_to_clipboard)
-                ui.user_info("Password for " + ui.sitename() + " copied to clipboard");
-            else
-                ui.user_info("Password for " + ui.sitename() + " ready");
-        }
-}
-
-function update_with_settings_for(domain) {
-    var keys, site;
-
-    if (typeof session_store.sites === 'undefined' || domain === '' ||
-        typeof session_store.sites[domain] === 'undefined') {
-        keys = [];
-    } else {
-        keys = Object.keys(session_store.sites[domain]);
-        site = session_store.sites[domain][keys[0]];
-    }
-
-    if (keys.length>1)
-        ui.show('#storedids_dropdown');
-    else if (keys.length === 0) {
-        keys[0] = domain;
-        site = { generation: 1,
-                 username: '',
-                 type: session_store.defaulttype
-        };
-    }
-
-    ui.sitename(keys[0]);
-    ui.siteconfig(site.type, site.generation, site.username || '');
-}
-
-function popup(session_store_, opened_by_hotkey) {
-    var recalc = false;
-
-    session_store = session_store_;
-    if (!session_store.username || !session_store.masterkey) {
-        ui.hide('#main');
-        ui.show('#sessionsetup');
-        mpw_session = undefined;
-        if (!session_store.username)
-            window.setTimeout(function(){
-                document.querySelector('#username').focus();
-            }, 15);
-        else {
-            document.querySelector('#username').value = session_store.username;
-            window.setTimeout(function(){
-                document.querySelector('#masterkey').focus();
-            }, 15);
-        }
-    } else {
-        recalc = true;
-        ui.show('#main');
-    }
-
-    get_active_tab_url()
-    .then(function(url){
-        if (url.startsWith('about:') || url.startsWith('resource:') || url.startsWith('moz-extension:'))
-            url = '';
-        var domain = parse_uri(url).domain.split("."),
-            significant_parts = 2;
-        if (domain.length > 2 && domain[domain.length-2].toLowerCase() === "co")
-            significant_parts = 3;
-        while(domain.length > 1 && domain.length > significant_parts)
-            domain.shift();
-        domain = domain.join(".");
-        for (let d of document.querySelectorAll('.domain'))
-            d.value = domain;
-        update_with_settings_for(domain);
-        if(recalc) {
-            recalculate(opened_by_hotkey);
-        }
+        if (ui.domain() !== '')
+            update_page_password_input(pass, siteconfig.username);
+        //if (hide_after_copy) {
+        //    addon.port.emit('close');
+        //}
+        if (config.pass_to_clipboard)
+            ui.user_info("Password for " + ui.sitename() + " copied to clipboard");
+        else
+            ui.user_info("Password for " + ui.sitename() + " ready");
     })
+    .catch(console.error);
+}
+
+function prepareSitelist(sites, domain, basedomain)
+{
+    const domainSplitReversed = domain.split('.').reverse();
+    const minScoreForRelated = basedomain.split('.').length;
+
+    let scoredSites = sites.map(s=>[scoreSiteByDomain(s, domainSplitReversed, minScoreForRelated),s]);
+
+    scoredSites.sort((a,b) => {
+        if (a[0] > b[0]) { return -1; }
+        if (a[0] < b[0]) { return 1; }
+        if (a[1].sitename < b[1].sitename) { return -1; }
+        return 1;
+    });
+
+    let num_related = scoredSites.findIndex(s=>s[0]==0);
+    if (num_related == -1) num_related=scoredSites.length;
+
+    if (!num_related && basedomain) {
+        console.log("insert default site");
+        scoredSites.unshift([1, new Site({
+            url:[basedomain],
+            sitename:basedomain,
+            generation: 1,
+            username: '',
+            type: config.defaulttype})]);
+        num_related++;
+    }
+
+    // insert a horizontal split in StoredIds separating related from unrelated sites
+    if (basedomain)
+        scoredSites.splice(num_related, 0, [0, null]);
+
+    return [scoredSites.map(s=>s[1]), num_related];
+}
+
+function onDataLoadedUpdateUI(activeurl, sites)
+{
+    const urlParsed = parseUri(activeurl);
+    const protocolsIgnored = ["", "about", "resource", "moz-extension", "chrome-extension", "chrome", "edge", "brave"];
+    const domain = protocolsIgnored.includes(urlParsed.protocol) ? '' : urlParsed.domain;
+    const basedomain = getBaseDomain(domain);
+
+    let [stored_sites, num_related] = prepareSitelist(sites, domain, basedomain);
+    session_store.stored_sites = stored_sites;
+
+    for (let d of document.querySelectorAll('.domain'))
+        d.value = basedomain;
+
+    ui.setStoredIds(stored_sites);
+    session_store.num_related_sites = num_related;
+
+    if (basedomain) { // expects there to be atleast one related site.. saved or default
+        let first = stored_sites[0];
+        ui.sitename(first.sitename);
+        ui.siteconfig(first.type, first.generation, first.username || '');
+    } else
+         ui.siteconfig(config.defaulttype, 1, '');
+}
+
+// The baseDomain is also known as "eTLD+1", eg www.example.com -> example.com
+// and shop.amazon.co.uk -> amazon.co.uk
+function getBaseDomain(domain) {
+    if (!domain) return '';
+
+    let domain_parts = domain.split(".");
+    let significant_parts = 2;
+    const common_slds = ['co','com','gov','govt','net','org','edu','priv','ac'];
+    let second_level_domain = domain_parts[domain_parts.length-2].toLowerCase();
+    if (domain_parts.length > 2 && common_slds.includes(second_level_domain))
+        significant_parts = 3;
+
+    return domain_parts.slice(-significant_parts).join('.');
+}
+
+function showSessionSetup() {
+    ui.hide('#main');
+    ui.show('#sessionsetup');
+
+    if (!config.username) {
+        ui.focus('#username');
+    } else {
+        ui.username(config.username);
+        ui.focus('#masterkey');
+    }
+}
+
+function showMain() {
+    ui.hide('#sessionsetup');
+    ui.show('#main');
+}
+
+function popup(masterkey) {
+    if (config.username && masterkey) {
+        showMain();
+        setTimeout(()=>{ resolve_mpw(masterkey);}, 1); // do later so page paints as fast as possible
+    } else {
+        showSessionSetup();
+    }
+
+    let urlpromise = get_active_tab_url()
     .catch(function(x) { //jshint ignore:line
         console.error('get_active_tab_url failed',x);
+        ui.user_warn("failed to get tab url");
+        setTimeout(()=>{ui.clear_warning()}, 2000);
+        return '';
     });
+
+
+    sitestore = new SiteStore(config.use_sync ? chrome.storage.sync : chrome.storage.local);
+    let sites = sitestore.get()
+    .catch(x=>{
+        console.error('sitestore.get failed',x);
+        ui.user_warn("failed to get sites");
+        setTimeout(()=>{ui.clear_warning()}, 2000);
+        return [];
+    });
+
+    let dataloaded = Promise.all([urlpromise,  sites])
+    .then((x)=>onDataLoadedUpdateUI(x[0], x[1]))
+    .catch(err => console.error(err));
+
+    Promise.all([mpw_promise, dataloaded])
+    .then(recalculate)
+    .catch(err => console.error(err));
 }
 
+window.addEventListener('test_reset', () => {
+    mpw_promise = defer();
+    session_store = {};
+});
+
 window.addEventListener('load', function () {
-    browser.runtime.sendMessage({action: 'store_get', keys:
-        ['sites', 'username', 'masterkey', 'key_id', 'max_alg_version', 'defaulttype', 'pass_to_clipboard']})
+    if (window.running_under_test)
+    {
+        window.running_under_test = undefined;
+        return;
+    }
+
+    config.get([
+        'username',
+        'key_id',
+        'defaulttype',
+        'pass_to_clipboard',
+        'pass_store',
+        'passwdtimeout',
+        'use_sync',
+    ])
+    .then(v=>{
+        return runtimeSendMessage({action: 'masterkey_get', use_pass_store: !!v.pass_store});
+    })
     .then(data => {
         if (data.pwgw_failure) {
             let e = ui.user_warn("System password vault failed! ");
@@ -308,9 +338,10 @@ window.addEventListener('load', function () {
             e.target = "_blank";
             e.textContent = "Help?";
             data.masterkey=undefined;
-        } else
+        } else {
             ui.user_info("");
-        popup(data);
+        }
+        popup(data.masterkey);
     })
     .catch(err => {
         console.error(err);
@@ -323,88 +354,80 @@ document.querySelector('#sessionsetup > form').addEventListener('submit', functi
     ev.preventDefault();
     ev.stopPropagation();
 
-    let username = document.querySelector('#username'),
-        masterkey= document.querySelector('#masterkey');
+    let username = ui.username(),
+        masterkey= ui.masterkey();
 
-    if (username.value.length < 2) {
+    if (username.length < 2) {
         ui.user_warn('Please enter a name (>2 chars)');
-        username.focus();
+        ui.focus('#username');
     }
-    else if (masterkey.value.length < 2) {
+    else if (masterkey.length < 2) {
         ui.user_warn('Please enter a master key (>2 chars)');
-        masterkey.focus();
+        ui.focus('#masterkey');
     }
     else {
-        session_store.username = username.value;
-        session_store.masterkey= masterkey.value;
-        masterkey.value = '';
+        ui.masterkey('');
+
+        config.set({username});
 
         ui.hide('#sessionsetup');
         ui.show('#main');
-        recalculate();
+        resolve_mpw(masterkey);
     }
 });
 
-document.querySelector('#storedids_dropdown').addEventListener('click', function(ev){
-    let sids = document.querySelector('#storedids');
-
-    if (ui.toggle(sids)) {
-        sids.innerHTML = '';
-        Object.keys(session_store.sites[ui.domain()]).forEach(function(site){
-            sids.appendChild(document.createElement('li')).textContent = site;
-        });
-        ui.show(sids);
-        sids.focus();
-    }
-});
-
-document.querySelector('#storedids').addEventListener('click', function(ev) {
-    let site = ev.target.textContent,
-        val = session_store.sites[ui.domain()][site];
-    ui.sitename(site);
-    ui.siteconfig(val.type, val.generation, val.username || '');
-    ui.hide(ev.target.parentNode);
-    ev.target.parentNode.blur();
-    window.setTimeout(recalculate, 1);
-});
-
-document.querySelector('#storedids').addEventListener('blur', e=>{
-    window.setTimeout(()=>{
-        ui.hide(document.querySelector('#storedids'));
-    },1);
-});
-
-
-
-function save_site_changes(){
-    let domain = ui.domain();
-
-    if (typeof session_store.sites === 'undefined')
-        session_store.sites = {};
-    if (typeof session_store.sites[domain] === 'undefined')
-        session_store.sites[domain] = {};
-
-    session_store.sites[domain][ui.sitename()] = ui.siteconfig();
-
-    if (domain !== '')
-        store_update({sites: session_store.sites});
-
-    if (Object.keys(session_store.sites[domain]).length>1)
-        ui.show('#storedids_dropdown');
-}
-
-function warn_keyid_not_matching()
+function warn_keyid_not_matching(ok_cb)
 {
     console.debug("keyids did not match!");
     let e = ui.user_warn("Master password possible mismatch! ");
     e = e.appendChild(document.createElement('button'));
-    e.id = 'change_keyid_ok';
     e.setAttribute('title', "set as new");
     e.textContent = "OK";
+    e.onclick = ok_cb;
 }
 
 document.querySelector('#main').addEventListener('change', function(ev){
-        save_site_changes();
+    let sitename = ui.sitename();
+    let domain = ui.domain();
+    const target_is_sitename_select = ev.target.id === 'sitename';
+
+    const siteidx = session_store.stored_sites.findIndex(e => e ? e.sitename == sitename : false);
+    let site = siteidx != -1 ? session_store.stored_sites[siteidx] : null;
+
+    if (!site) {
+        if (!target_is_sitename_select) {
+            // we would get here if the default-insert is not in stored_sites though...
+            console.log("impossible condition?");
+            let props = {sitename: sitename, url:[domain]};
+            Object.assign(props, ui.siteconfig());
+            site = new Site(props);
+        } else {
+            site = new Site({sitename: sitename, url:[domain], type: config.defaulttype, generation: 1, username:''})
+        }
+    } else {
+        let domainquery = new RegExp('^(.*\\.)?' + domain.replace('.', '\\.') + '$', 'i');
+        if (! site.url.map(u => domainquery.test(u)).some(e=>e))
+            site.url = Array.from(new Set([...site.url, domain]));
+        if (!target_is_sitename_select)
+            Object.assign(site, ui.siteconfig());
+    }
+    if (target_is_sitename_select)
+        ui.siteconfig(site.type, site.generation, site.username);
+
+    if (domain !== '' && !chrome.extension.inIncognitoContext) {
+        sitestore.addOrReplace(site)
+        .catch(e => {
+            console.error(e);
+            ui.user_warn("save failed: "+e.message);
+        });
+    }
+
+    // TODO: remove default site from stored_sites if it exists and it's not the one we're changing
+    // --> meaning the user wanted a different sitename for this url
+
+    //     if (session_store.related_sites.length > 1)
+    //         ui.show('#storedids_dropdown');
+
     recalculate();
 });
 
@@ -419,7 +442,7 @@ document.querySelector('#thepassword').addEventListener('click', function(ev) {
     ev.stopPropagation();
 });
 
-document.querySelector('#copypass').addEventListener('click', function(ev) {
+document.querySelector('#copypass').addEventListener('click', function() {
     let pass = document.querySelector('#thepassword').getAttribute('data-pass');
     copy_to_clipboard("text/plain", pass);
     if (pass && pass !== '')
@@ -428,27 +451,19 @@ document.querySelector('#copypass').addEventListener('click', function(ev) {
 
 document.querySelector('body').addEventListener('click', function(ev) {
     if (ev.target.classList.contains('btnconfig')) {
-        chrome.tabs.create({'url': '../options/index.html'}, function(tab) { });
+        chrome.tabs.create({'url': '/src/options/index.html'}, function() { });
     }
     else if (ev.target.classList.contains('btnlogout')) {
-        session_store.masterkey = null;
-        store_update({masterkey: null});
-        popup(session_store);
+        masterkey_clear();
+        mpw_promise = defer();
+        ui.clear_warning();
         ui.user_info("Session destroyed");
-    }
-    else if (ev.target.id === 'change_keyid_ok') {
-        session_store.key_id = mpw_session.key_id();
-        store_update({
-            username: session_store.username,
-            masterkey: session_store.masterkey,
-            key_id: session_store.key_id,
-            force_update: true
-        });
-        ui.user_info("ready");
+        console.log("session destroyed");
+        popup();
     }
 });
 
-document.querySelector('#siteconfig_show').addEventListener('click', function(ev) {
+document.querySelector('#siteconfig_show').addEventListener('click', function() {
     let sc = document.querySelector('#siteconfig');
     sc.style.transform = 'scale(0,0)';
     sc.style.transformOrigin = '0 0';

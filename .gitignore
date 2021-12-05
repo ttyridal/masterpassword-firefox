@@ -1,2 +1,11 @@
 /ext/data/*.png
 /ext/webextension/icons/*
+/ext/chromeext/icons
+/ext/chromeext/src
+/builds
+node_modules/
+scrypt.js
+scrypt-asm.js
+*.msi
+*.exe
+/libscrypt/crypto_scrypt-nosse-nommap.c

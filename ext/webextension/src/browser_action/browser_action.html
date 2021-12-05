@@ -49,11 +49,7 @@
 
         <input id="domain" class="domain" type="hidden"/>
         <div class="content valign_mid">
-            <div class="dropdown" style="flex:1">
-                <input id="sitename" class="dropdown" type="text" placeholder="site"/>
-                <ul id="storedids" style="display:none"></ul>
-            </div>
-            <button id="storedids_dropdown" style="display: none;"><i class="fa fa-chevron-down fa-2" aria-hidden="true"></i></button>
+            <mp-combobox id="sitename" placeholder="site"></mp-combobox>
         </div>
 
         <div class="content line-heigh valign_mid" id="passwd">
@@ -93,8 +89,7 @@
 
     <div class="container content" id="usermessage">loading...</div>
 
-<script src="../lib/scrypt-asm.js"></script>
-<script src="../lib/mpw.js"></script>
-<script src="./main_popup.js"></script>
+<script async src="mpcombobox.js"></script>
+<script type="module" src="./main_popup.js"></script>
 </body>
 </html>

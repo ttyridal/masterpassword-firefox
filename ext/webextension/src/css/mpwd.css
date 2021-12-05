@@ -1,4 +1,15 @@
 html{box-sizing:border-box}*,*:before,*:after{box-sizing:inherit}
+:root {
+    --cb-border: 0;
+    --text-color: #abb2b6;
+    --main-bg-color: #21252b;
+    --input-bg-color: #1b1d23;
+    --cb-background: #1b1d23;
+    --header-bg-color: #373d47;
+    --default-padding: 0.2rem;
+    --font-size-big: 1.4rem;
+    --cb-input-height: 2rem;
+}
 header,main,div,body,html,h1,h2,h3,h4,p,img,span,button,input,select,textarea,form {margin:0;padding:0;border:0;}
 h1,h2,h3,h4,h5,h6 {font-weight: normal;}
 button,input,textarea,optgroup{font-weight:bold;}
@@ -12,9 +23,10 @@ html{
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Helvetica Neue", sans-serif;
   font-size: 14pt;
   line-height: 1.5em;
-  color: #abb2b6;
-  background-color: #21252b;
+  color: var(--text-color);
+  background-color: var(--main-bg-color);
 }
+body { font-size: 100%;}
 
 main {
     display: block;
@@ -34,7 +46,7 @@ main a, main a:link,
 }
 
 main h3 {
-    margin-bottom:0.2em;
+    margin-bottom:var(--default-padding);
     font-size: 1.2em;
     color: #ddd;
 }
@@ -43,7 +55,7 @@ a:visited,
 a:hover,
 a:link,
 a:active {
-  color: #abb2b6;
+  color: var(--text-color);
   text-decoration: none;
 }
 
@@ -59,8 +71,8 @@ a:active {
 
 button {
   color: #969eac;
-  background-color: #373d47;
-  background-image: linear-gradient(lighten(#383e48, 2%), #373d47);
+  background-color: var(--header-bg-color);
+  background-image: linear-gradient(lighten(#383e48, 2%), var(--header-bg-color));
   min-width: 1.8em;
   min-height: 1.8em;
   border: 1px solid #181a1f;
@@ -69,65 +81,43 @@ button {
   text-align: center;
   white-space: nowrap;
   vertical-align: middle;
-  cursor: default;
+  cursor: pointer;
 }
 
-button:focus, input:focus {
+button:focus, input:focus, mp-combobox:focus-within {
   outline-color: #6696e7;
-  outline-width: thin;
+  outline-width: 2px;
+  outline-style: solid; /*auto;*/
 }
 
-input, select {
-    background-color: #1b1d23;
+input,
+select,
+mp-combobox,
+no-op {
     color: #d7dae0;
-    height: 2em;
-    padding-left: 0.3em;
-    padding-right: 0.3em;
-    vertical-align: middle;
-    font-size: 1.4em;
+    --height-pad: 0.2em;
     width:100%;
-}
-
-div.dropdown {
-    position:relative;
-    background-color: #1b1d23;
-}
-div.dropdown > ul {
-    list-style-type: none;
-    background-color: #1b1d23;
-    z-index: 100;
-    position:absolute;
-    border: 0;
-    margin-top:-0.2em;
-    width:100%;
-    height:5em;
-    font-size: 1.1em;
+    height: calc(var(--cb-input-height) + 2 * var(--height-pad));
+    --cb-padding: 0 0.3em;
+    --cb-input-font: var(--font-size-big);
+    --cb-drop-font: 1.1em;
     vertical-align: middle;
-    overflow: auto;
-    padding:0
+    padding: var(--height-pad) 0;
 }
-div.dropdown > ul > li {
-    padding: 0.1em;
-    padding-left: 0.3em;
-}
-div.dropdown > ul > li:hover {
-    background: #abb2b6;
-    color: #000000;
+input, select {
+    padding: 0.2em 0.3em;
+    background: var(--input-bg-color);
+    font-size: var(--font-size-big);
 }
 
-
+*::-moz-placeholder,
 *::-webkit-input-placeholder {
-    color: #abb2b6;
-    opacity: 0.6;
-    font-size: 0.8em;
-}
-*::-moz-placeholder {
-    color: #abb2b6;
+    color: var(--text-color);
     opacity: 0.6;
     font-size: 0.8em;
 }
 
-.text-big { font-size: 1.4em; }
+.text-big { font-size: var(--font-size-big); }
 .text-bigger { font-size: 2em; }
 
 
@@ -143,12 +133,11 @@ body > * {
 }
 
 header {
-  background-color: #373d47;
-  color: #abb2b6;
+  background-color: var(--header-bg-color);
+  color: var(--text-color);
   justify-content: left;
   margin-bottom: 0.8em;
-  padding-top: 0.2em;
-  padding-bottom: 0.2em;
+  padding: var(--default-padding) 0;
 }
 header > * {
   vertical-align:middle;
@@ -159,7 +148,7 @@ header h1 { display:inline-block; font-size: 1.5em; font-weight: 200; }
 .configbuttons {
     position:fixed;
     top:0.1em;
-    right:0.2em;
+    right:var(--default-padding);
     font-size: 2em;
 }
 .configbuttons > div {
@@ -187,8 +176,9 @@ header h1 { display:inline-block; font-size: 1.5em; font-weight: 200; }
 #main > * {
     margin-bottom: 0.6em;
 }
+
 #storedids_dropdown {
-    margin-left: 0.5em;
+    margin-left: 0.2rem;
 }
 
 #thepassword {
@@ -206,6 +196,7 @@ button#siteconfig_show {
 }
 #siteconfig {
     overflow:hidden;
+    padding-bottom: 0.5em;
 }
 #siteconfig > label {
     margin-left: 1em;
@@ -215,7 +206,8 @@ button#siteconfig_show {
 }
 #siteconfig > input,
 #siteconfig > select,
-#siteconfig > option {
+#siteconfig > option,
+no-op {
     font-size: 1em;
     font-weight: normal;
     width: 6em;
@@ -226,7 +218,7 @@ button#siteconfig_show {
 .verify_pass {
   width: 100%;
   font-size: 0.70em;
-  bottom: 1.4em;
+  bottom: var(--font-size-big);
   position: fixed;
 }
 
@@ -272,10 +264,11 @@ button#siteconfig_show {
 
 /* Options page styles */
 .accordion {
-  width: 50em;
   margin-bottom:1em;
   box-shadow:0 2px 4px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12)!important;
   margin-left: 1em;
+  min-width: 40em;
+  margin-right: 2em;
   padding-bottom: 1em;
   overflow: hidden;
 }
@@ -286,7 +279,7 @@ button#siteconfig_show {
 }
 .accordion > h2:after {
     position:absolute;
-    right:0.2em;
+    right:var(--default-padding);
     content: '+';
 }
 .accordion.in > h2:after {
@@ -300,6 +293,16 @@ button#siteconfig_show {
   height: auto;
 }
 
+.configgroup {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+}
+
+.configsubgroup.left {
+    padding-right:5em;
+}
+
 .configitem > label {
     margin-left: 1em;
     font-size: 0.8em;
@@ -309,7 +312,8 @@ button#siteconfig_show {
 
 .configitem > input,
 .configitem > select,
-.configitem > option {
+.configitem > option,
+no-op {
     margin-top:1.5em;
     margin-left:-8em;
     font-size: 1em;
@@ -318,10 +322,25 @@ button#siteconfig_show {
     height: 1.8em;
     border: 0;
 }
+.configitem > input[type=checkbox] {
+    margin-left: -2em;
+    margin-top:0.2em;
+}
 
 #stored_sites {
     width:100%;
     text-align: center;
+}
+#stored_sites > tbody > tr > td:first-child {
+    text-align: left;
+    text-overflow:ellipsis;
+}
+#stored_sites > tbody > tr > td:nth-child(2) {
+    min-width:17em;
+}
+
+#stored_sites input {
+    text-overflow:ellipsis;
 }
 
 #stored_sites input {
@@ -350,4 +369,40 @@ button#siteconfig_show {
     background:white;
 	color:black;
     padding: 1em;
+}
+
+.inset {
+    margin-left: 2em;
+}
+
+#messagebox {
+    width: 22vw;
+    position: fixed;
+    right:-22vw;
+    top:1em;
+    background: var(--text-color);
+    color: var(--main-bg-color);
+/*    transition: right 0.2s cubic-bezier(0,.74,.7,1.16);  */
+    transition: right 0.3s cubic-bezier(0,1.4,1,1);
+}
+#messagebox > div.progress {
+    background:blue;
+    display:block;
+    height:3px;
+    width:100%;
+    margin:0 0;
+    position: absolute;
+    bottom:0;
+    left:0;
+    transition: width 0.3s linear;
+}
+#messagebox.visible {
+    right:0vw;
+}
+#messagebox.visible > div.progress {
+    width:0;
+    transition: width 5s linear;
+}
+#messagebox_text {
+    margin: 0.5em;
 }

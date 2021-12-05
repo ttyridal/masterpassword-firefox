@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title></title>
+<meta charset="UTF-8">
+<style>
+body { max-width: 30em; }
+div.item {
+    break-inside: avoid;
+    width:100%;
+    height:3em;
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    align-content: center;
+    padding: 0.5em 0;
+    }
+div.item:hover {
+    background-color: rgba(0,0,0,0.03);
+}
+
+label {
+    display:block;
+    flex-grow: *;
+}
+
+input,
+select,
+option,
+no-op {
+    display:block;
+    border: 0;
+    width: 14em;
+    background-color: #f0f0f0;
+}
+select > option { background: white}
+input[type=checkbox] {
+    width:1em;
+}
+
+</style>
+</head>
+<body>
+    <div class="item">
+        <label for="passwdtype">Default password type</label>
+            <select id="passwdtype">
+            <option value="x">Maximum
+            <option value="l" selected>Long
+            <option value="m">Medium
+            <option value="b">Basic
+            <option value="s">Short
+            <option value="i">Pin
+            <option value="n">Name
+            <option value="p">Phrase
+            <option value="nx">Name [V]
+            <option value="px">Phrase [V]
+        </select>
+    </div>
+    <div class="item">
+        <label for="passwdtimeout">Remember password</label>
+            <select id="passwdtimeout">
+            <option value="0">Never
+            <option value="5">5 minutes
+            <option value="15">15 minutes
+            <option value="30">30 minutes
+            <option value="60">1 hour
+            <option value="480">8 hours
+            <option value="-1" selected>Until closed
+        </select>
+    </div>
+    <div class="item">
+        <label for="pass_to_clipboard">Copy password to clipboard</label>
+            <input id="pass_to_clipboard" type="checkbox"/>
+    </div>
+    <div class="item">
+        <label for="auto_submit_pass">Send submit after injecting password</label>
+            <input id="auto_submit_pass" type="checkbox"/>
+    </div>
+    <div class="item">
+        <label for="auto_submit_username">Inject username to page</label>
+            <input id="auto_submit_username" type="checkbox"/>
+    </div>
+    <div class="item">
+        <label for="pass_store">Use OS' password store</label>
+            <input id="pass_store" type="checkbox"/>
+    </div>
+    <div class="item">
+        <label for="use_sync">Let browser sync site data</label>
+            <input id="use_sync" type="checkbox"/>
+    </div>
+<script type="module" src="globaloptions.js"></script>
+</body>
+</html>

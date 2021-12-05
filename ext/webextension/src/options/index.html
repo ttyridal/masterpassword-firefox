@@ -1,6 +1,6 @@
 <!doctype html>
 <!--
- Copyright Torbjorn Tyridal 2015
+ Copyright Torbjorn Tyridal 2015-2021
 
     This file is part of Masterpassword for Firefox (herby known as "the software").
 
@@ -32,54 +32,62 @@
     </header>
     <div class="container accordion">
         <h2 class="accordion_toggle">Global settings</h2>
-        <div>
-            <div class="configitem">
-                <label class="w3-label w3-small w3-text-white" for="passwdtype">Default password type:</label>
-                 <select class="w3-select w3-small w3-border" id="passwdtype">
-                    <option value="x">Maximum
-                    <option value="l">Long
-                    <option value="m">Medium
-                    <option value="b">Basic
-                    <option value="s">Short
-                    <option value="i">Pin
-                    <option value="n">Name
-                    <option value="p">Phrase
-                    <option value="nx">Name [V]
-                    <option value="px">Phrase [V]
-                </select>
+        <div class="configgroup">
+            <div class="configsubgroup left">
+                <div class="configitem">
+                    <label class="w3-label w3-small w3-text-white" for="passwdtype">Default password type:</label>
+                    <select class="w3-select w3-small w3-border" id="passwdtype">
+                        <option value="x">Maximum
+                        <option value="l">Long
+                        <option value="m">Medium
+                        <option value="b">Basic
+                        <option value="s">Short
+                        <option value="i">Pin
+                        <option value="n">Name
+                        <option value="p">Phrase
+                        <option value="nx">Name [V]
+                        <option value="px">Phrase [V]
+                    </select>
+                </div>
+                <div class="configitem">
+                    <label class="w3-label w3-small w3-text-white" for="passwdtimeout">Remember password:</label>
+                    <select class="w3-select w3-small w3-border" id="passwdtimeout">
+                        <option value="0">Never
+                        <option value="5">5 minutes
+                        <option value="15">15 minutes
+                        <option value="30">30 minutes
+                        <option value="60">1 hour
+                        <option value="480">8 hours
+                        <option value="-1">Until closed
+                    </select>
+                </div>
             </div>
-            <div class="configitem">
-                <label class="w3-label w3-small w3-text-white" for="passwdtimeout">Remember password:</label>
-                <select class="w3-select w3-small w3-border" id="passwdtimeout">
-                    <option value="0">Never
-                    <option value="5">5 minutes
-                    <option value="15">15 minutes
-                    <option value="30">30 minutes
-                    <option value="60">1 hour
-                    <option value="480">8 hours
-                    <option value="-1">Until closed
-                </select>
-            </div>
-            <div class="configitem">
-                <label for="pass_to_clipboard">Copy password to clipboard</label>
-                <input id="pass_to_clipboard" type="checkbox"/>
-            </div>
-            <div class="configitem">
-                <label for="auto_submit_pass">Submit after password inject</label>
-                <input id="auto_submit_pass" type="checkbox"/>
-            </div>
-            <div class="configitem">
-                <label for="auto_submit_username">Inject username</label>
-                <input id="auto_submit_username" type="checkbox"/>
-            </div>
-            <div class="configitem">
-                <label for="pass_store">Use OS' password store</label>
-                <input id="pass_store" type="checkbox"/>
+            <div class="configsubgroup right">
+                <div class="configitem">
+                    <label for="pass_to_clipboard">Copy password to clipboard</label>
+                    <input id="pass_to_clipboard" type="checkbox"/>
+                </div>
+                <div class="configitem">
+                    <label for="auto_submit_pass">Submit after password inject</label>
+                    <input id="auto_submit_pass" type="checkbox"/>
+                </div>
+                <div class="configitem">
+                    <label for="auto_submit_username">Inject username</label>
+                    <input id="auto_submit_username" type="checkbox"/>
+                </div>
+                <div class="configitem">
+                    <label for="pass_store">Use OS' password store</label>
+                    <input id="pass_store" type="checkbox"/>
+                </div>
+                <div class="configitem">
+                    <label for="use_sync">Let browser sync site data</label>
+                    <input id="use_sync" type="checkbox"/>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="container accordion">
+    <div class="container accordion in">
         <h2 class="accordion_toggle">Stored sites</h2>
         <div>
             <p class="warning_message" id="ver3note" style="display:none">
@@ -88,10 +96,13 @@
             This browser-plugin implements the third revision of MasterPassword. As a consequence,
             your password list can not be imported in apps supporting max revision 2 (notably the
             official iOS and osX apps with version 2.1.x and earlier)</p>
-            <button class="export_mpsites">export</button>
-            <p class="">(You can drag-drop a .mpsites file here to import it)</p>
-            <table class="" id="stored_sites">
-                <thead><tr><th>sitename<th>(matching)<th>Login<th>count<th>type<th>ver
+            <input type='file' id="importinput" accept=".mpsites,.mpjson,application/json" hidden>
+            <button class="import_mpsites">import</button>
+            <button class="export_mpsites">export (.mpsites)</button>
+            <button class="export_mpsites_json">export (.mpjson)</button>
+            <button class="upgrade_datastore" style="color:red;font-weight:800;display:none">Upgrade datastore</button>
+            <table class="spacer-fixed-small" id="stored_sites">
+                <thead><tr><th>sitename<th>match with url(s)<th>Login<th>count<th>type<th>ver
                 <template id="stored_sites_row">
                 <tr>
                     <td>sitename</td>
@@ -109,6 +120,23 @@
     </div>
 
     <div class="container accordion">
+        <h2 class="accordion_toggle">Privacy policy</h2>
+        <div class="hightlight-links">
+        <p>Neither Masterpassword nor it's authors collect any information from or about the usage of
+        Masterpassword.<br>full stop!</p>
+
+        <p>Masterpassword store your settings (site name, etc) locally on your device. This information is
+        never transferred anywhere by Masterpassword.<p>
+
+        <p>Your browser vendor may collect data on your usage of this extension; when you download it, every
+        time you activate it etc. Please refer to your vendor's policy for details.<br>
+        Further, if you have enabled synchronization of addon-data within your browser, the browser may
+        transfer and store this on a synchronization server. Again please refer to your browser vendor's
+        policy for details.</p>
+        </div>
+    </div>
+
+    <div class="container accordion">
         <h2 class="accordion_toggle">Acknowledgements &amp; licenses</h2>
         <div class="hightlight-links">
             <a href="releasenote.html">Release note</a>
@@ -121,7 +149,7 @@
             </ul>
             <h3>Major contributors</h3>
             <ul class="list-clean">
-                <li><a href="http://masterpasswordapp.com">MasterPassword</a> algorithm - <a href="http://www.lhunath.com/">Maarten Billemont</a>
+                <li><a href="https://en.wikipedia.org/wiki/Master_Password_(algorithm)">MasterPassword</a> algorithm - <a href="http://www.lhunath.com/">Maarten Billemont</a>
                 <li>Primary author and maintainer - <a href="https://torbjorn.tyridal.no">T.Tyridal</a>
                 <li>Font Awesome by Dave Gandy - <a href="http://fontawesome.io">http://fontawesome.io</a>
                 <li>UI design - Sami Vänttinen / T.Tyridal
@@ -134,19 +162,43 @@
 
 <div id="conflict_resolve" class="backdrop" style="display:none">
     <div class="dialog">
-        <h2>Conflicting <span class="sitename"></span> (<small class="domainvalue"></small>)</h2>
-        <h3>existing</h3>
-        type: <span class="existing_type"></span>
-        count: <span class="existing_count"></span>
-        username: <span class="existing_username"></span>
-        <h3>importing</h3>
-        type: <span class="new_type"></span>
-        count: <span class="new_count"></span>
-        username: <span class="new_username"></span>
+        <h2>Conflicting sitename <span class="sitename"></span></h2>
+        <small>url's will be merged in both cases</small>
+        <h3 class="existing">existing  (<small>for url <span class="domainvalue_existing"></span></small>)</h3>
+        <div class="inset">
+            type: <span class="existing_type"></span><br>
+            count: <span class="existing_count"></span><br>
+            username: <span class="existing_username"></span><br>
+        </div>
+        <h3 class="importing">importing (<small>for url <span class="domainvalue_new"></span></small>)</h3>
+        <div class="inset">
+            type: <span class="new_type"></span><br>
+            count: <span class="new_count"></span><br>
+            username: <span class="new_username"></span><br>
+        </div>
         <div style="padding-top:1em"><button id="existing">Keep existing</button> <button id="imported">Replace with imported</button></div>
     </div>
 </div>
 
-<script src="../lib/mpw-utils.js"></script>
-<script src="globaloptions.js"></script>
-<script src="config.js"></script>
+<div id="preupgrade" class="backdrop" style="display:none">
+    <div class="dialog">
+        <p>This process will convert your stored sites to the new format<p>Please notice that
+        the new format will prevent having the same site stored under different urls with different
+        parameters. eg. your.site.com will have the same counter, type and username regardless of
+        the url of the current tab.<p>
+        You will be prompted to select the one to keep if your data contains such inconsistencies.
+        <p>
+        <button class="export_mpsites_json">save data now</button>
+        <button class="upgrade_datastore_now">start upgrade</button>
+        <button class="hide_preupgrade">cancel</button>
+    </div>
+</div>
+
+<div id="messagebox" class="messagebox">
+    <div id="messagebox_text">
+    </div>
+    <div class="progress"></div>
+</div>
+
+<script type="module" src="config.js"></script>
+<script type="module" src="globaloptions.js"></script>

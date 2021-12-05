@@ -2,37 +2,62 @@
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        <title>Masterpassword for Firefox release note</title>
+        <title>Masterpassword for Browsers release note</title>
         <link href="../css/mpwd.css" rel="stylesheet" />
         <link href="../css/font-awesome.min.css" rel="stylesheet"/>
     </head>
     <body>
         <header class="banner valign_mid container">
-            <div class="valign_mid"><img src="/icons/icon48.png"><h1>MasterPassword Release 2.3.1b1</h1></div>
+            <div class="valign_mid"><img src="/icons/icon48.png"><h1>MasterPassword Release 3.0</h1></div>
         </header>
         <main>
-        <p>Thank you for using MasterPassword for Firefox! The easiest way to handle site-unique password on the web.
-        If you want to understand what this is all about, please see <a href="http://masterpasswordapp.com/">here</a>.
+        <p>Thank you for using MasterPassword for browsers! The easiest way to handle site-unique password on the web.
+        If you want to understand what this is all about, please see <a href="https://spectre.app/blog/2021-02-04-whats-a-password/">here</a>.
 
          <p style="display:none">
          You've chosen to install a beta release of this addon. Thank you for beeing an early adopter! If you find
          any bugs or missing features, please report them on the <a href="https://github.com/ttyridal/masterpassword-firefox/issues" target="_blank">issue tracker</a>.
-         <p>
-         If you have any issues with with addon, please report them on the <a href="https://github.com/ttyridal/masterpassword-firefox/issues" target="_blank">issue tracker</a>.
+         <p style="display:none">
+         If you have any issues with with addon, please report them on the <a href="https://github.com/ttyridal/masterpassword-firefox/issues" target="_blank">issue tracker</a>.</p>
 
         <h3>Users of OS' key-vault</h3>
         <p>If you're using GNOME Keyring, KWallet, OSX Keychain or Windows Password Vault to store your master key, you'll need to
         download a separate helper app. Please refer to <a href="https://github.com/ttyridal/masterpassword-firefox/wiki/Webextensions" target="_blank">the wiki</a> for further information.
-        <h3>Changes since v2.3.0</h3>
-        This is a bugfix release
+        <h3>Changes since v2.3.1 (firefox) / 2.1.5 (chrome)</h3>
         <ul>
-        <li>Fixed not working in privacy mode on newer versions of Firefox
-        <li>Fixed python3 issues in os-key-vault helper (linux)
+        <li>Deny multiple instances of site with different settings (see <a href="#details">details below</a>)
+        <li>Added import/export of mpjson format (can now store url match info)
+        <li>Added import mpsites/mpjson <i>button</i>, in addition to drag-n-drop
+        <li>Reduced set of required permissions
+        <li>Merged Firefox and Chrome codebases
+        <li>Fix for many second level domains (edu.nz etc) not beeing recognized and giving wrong default sitename
+        <li>Fix extension not working for sites opened as a webapp ("create application shortcut") (thanks to Jesse Morgan)
+        <li>Fix for frameworks that did not detect password inserted (thanks to Andrew Armenia)
         </ul>
 
-        <h3>Review</h3>
-        <p>If you're happy with this addon and haven't done so already, please consider
-        <a href="https://addons.mozilla.org/en-US/firefox/addon/masterpassword-firefox/reviews/add">rating it</a>.
+        <h3 style="margin-top:2em">New data format</h3>
+        <p>
+        <a name="details"></a>
+        This version of MasterPassword changes the internal representation for sites. This is done for a couple
+        of reasons. First, the export file can only represent a sitename once. The addon could previously have
+        a sitename with different configurations registered on different websites.<p>
+        Example:<br> You use your google account with the site-name set to google.com and generation set to 2.
+        You configured this when visiting gmail.com (the url you where at when opening masterpassword).<br> At a
+        later time, you visit youtube.com and you want to login with your google account.<br>
+        Previously you would have to enter the settings again. google.com at gmail.com and youtube.com was
+        considered two unrelated things. This is no longer the case. There can only be <i>one</i> google.com
+        site-name, and when you change the site-name to google.com (when visiting youtube) masterpassword will give
+        you that the correct setting, with the generation correctly set to 2. And, if you update the generation to 3,
+        it will change in all places where you use google.com as a site-name.<br>You can observe in the
+        configuration/stored-sites, that google.com will be matched to both youtube.com and gmail.com.<br>
+        You can of course still have multiple google accounts, user1@google.com, user2@google.com etc.
+
+        <p>
+        Furthermore, the new representation is better suited for working around storage limitations imposed by
+        the browser.
+        <p>
+        Please head over to the configuration view to execute the upgrade.
+
         </main>
     </body>
 </html>

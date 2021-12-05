@@ -1,0 +1,53 @@
+*** crypto_scrypt-nosse.c	2021-11-25 21:55:17.867235842 +0000
+--- crypto_scrypt-nosse-nommap.c	2021-11-25 21:47:29.422544937 +0000
+***************
+*** 48,53 ****
+--- 48,61 ----
+  static uint64_t integerify(void *, size_t);
+  static void smix(uint8_t *, size_t, uint64_t, uint32_t *, uint32_t *);
+  
++ static void * xmmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset) {
++ return malloc(len);
++ }
++ int xmunmap(void * p, size_t len) {
++ 	free(p);
++ return 0;
++ }
++ 
+  static void
+  blkcpy(void * dest, void * src, size_t len)
+  {
+***************
+*** 296,302 ****
+  #endif
+  #endif
+  #ifdef MAP_ANON
+! 	if ((V0 = mmap(NULL, 128 * r * N, PROT_READ | PROT_WRITE,
+  #ifdef MAP_NOCORE
+  	    MAP_ANON | MAP_PRIVATE | MAP_NOCORE,
+  #else
+--- 304,310 ----
+  #endif
+  #endif
+  #ifdef MAP_ANON
+! 	if ((V0 = xmmap(NULL, 128 * r * N, PROT_READ | PROT_WRITE,
+  #ifdef MAP_NOCORE
+  	    MAP_ANON | MAP_PRIVATE | MAP_NOCORE,
+  #else
+***************
+*** 321,327 ****
+  
+  	/* Free memory. */
+  #ifdef MAP_ANON
+! 	if (munmap(V0, 128 * r * N))
+  		goto err2;
+  #else
+  	free(V0);
+--- 329,335 ----
+  
+  	/* Free memory. */
+  #ifdef MAP_ANON
+! 	if (xmunmap(V0, 128 * r * N))
+  		goto err2;
+  #else
+  	free(V0);
