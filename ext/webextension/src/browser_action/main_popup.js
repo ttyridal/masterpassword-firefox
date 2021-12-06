@@ -61,7 +61,7 @@ const runtimeSendMessage = (typeof browser !== 'undefined' ?
 function masterkey_set(masterkey, nosave) {
     runtimeSendMessage({action: 'masterkey_set',
                         masterkey: masterkey,
-                        use_pass_store: config.pass_store && !nosave,
+                        use_pass_store: config.pass_store && (!nosave),
                         keep_time: config.passwdtimeout})
     .catch(err=>{ console.log("BUG!",err); });
 }
@@ -328,7 +328,7 @@ window.addEventListener('load', function () {
         'use_sync',
     ])
     .then(v=>{
-        return runtimeSendMessage({action: 'masterkey_get', use_pass_store: !!v.pass_store});
+        return runtimeSendMessage({action: 'masterkey_get', use_pass_store: v.pass_store});
     })
     .then(data => {
         if (data.pwgw_failure) {
