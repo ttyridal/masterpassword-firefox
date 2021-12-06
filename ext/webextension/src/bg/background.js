@@ -77,7 +77,8 @@ function pwvault_gateway(msg) {
         };
         error = p => {
             p = p.error;
-            if (!p) new Error("ERROR pwgateway disconnected");
+            if (!p)
+                p = new Error("ERROR pwgateway disconnected");
             port = undefined;
             fail(p);
             return;
