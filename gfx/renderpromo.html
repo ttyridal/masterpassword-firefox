@@ -1,0 +1,51 @@
+<!doctype html>
+<html style="background:#454545; width:100vw;height:100vh">
+<body style="display:flex;flex-direction: column;width:100%;height:100%;justify-content:center;align-items:center">
+    <!--img id="thesvg" src="promotile.svg" style="height:80%"-->
+    <object data="promotile.svg" type="text/svg+xml" id="thesvg" style="height:80%"></object>
+</body>
+</html>
+<script type="text/javascript">
+let d = document.getElementById('thesvg');
+d.onload = () => {
+    const min_ratio = 920/680;
+    const urlSearchParams = new URLSearchParams(window.location.search);
+    const params = Object.fromEntries(urlSearchParams.entries());
+    console.log(params);
+
+    const w = params.width || 920;
+    const h = params.height || 680;
+
+    if (w/h < min_ratio) {
+        console.error("unable.. ratio too small");
+        return;
+    }
+    let svg_main = d.contentDocument.documentElement;
+    svg_main.setAttribute('viewBox', `0 0 ${w} ${h}`);
+
+    let str = (new XMLSerializer()).serializeToString(svg_main);
+    let bb = new Blob([str], { type:'image/svg+xml;charset=utf-8' });
+    let blobURL = URL.createObjectURL(bb);
+
+    // CORS not happy open with Chrome --user-data-dir=/tmp/chrome/ --disable-web-security
+    let image = new Image();
+    image.onload = () => {
+       let canvas = document.createElement('canvas');
+       canvas.width = w;
+       canvas.height = h;
+       let context = canvas.getContext('2d');
+       context.drawImage(image, 0, 0, w, h );
+       canvas.toBlob(blob => {
+           let aref = document.createElement('a');
+           aref.href = URL.createObjectURL(blob);
+           aref.innerText="Download as png";
+           document.querySelector('body').appendChild(aref);
+           //let newWindow = window.open(URL.createObjectURL(blob), "_blank");
+      },'image/png' );
+    };
+    image.width = w;
+    image.height = h;
+    image.src = blobURL;
+
+}
+</script>
