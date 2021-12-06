@@ -55,14 +55,17 @@ chrome.runtime.onInstalled.addListener(details=>{
 var port;
 function port_default_error() { port = undefined; }
 function pwvault_gateway(msg) {
-    console.log("pwvault_gw:",msg.type);
     // Keeping the port open "forever".. seems to be a bug in firefox
     // not noting that the native-app is gone and it will spinn forever.
     // Like this, we'll at least not trigger that until firefox closes.
 
     if (!port) {
-        port = cbrowser.runtime.connectNative('no.ttyridal.pwvault_gateway');
-        port.onDisconnect.addListener(port_default_error);
+        try {
+            port = cbrowser.runtime.connectNative('no.ttyridal.pwvault_gateway');
+            port.onDisconnect.addListener(port_default_error);
+        } catch (e) {
+            return Promise.reject(e);
+        }
     }
 
     return new Promise((resolv, fail) => {
@@ -74,13 +77,20 @@ function pwvault_gateway(msg) {
         };
         error = p => {
             p = p.error;
-            if (!p) p = "disconnect";
+            if (!p) new Error("ERROR pwgateway disconnected");
             port = undefined;
             fail(p);
+            return;
         };
 
-        port.onMessage.addListener(success);
-        port.onDisconnect.addListener(error);
+        try {
+            port.onMessage.addListener(success);
+            port.onDisconnect.addListener(error);
+        } catch (err) {
+            console.log("Failed to attach listeners", err);
+            fail(err);
+            return;
+        }
         try {
             port.postMessage(msg);
         } catch (err) {
@@ -276,8 +286,8 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
                     sendResponse({masterkey: mk.value});
                 })
                 .catch(err => {
-                    console.error("pwvault_gateway failed " + err);
-                    sendResponse({pwgw_failure: err});
+                    console.error("pwvault_gateway failed ", err);
+                    sendResponse({pwgw_failure: err.message});
                 });
                 return true;
             }
