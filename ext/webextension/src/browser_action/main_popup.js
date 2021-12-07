@@ -451,7 +451,11 @@ document.querySelector('#copypass').addEventListener('click', function() {
 
 document.querySelector('body').addEventListener('click', function(ev) {
     if (ev.target.classList.contains('btnconfig')) {
+//         if (window.matchMedia("only screen and (max-device-width:640px)").matches)
+//             chrome.tabs.create({'url': '/src/options/options_mobile.html'}, function() { });
+//         else
         chrome.tabs.create({'url': '/src/options/index.html'}, function() { });
+        window.close();
     }
     else if (ev.target.classList.contains('btnlogout')) {
         masterkey_clear();
