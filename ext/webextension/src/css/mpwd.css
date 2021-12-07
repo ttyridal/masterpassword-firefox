@@ -26,6 +26,12 @@ html{
   color: var(--text-color);
   background-color: var(--main-bg-color);
 }
+@media only screen and (max-device-height:640px) {
+html {
+    font-size: 11pt;
+}
+}
+
 body { font-size: 100%;}
 
 main {
@@ -267,11 +273,12 @@ no-op {
   margin-bottom:1em;
   box-shadow:0 2px 4px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12)!important;
   margin-left: 1em;
-  min-width: 40em;
+  min-width: 80%;
   margin-right: 2em;
   padding-bottom: 1em;
   overflow: hidden;
 }
+
 .accordion > h2 {
     cursor: pointer;
     width:100%;
@@ -293,10 +300,20 @@ no-op {
   height: auto;
 }
 
+
 .configgroup {
     width: 100%;
     display: flex;
     justify-content: flex-start;
+}
+
+@media only screen and (max-width:640px) and (orientation : portrait) {
+.configgroup {
+    flex-direction:column;
+}
+.configsubgroup.left {
+    margin-bottom: 2em;
+}
 }
 
 .configsubgroup.left {

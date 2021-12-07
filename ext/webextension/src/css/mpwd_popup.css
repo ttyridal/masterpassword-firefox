@@ -4,6 +4,14 @@ html,body {
   overflow: hidden;
 }
 
+@media only screen and (max-device-height:640px) {
+html,body {
+  height: 100vh;
+  width: auto;
+  overflow: hidden;
+}
+}
+
 body {
     height:100%;
 }
