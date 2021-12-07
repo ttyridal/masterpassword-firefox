@@ -345,7 +345,7 @@ document.querySelector('#messagebox > div.progress').addEventListener('transitio
 
 function messagebox(txt) {
     document.querySelector("#messagebox").classList.add('visible');
-    document.querySelector("#messagebox_text").innerHTML = txt;
+    document.querySelector("#messagebox_text").innerText = txt;
 }
 
 
