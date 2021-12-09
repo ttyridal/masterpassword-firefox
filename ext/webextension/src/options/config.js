@@ -161,24 +161,21 @@ document.querySelector('#stored_sites').addEventListener('click', function(e) {
 function resolveConflict(site, existing, AB) {
     return new Promise(resolve => {
         let div = document.querySelector('#conflict_resolve');
+        const dialog = document.importNode(document.querySelector(
+            AB ? '#conflict_resolve_ab' : '#conflict_resolve_newold').content, true);
 
-        div.querySelector('.sitename').textContent = site.sitename;
-        div.querySelector('.domainvalue_existing').textContent = existing.url;
-        div.querySelector('.existing_type').textContent = passtype_to_str(existing.type);
-        div.querySelector('.existing_count').textContent = existing.generation;
-        div.querySelector('.existing_username').textContent = existing.username;
+        dialog.querySelector('.sitename').textContent = site.sitename;
+        dialog.querySelector('.domainvalue_existing').textContent = existing.url;
+        dialog.querySelector('.existing_type').textContent = passtype_to_str(existing.type);
+        dialog.querySelector('.existing_count').textContent = existing.generation;
+        dialog.querySelector('.existing_username').textContent = existing.username;
 
-        div.querySelector('.domainvalue_new').textContent = site.url;
-        div.querySelector('.new_type').textContent = passtype_to_str(site.type);
-        div.querySelector('.new_count').textContent = site.generation;
-        div.querySelector('.new_username').textContent = site.username;
-
-        if (AB) {
-            div.querySelector('.existing').innerText = div.querySelector('.existing').innerText.replace(/existing/i, 'A');
-            div.querySelector('.importing').innerText = div.querySelector('.importing').innerText.replace(/importing/i, 'B');
-            div.querySelector('#existing').innerText = 'Keep A';
-            div.querySelector('#imported').innerText = 'Keep B';
-        }
+        dialog.querySelector('.domainvalue_new').textContent = site.url;
+        dialog.querySelector('.new_type').textContent = passtype_to_str(site.type);
+        dialog.querySelector('.new_count').textContent = site.generation;
+        dialog.querySelector('.new_username').textContent = site.username;
+        div.innerHTML = '';
+        div.appendChild(dialog);
 
         function click_handler(ev) {
             switch (ev.target.id) {

@@ -161,7 +161,27 @@
     </div>
 
 
-<div id="conflict_resolve" class="backdrop" style="display:none">
+
+    <template id="conflict_resolve_ab">
+    <div class="dialog">
+        <h2>Conflicting sitename <span class="sitename"></span></h2>
+        <small>url's will be merged in both cases</small>
+        <h3 class="existing">A (<small>for url <span class="domainvalue_existing"></span></small>)</h3>
+        <div class="inset">
+            type: <span class="existing_type"></span><br>
+            count: <span class="existing_count"></span><br>
+            username: <span class="existing_username"></span><br>
+        </div>
+        <h3 class="importing">B (<small>for url <span class="domainvalue_new"></span></small>)</h3>
+        <div class="inset">
+            type: <span class="new_type"></span><br>
+            count: <span class="new_count"></span><br>
+            username: <span class="new_username"></span><br>
+        </div>
+        <div style="padding-top:1em"><button id="existing">Keep A</button> <button id="imported">Keep B</button></div>
+    </div>
+    </template>
+    <template id="conflict_resolve_newold">
     <div class="dialog">
         <h2>Conflicting sitename <span class="sitename"></span></h2>
         <small>url's will be merged in both cases</small>
@@ -179,6 +199,9 @@
         </div>
         <div style="padding-top:1em"><button id="existing">Keep existing</button> <button id="imported">Replace with imported</button></div>
     </div>
+    </template>
+
+<div id="conflict_resolve" class="backdrop" style="display:none">
 </div>
 
 <div id="preupgrade" class="backdrop" style="display:none">
