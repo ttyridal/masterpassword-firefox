@@ -23,6 +23,7 @@ jest.unstable_mockModule('../lib/sitestore.js', () => {
 
 jest.unstable_mockModule('../lib/mpw.js', () => {
     return { default: jest.fn().mockResolvedValue({sitepassword:calcpasswd,
+                                              state: ()=>{return "state="},
                                               key_id: ()=>{return "yyyy"}}) };
 });
 

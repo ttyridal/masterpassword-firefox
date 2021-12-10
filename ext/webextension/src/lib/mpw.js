@@ -128,7 +128,16 @@ function mpw(name, password, version){
         lenoverride = version < 3 ? name.length : 0;
     keyofs = typeof keyofs !== 'undefined' ? keyofs : Module.ccall('get_masterkey', 'number', [], []);
 
-    key = mp_key(password, name, lenoverride);
+    if (typeof password === 'undefined') {
+        try {
+            key = atob(name).split('').map(function (c) { return c.charCodeAt(0); });
+            console.log("restoring state quickly");
+        } catch (err) {
+            console.error(err);
+            throw err;
+        }
+    } else
+        key = mp_key(password, name, lenoverride);
 
     return {
         sitepassword : function(site, count, type) {
@@ -138,6 +147,7 @@ function mpw(name, password, version){
                 return encode(key, site, count, type);
         },
         key_id : function() { return sha256_digest(key); },
+        state: function() { return btoa(String.fromCharCode.apply(null, key)); },
         v2_compatible : function() { return name.length === encode_utf8(name).length; }
     };
 }

@@ -59,9 +59,16 @@ const runtimeSendMessage = (typeof browser !== 'undefined' ?
                        (msg) => new Promise(suc => chrome.runtime.sendMessage(msg, suc)));
 
 function masterkey_set(masterkey, nosave) {
-    runtimeSendMessage({action: 'masterkey_set',
+    return runtimeSendMessage({action: 'masterkey_set',
                         masterkey: masterkey,
                         use_pass_store: config.pass_store && (!nosave),
+                        keep_time: config.passwdtimeout})
+    .catch(err=>{ console.log("BUG!",err); });
+}
+
+function mpwstate_set(mpwstate) {
+    return runtimeSendMessage({action: 'mpwstate_set',
+                        mpwstate: mpwstate,
                         keep_time: config.passwdtimeout})
     .catch(err=>{ console.log("BUG!",err); });
 }
@@ -107,11 +114,11 @@ function update_page_password_input(pass, username) {
 var mpw_promise = defer(),
     session_store = {};
 
-function resolve_mpw(masterkey) {
+function resolve_mpw(masterkey_or_state) {
     mpw_promise.resolve(
-        mpw(
+        masterkey_or_state.mpwstate ? mpw(masterkey_or_state.mpwstate) : mpw(
             config.username,
-            masterkey,
+            masterkey_or_state.masterkey,
             config.algorithm_version));
     mpw_promise.then(mpw_session => {
         ui.verify("Verify: " + mpw_session.sitepassword(".", 0, "nx"));
@@ -122,16 +129,27 @@ function resolve_mpw(masterkey) {
         if (!has_known_keyid) {
             config.set({ key_id: key_id});
         }
-        else if (key_id !== config.key_id) {
+        else if (key_id !== config.key_id && masterkey_or_state.masterkey) {
+            let masterkey = masterkey_or_state.masterkey;
             warn_keyid_not_matching(()=>{
                 config.set({ key_id });
                 masterkey_set(masterkey);
                 ui.clear_warning();
                 ui.user_info("ready");
             });
+            return Promise.all([mpw_session, masterkey_set(masterkey_or_state.masterkey, has_known_keyid), false]);
         }
         // always call masterkey_set to reset password timer
-        masterkey_set(masterkey, has_known_keyid);
+        if (masterkey_or_state.masterkey)
+            return Promise.all([mpw_session, masterkey_set(masterkey_or_state.masterkey, has_known_keyid), true]);
+        else
+            return Promise.all([mpw_session, null, true]);
+    })
+    .then((values)=>{
+        // save mpwstate only if key_id matches.. so we can continue to present the warning (on next
+        // popup open if not matching
+        if (values[2])
+            return mpwstate_set(values[0].state());
     })
     .catch(console.error);
 }
@@ -271,10 +289,13 @@ function showMain() {
     ui.show('#main');
 }
 
-function popup(masterkey) {
-    if (config.username && masterkey) {
+function popup(masterkey_or_state) {
+    if (!masterkey_or_state) {
+        showSessionSetup();
+    }
+    else if (masterkey_or_state.mpwstate || (config.username && masterkey_or_state.masterkey)) {
         showMain();
-        setTimeout(()=>{ resolve_mpw(masterkey);}, 1); // do later so page paints as fast as possible
+        setTimeout(()=>{ resolve_mpw(masterkey_or_state);}, 1); // do later so page paints as fast as possible
     } else {
         showSessionSetup();
     }
@@ -341,7 +362,7 @@ window.addEventListener('load', function () {
         } else {
             ui.user_info("");
         }
-        popup(data.masterkey);
+        popup(data);
     })
     .catch(err => {
         console.error(err);
@@ -372,7 +393,7 @@ document.querySelector('#sessionsetup > form').addEventListener('submit', functi
 
         ui.hide('#sessionsetup');
         ui.show('#main');
-        resolve_mpw(masterkey);
+        resolve_mpw({masterkey});
     }
 });
 

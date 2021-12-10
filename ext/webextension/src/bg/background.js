@@ -102,18 +102,21 @@ function pwvault_gateway(msg) {
     });
 }
 
-var _masterkey;
+var _masterkey, _mpwstate;
 const pw_retention_timer = 'pw_retention_timer';
 cbrowser.alarms.onAlarm.addListener(a => {
     if (a.name === pw_retention_timer) {
         _masterkey = undefined;
+        _mpwstate = undefined;
     }
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {
     if (area === 'local' && changes.passwdtimeout) {
-        if (changes.passwdtimeout.newValue == 0)
+        if (changes.passwdtimeout.newValue == 0) {
             _masterkey = undefined;
+            _mpwstate = undefined;
+        }
         if (changes.passwdtimeout.newValue <= 0)
             cbrowser.alarms.clear(pw_retention_timer);
     }
@@ -126,6 +129,15 @@ function temp_store_masterkey(k, keep_time) {
         cbrowser.alarms.create(pw_retention_timer, {delayInMinutes: keep_time});
     }
     _masterkey = k;
+}
+
+function temp_store_mpwstate(k, keep_time) {
+    if (!keep_time) return;
+    if (keep_time > 0) {
+        // create a new alarm with same name will automatically clear the old -> reset :)
+        cbrowser.alarms.create(pw_retention_timer, {delayInMinutes: keep_time});
+    }
+    _mpwstate = k;
 }
 
 function promised_storage_get(keys) {
@@ -278,6 +290,10 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
         case 'IamActive':  // noisy bastard
             return;
         case 'masterkey_get':
+            if (_mpwstate) {
+                sendResponse({mpwstate: _mpwstate});
+                return;
+            }
             if (_masterkey) {
                 sendResponse({masterkey: _masterkey});
                 return;
@@ -297,11 +313,20 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
         case 'masterkey_set':
             if (!req.masterkey) {
                 _masterkey = undefined;
+                _mpwstate = undefined;
             } else if (req.use_pass_store) {
                 pwvault_gateway({'type':'pwset','name':'default', 'value': req.masterkey})
                 .catch(e => { console.error(e); });
-            } else
+            } else if (!_mpwstate)
                 temp_store_masterkey(req.masterkey, req.keep_time);
+            sendResponse({});
+            return;
+        case 'mpwstate_set':
+            _masterkey = undefined;  // no need to keep it around if we have the state
+            if (!req.mpwstate) {
+                _mpwstate = undefined;
+            } else
+                temp_store_mpwstate(req.mpwstate, req.keep_time);
             sendResponse({});
             return;
         case 'update_page_password':
