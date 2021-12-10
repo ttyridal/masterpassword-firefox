@@ -2,6 +2,8 @@
 /ext/webextension/icons/*
 /ext/chromeext/icons
 /ext/chromeext/src
+/ext/edgeext/icons
+/ext/edgeext/src
 /builds
 node_modules/
 scrypt.js

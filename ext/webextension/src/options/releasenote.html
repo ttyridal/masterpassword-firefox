@@ -23,6 +23,12 @@
         <h3>Users of OS' key-vault</h3>
         <p>If you're using GNOME Keyring, KWallet, OSX Keychain or Windows Password Vault to store your master key, you'll need to
         download a separate helper app. Please refer to <a href="https://github.com/ttyridal/masterpassword-firefox/wiki/Webextensions" target="_blank">the wiki</a> for further information.
+        <h3>Changes since v2.9.0b2</h3>
+        <ul>
+            <li>Fix bug failing to convert datastore if more than one conflict
+            <li>Improve load time by storing (if configured) password generator state instead of master key
+            <li>Minor UI changes to improve experience on mobile (Firefox for Android)
+        </ul>
         <h3>Changes since v2.9.0b1</h3>
         <ul>
             <li>Fix bug where extension fails to load if configured with os password store and helper not installed
