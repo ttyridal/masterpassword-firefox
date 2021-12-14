@@ -269,14 +269,14 @@ function getBaseDomain(domain) {
     } catch (err) {
         console.warn("psl lookup failed, using fallback", err);
 
-    let domain_parts = domain.split(".");
-    let significant_parts = 2;
-    const common_slds = ['co','com','gov','govt','net','org','edu','priv','ac'];
-    let second_level_domain = domain_parts[domain_parts.length-2].toLowerCase();
-    if (domain_parts.length > 2 && common_slds.includes(second_level_domain))
-        significant_parts = 3;
+        let domain_parts = domain.split(".");
+        let significant_parts = 2;
+        const common_slds = ['co','com','gov','govt','net','org','edu','priv','ac'];
+        let second_level_domain = domain_parts[domain_parts.length-2].toLowerCase();
+        if (domain_parts.length > 2 && common_slds.includes(second_level_domain))
+            significant_parts = 3;
 
-    return domain_parts.slice(-significant_parts).join('.');
+        return domain_parts.slice(-significant_parts).join('.');
     }
 }
 
