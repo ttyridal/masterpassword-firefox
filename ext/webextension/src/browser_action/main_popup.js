@@ -21,10 +21,12 @@ import {SiteStore} from "../lib/sitestore.js";
 import {Site} from "../lib/sites.js";
 import {defer, copy_to_clipboard} from "../lib/utils.js";
 import {parseUri} from "../lib/uritools.js";
+import {PslLookup} from '../lib/psllookup.js'
 import config from "../lib/config.js";
 import mpw from "../lib/mpw.js";
 import {ui} from "./ui.js";
 
+const psl = new PslLookup({tableurl: "/src/lib/psllookup.json.png"});
 
 const zip = (a, b) => Array.from(Array(Math.max(b.length, a.length)), (_, i) => [a[i], b[i]]);
 function arrayEqualElements(a,b) {
@@ -262,6 +264,11 @@ function onDataLoadedUpdateUI(activeurl, sites)
 function getBaseDomain(domain) {
     if (!domain) return '';
 
+    try {
+        return psl.getPublicDomain(domain);
+    } catch (err) {
+        console.warn("psl lookup failed, using fallback", err);
+
     let domain_parts = domain.split(".");
     let significant_parts = 2;
     const common_slds = ['co','com','gov','govt','net','org','edu','priv','ac'];
@@ -270,6 +277,7 @@ function getBaseDomain(domain) {
         significant_parts = 3;
 
     return domain_parts.slice(-significant_parts).join('.');
+    }
 }
 
 function showSessionSetup() {
@@ -318,7 +326,7 @@ function popup(masterkey_or_state) {
         return [];
     });
 
-    let dataloaded = Promise.all([urlpromise,  sites])
+    let dataloaded = Promise.all([urlpromise,  sites, psl.waitTableReady()])
     .then((x)=>onDataLoadedUpdateUI(x[0], x[1]))
     .catch(err => console.error(err));
 

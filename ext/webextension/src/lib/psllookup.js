@@ -1,6 +1,9 @@
 function loadImage(url) {
     let img = new Image();
-    return new Promise(res=>{
+    return new Promise((res,fail)=>{
+        img.onerror = () =>{
+            fail(new Error("failed to load image "+url));
+        }
         img.onload = ()=>{
             res(img);
         }
@@ -32,7 +35,7 @@ export class PslLookup {
         this.psltable = args.tableLoader(args.tableurl)
         .then(pixeldata_to_json)
         .then(JSON.parse)
-        .catch(e=>{console.log("something is failing",e)});
+        .catch(e=>{console.error("psllookup load failed",e); return undefined;});
     }
 
     async waitTableReady() {
@@ -41,6 +44,8 @@ export class PslLookup {
     }
 
     getPublicDomain(url) {
+        if (typeof this.psltable === 'undefined')
+            throw new Error("PslLoopup not initialized");
         let lut = this.psltable;
         const parts = url.split('.').reverse();
         let res = [];

@@ -27,6 +27,10 @@ jest.unstable_mockModule('../lib/mpw.js', () => {
                                               key_id: ()=>{return "yyyy"}}) };
 });
 
+jest.unstable_mockModule('../lib/psllookup.js', () => {
+    return { PslLookup: jest.fn().mockReturnValue({waitTableReady:jest.fn().mockResolvedValue(null)}) };
+});
+
 jest.unstable_mockModule('../lib/config.js', () => {
     return {
         default: {
@@ -60,6 +64,7 @@ beforeAll(async ()=>{
     };
     await import('../lib/sitestore.js');
     await import('../lib/config.js');
+    await import('../lib/psllookup.js');
     libmpw = await import('../lib/mpw.js');
 
     document.body.innerHTML =
