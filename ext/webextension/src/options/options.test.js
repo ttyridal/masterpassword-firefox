@@ -44,7 +44,7 @@ it('config.js loads without error', async () => {
     '</div>';
 
 
-    await import('./config.js');
+    await import('./options.js');
 
     window.dispatchEvent(new window.Event('load'));
 });
