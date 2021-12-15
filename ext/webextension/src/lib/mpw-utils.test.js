@@ -146,10 +146,10 @@ it('merge 2', async () => {
 
     const resolve2 = jest.fn((a/*,b*/)=>a);
     // merge_sites modifies the first argument.. taking a copy
-    let orig = Object.assign({}, non_conflict_sites[0]);
-    res = await mpw_utils.merge_sites(non_conflict_sites, [s5], resolve2);
+    let arrayCopy = non_conflict_sites.map(s => new Site(s));
+    res = await mpw_utils.merge_sites(arrayCopy, [s5], resolve2);
     expect(resolve2).toHaveBeenCalledTimes(1);
-    expect(resolve2).toHaveBeenCalledWith(s5, orig);
+    expect(resolve2).toHaveBeenCalledWith(s5, non_conflict_sites[0]);
     expect(res[0]).toBe(s5);
 });
 
@@ -166,7 +166,7 @@ it('exports mpjson', () => {
     expect(jsn).toEqual(expect.objectContaining({'user': expect.objectContaining({'full_name': 'mainuser', 'algorithm': 3, 'key_id': '0123456'})}));
     expect(jsn.sites).toBeDefined();
     expect(jsn.sites['test.domain']).toEqual(expect.objectContaining({
-          'counter': 2,
+          'counter': 1,
           'algorithm': 1,
           'type': 18,
           'ext.browser.url': ['testdomain.no'],
