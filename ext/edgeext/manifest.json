@@ -1,6 +1,7 @@
 {
   "name": "MasterPassword for edge",
-  "version": "2.9.0",
+  "version": "2.9.4",
+  "version_name": "2.9b4",
   "manifest_version": 2,
   "description": "Remember your MasterPassword, and this app will generate unique passwords for every other site you visit",
   "author": "Torbjorn Tyridal (ttyridal)",
