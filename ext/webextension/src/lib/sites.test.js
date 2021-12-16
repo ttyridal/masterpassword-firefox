@@ -41,6 +41,6 @@ it('constructs with all password types', () => {
     expect(m.type_as_code()).toEqual(18);
     expect(n.type_as_code()).toEqual(30);
     expect(p.type_as_code()).toEqual(31);
-    expect(nx.type_as_code()).toEqual(17); // type is actually ignored. mpjson login_type is the correct field
-    expect(px.type_as_code()).toEqual(17); // type is actually ignored. mpjson question is the correct field
+    expect(nx.type_as_code()).toEqual(30); // type is actually ignored. mpjson login_type is the correct field
+    expect(px.type_as_code()).toEqual(31); // type is actually ignored. mpjson question is the correct field
 });

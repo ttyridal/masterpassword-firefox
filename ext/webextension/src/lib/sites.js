@@ -62,9 +62,9 @@ Site.prototype.type_as_code = function() {
         case 'i': return 21;
         case 'b': return 19;
         case 'p': return 31;
-        case 'px': return 17;
+        case 'px': return 31;
         case 'n': return 30;
-        case 'nx': return 17;
+        case 'nx': return 30;
         case 'l': return 17;
         case 'm': return 18;
         default: throw "unknown password type:" + this.type;

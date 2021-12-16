@@ -9,7 +9,11 @@ const non_conflict_sites =[
             new Site({sitename: 'test.domain', url:['testdomain.no'], type:'m', generation:1}),
             new Site({sitename: 'user@test.domain', url:['testdomain.no'], type:'l', username:'reasonably_short', generation:1}),
             new Site({sitename: 'åuser@test.domain', url:['testdomain.no'], type:'x', username: 'veryveryveryveryveryveryverylong', generation:2}),
-            new Site({sitename: 'very@long.domain@another_very_very_long_test.domain', url:['another.domain'], type:'i', username: 'regular', generation:3})
+            new Site({sitename: 'very@long.domain@another_very_very_long_test.domain', url:['another.domain'], type:'i', username: 'regular', generation:3}),
+            new Site({sitename: 'n@site.com', url:['site.com'], type:'n', generation:1}),
+            new Site({sitename: 'nx@site.com', url:['site.com'], type:'nx', generation:1}),
+            new Site({sitename: 'p@site.com', url:['site.com'], type:'p', generation:1}),
+            new Site({sitename: 'px@site.com', url:['site.com'], type:'px', generation:1}),
         ];
 
 it('exports mpsites', () => {
@@ -28,6 +32,10 @@ it('exports mpsites', () => {
         expect.objectContaining({type:'17', algver: ':1', count: ':1', username:'reasonably_short', sitename: 'user@test.domain'}),
         expect.objectContaining({type:'16', algver: ':2', count: ':2', username:'veryveryveryveryveryveryverylong', sitename: 'åuser@test.domain'}),
         expect.objectContaining({type:'21', algver: ':1', count: ':3', username:'regular', sitename: 'very@long.domain@another_very_very_long_test.domain'}),
+        expect.objectContaining({type:'30', algver: ':1', count: ':1', sitename: 'n@site.com'}),
+        expect.objectContaining({type:'31', algver: ':1', count: ':1', sitename: 'p@site.com'}),
+        expect.objectContaining({type:'30', algver: ':1', count: ':1', sitename: 'nx@site.com'}), // basically not supported in mpsites format
+        expect.objectContaining({type:'31', algver: ':1', count: ':1', sitename: 'px@site.com'}), // basically not supported in mpsites format
     ]));
 });
 
@@ -169,10 +177,12 @@ it('exports mpjson', () => {
           'counter': 1,
           'algorithm': 1,
           'type': 18,
+          'login_type': 0, // NSGENERAL
           'ext.browser.url': ['testdomain.no'],
           'ext.browser.username': ''}));
     expect(jsn.sites['manyurls.com']).toEqual(expect.objectContaining({
           'type': 16,
+          'login_type': 0,  // NSGENERAL
           'ext.browser.url': ['manyurls.com','some.site.no','me.to'],
           'ext.browser.username': ''}));
     expect(jsn.sites['åuser@test.domain']).toEqual(expect.objectContaining({
@@ -180,5 +190,48 @@ it('exports mpjson', () => {
           'ext.browser.url': ['testdomain.no'],
           'ext.browser.username': 'veryveryveryveryveryveryverylong',
           'counter': 2}));
-    console.log(jsn);
+    expect(jsn.sites['n@site.com']).toEqual(expect.objectContaining({
+          'counter': 1,
+          'algorithm': 1,
+          'type': 30,
+          'login_type': 0,
+    }));
+    expect(jsn.sites['nx@site.com']).toEqual(expect.objectContaining({
+          'counter': 1,
+          'algorithm': 1,
+          'type': 30,
+          'login_type': 30,  //NSLOGIN
+    }));
+    expect(jsn.sites['p@site.com']).toEqual(expect.objectContaining({
+          'counter': 1,
+          'algorithm': 1,
+          'type': 31,
+          'login_type': 0,
+    }));
+    expect(jsn.sites['px@site.com']).toEqual(expect.objectContaining({
+          'counter': 1,
+          'algorithm': 1,
+          'type': 31,
+          'login_type': 0,
+          'questions': { '': { "type": 31 } }
+    }));
+});
+
+it('imports mpjson', () => {
+    const fdr = fs.readFileSync('../test/spectre_cli.mpjson', "utf8", function(err, data) { return data; });
+    const confirm_true = jest.fn().mockReturnValue(true);
+    let r = mpw_utils.read_mpsites(fdr, 'test', mpheader_key, confirm_true);
+    console.log(r);
+    expect(r).toEqual(expect.arrayContaining([
+        expect.objectContaining({ type: 'x', passalgo: 3, generation: 1, username: '', sitename: 'x@site.com'}),
+        expect.objectContaining({ type: 'l', passalgo: 3, generation: 1, username: '', sitename: 'l@site.com'}),
+        expect.objectContaining({ type: 'm', passalgo: 3, generation: 1, username: '', sitename: 'm@site.com'}),
+//         expect.objectContaining({ type: 'b', passalgo: 3, generation: 1, username: '', sitename: 'b@site.com'}),
+//         expect.objectContaining({ type: 's', passalgo: 3, generation: 1, username: '', sitename: 's@site.com'}),
+        expect.objectContaining({ type: 'i', passalgo: 3, generation: 1, username: '', sitename: 'i@site.com'}),
+        expect.objectContaining({ type: 'n', passalgo: 3, generation: 1, username: '', sitename: 'n@site.com'}),
+        expect.objectContaining({ type: 'p', passalgo: 3, generation: 1, username: '', sitename: 'p@site.com'}),
+        expect.objectContaining({ type: 'nx', passalgo: 3, generation: 1, username: '', sitename: 'nx@site.com'}),
+        expect.objectContaining({ type: 'px', passalgo: 3, generation: 1, username: '', sitename: 'px@site.com'}),
+    ]));
 });

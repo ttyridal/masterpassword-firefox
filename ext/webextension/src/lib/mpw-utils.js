@@ -69,12 +69,17 @@ function site_as_mpjson(site, alg_min_version) {
         "counter": site.generation,
         "algorithm": site.required_alg_version(alg_min_version),
         "type": site.type_as_code(),
-        //login_type: 30
+        "login_type": 0,
         "uses": 0,
         "last_used": '2015-03-23T13:06:35Z',
         "ext.browser.url": site.url,
         "ext.browser.username": site.username
         }
+    if (site.type == 'nx')
+        o[site.sitename].login_type = 30;
+    if (site.type == 'px') {
+        o[site.sitename].questions = { '': { "type": 31 }};
+    }
     return o;
 }
 
@@ -90,7 +95,7 @@ function read_mpsites(d, username, key_id, confirm_fn){
           'sites' in jsn &&
           'user' in jsn &&
           'format' in jsn['export'] &&
-          jsn['export']['format'] == 1)) {
+          [1,2].includes(jsn['export']['format']))) {
         throw new MPsitesImportError("Not a mpjson v1 file");
     }
     if (username && jsn.user['full_name'] && jsn.user['full_name'] !== username) {
@@ -105,6 +110,15 @@ function read_mpsites(d, username, key_id, confirm_fn){
 
     let ret = [];
     for (const [sitename, siteprops] of Object.entries(jsn.sites)) {
+        // if login_type is != 0 it's value is actually anything type can take,
+        // but we only support 'name'
+        if (siteprops.login_type)
+            siteprops.type = 'nx'
+        // if question exists, it's a dict for different 'keywords' like:
+        // "questions": { "keyword": { "type": 19 } }
+        // we only support empty keyword ('') and type 'phrase'
+        if (siteprops.questions)
+            siteprops.type = 'px'
         ret.push(new Site({
             sitename: sitename,
             generation: siteprops.counter || 1,

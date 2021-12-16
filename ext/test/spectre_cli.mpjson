@@ -1,0 +1,104 @@
+{
+   "export": {
+     "date": "2021-12-15T23:36:50Z",
+     "redacted": true,
+     "format": 2
+   },
+   "user": {
+     "avatar": 0,
+     "full_name": "test",
+     "identicon": "7:╔░╝☂",
+     "algorithm": 3,
+     "key_id": "95212FAE6842582826F620D402B19AEAF38A77D612C24529BD5C89BACFD42288",
+     "default_type": 17,
+     "login_type": 30,
+     "last_used": "2021-12-15T23:36:50Z"
+   },
+   "sites": {
+     "x@site.com": {
+       "counter": 1,
+       "algorithm": 3,
+       "type": 16,
+       "login_type": 0,
+       "uses": 1,
+       "last_used": "2021-12-15T23:34:13Z"
+     },
+     "l@site.com": {
+       "counter": 1,
+       "algorithm": 3,
+       "type": 17,
+       "login_type": 0,
+       "uses": 1,
+       "last_used": "2021-12-15T23:34:27Z"
+     },
+     "m@site.com": {
+       "counter": 1,
+       "algorithm": 3,
+       "type": 18,
+       "login_type": 0,
+       "uses": 1,
+       "last_used": "2021-12-15T23:34:42Z"
+     },
+     "b@site.com": {
+       "counter": 1,
+       "algorithm": 3,
+       "type": 20,
+       "login_type": 0,
+       "uses": 1,
+       "last_used": "2021-12-15T23:34:48Z"
+     },
+     "s@site.com": {
+       "counter": 1,
+       "algorithm": 3,
+       "type": 19,
+       "login_type": 0,
+       "uses": 1,
+       "last_used": "2021-12-15T23:35:03Z"
+     },
+     "i@site.com": {
+       "counter": 1,
+       "algorithm": 3,
+       "type": 21,
+       "login_type": 0,
+       "uses": 1,
+       "last_used": "2021-12-15T23:35:10Z"
+     },
+     "n@site.com": {
+       "counter": 1,
+       "algorithm": 3,
+       "type": 30,
+       "login_type": 0,
+       "uses": 1,
+       "last_used": "2021-12-15T23:35:31Z"
+     },
+     "p@site.com": {
+       "counter": 1,
+       "algorithm": 3,
+       "type": 31,
+       "login_type": 0,
+       "uses": 1,
+       "last_used": "2021-12-15T23:35:43Z"
+     },
+     "px@site.com": {
+       "counter": 1,
+       "algorithm": 3,
+       "type": 17,
+       "login_type": 0,
+       "uses": 1,
+       "last_used": "2021-12-15T23:36:42Z",
+       "questions": {
+         "": {
+           "type": 31
+         }
+       }
+     },
+     "nx@site.com": {
+       "counter": 1,
+       "algorithm": 3,
+       "type": 17,
+       "login_type": 30,
+       "uses": 1,
+       "last_used": "2021-12-15T23:36:50Z"
+     }
+   }
+}
