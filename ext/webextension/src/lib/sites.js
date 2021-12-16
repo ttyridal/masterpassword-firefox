@@ -31,10 +31,10 @@ export function Site(site_data) {
         Object.assign(this, site_data);
     if (this.type && !isNaN(this.type)) {
         let t = new Map([
-            [20,'s'],
+            [19,'s'],
             [16,'x'],
             [21,'i'],
-            [19,'b'],
+            [20,'b'],
             [31,'p'],
             [30,'n'],
             [17,'l'],
@@ -57,10 +57,10 @@ export function Site(site_data) {
 Site.prototype.constructor = Site;
 Site.prototype.type_as_code = function() {
     switch(this.type){
-        case 's': return 20;
+        case 's': return 19;
         case 'x': return 16;
         case 'i': return 21;
-        case 'b': return 19;
+        case 'b': return 20;
         case 'p': return 31;
         case 'px': return 31;
         case 'n': return 30;

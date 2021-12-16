@@ -33,10 +33,10 @@ it('constructs with all password types', () => {
     let p = new Site({sitename:'somesite.com',url:['somesite.com'],'type':'p'});
     let nx = new Site({sitename:'somesite.com',url:['somesite.com'],'type':'nx'});
     let px = new Site({sitename:'somesite.com',url:['somesite.com'],'type':'px'});
-    expect(s.type_as_code()).toEqual(20);
+    expect(s.type_as_code()).toEqual(19);
     expect(x.type_as_code()).toEqual(16);
     expect(i.type_as_code()).toEqual(21);
-    expect(b.type_as_code()).toEqual(19);
+    expect(b.type_as_code()).toEqual(20);
     expect(l.type_as_code()).toEqual(17);
     expect(m.type_as_code()).toEqual(18);
     expect(n.type_as_code()).toEqual(30);
