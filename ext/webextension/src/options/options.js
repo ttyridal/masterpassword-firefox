@@ -42,7 +42,9 @@ function passtype_to_str(type) {
         case 's': return "Short";
         case 'i': return "Pin";
         case 'n': return "Name";
+        case 'nx': return "Name [v]";
         case 'p': return "Phrase";
+        case 'px': return "Phrase [v]";
         default: throw new Error("Unknown password type:"+type);
     }
 }
@@ -79,6 +81,12 @@ function stored_sites_table_update(sites) {
 }
 
 window.addEventListener('load', async function() {
+    if (window.running_under_test)
+    {
+        window.running_under_test = undefined;
+        return;
+    }
+
     try {
         let {username, use_sync} = await config.get(['username', 'use_sync']);
         sitestore = new SiteStore(use_sync ? chrome.storage.sync : chrome.storage.local);
@@ -342,7 +350,7 @@ document.querySelector('#messagebox > div.progress').addEventListener('transitio
 
 function messagebox(txt) {
     document.querySelector("#messagebox").classList.add('visible');
-    document.querySelector("#messagebox_text").innerText = txt;
+    document.querySelector("#messagebox_text").textContent = txt;
 }
 
 
