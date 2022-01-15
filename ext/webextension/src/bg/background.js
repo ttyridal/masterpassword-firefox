@@ -346,7 +346,7 @@ Promise.all([cbrowser.management.getSelf(), promised_storage_get(['releasenote_v
 .then(c => {
     // show releasenote if maj.min version differ (ginore patch/beta)
     const this_version = c[0].version.split('.').slice(0,2).join('.');
-    const last_run_version = c[1].releasenote_version.split('.').slice(0,2).join('.');
+    const last_run_version = c[1]?.releasenote_version?.split('.').slice(0,2).join('.');
     if (this_version !== last_run_version) {
         cbrowser.tabs.create({
             url: "/src/options/releasenote.html"
