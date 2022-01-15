@@ -7,12 +7,9 @@ html,body {
 @media only screen and (max-device-height:640px) {
 html,body {
   height: 100vh;
+  min-height: 20em;
   width: auto;
   overflow: hidden;
 }
-}
-
-body {
-    height:100%;
 }
 
