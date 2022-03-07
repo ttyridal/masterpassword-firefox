@@ -526,8 +526,12 @@ function indetifierUpdate() {
                 b += text.charCodeAt(i);
             isA = !isA;
         }
-        a = a % 99;
-        b = b % 99;
+        a = a % 90;
+        b = b % 90;
+        if (a < 12) 
+            a += 12;
+        if (b < 12)
+            b += 12;
         let emojiText = emojiStr + a.toString() + "; " + emojiStr + b.toString() + ";";
         identifier.innerHTML = emojiText;
     }
