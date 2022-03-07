@@ -509,40 +509,30 @@ document.querySelector('#siteconfig_show').addEventListener('click', function() 
     ui.hide('#siteconfig_show');
 });
 
-function indetifierUpdate()
-{
-    var text = document.querySelector("#username").value;
+function indetifierUpdate() {
+    let text = document.querySelector("#username").value;
     text += document.querySelector('#masterkey').value;
-    var identifier = document.querySelector('#identifier');
+    let identifier = document.querySelector('#identifier');
     if (text == '' || text == null || text.length < 6)
-    {
         identifier.innerHTML = '';
-    }
-    else if (text.length >=6)
-    {
-        var emojiStr = "&#1285";
-        var a = 0, b = 0;
-        var isA = true;
-        for (var i = 0; i < text.length; i++)
-        {
+    else if (text.length >=6) {
+        let emojiStr = "&#1285";
+        let a = 0, b = 0;
+        let isA = true;
+        for (let i = 0; i < text.length; i++) {
             if (isA)
-            {
                 a += text.charCodeAt(i);
-            }
             else 
-            {
                 b += text.charCodeAt(i);
-            }
             isA = !isA;
         }
         a = a % 99;
         b = b % 99;
-        var emojiText = emojiStr + a.toString() + "; " + emojiStr + b.toString() + ";";
+        let emojiText = emojiStr + a.toString() + "; " + emojiStr + b.toString() + ";";
         identifier.innerHTML = emojiText;
     }
 }
 
 document.querySelector("#username").addEventListener('input',indetifierUpdate);
 document.querySelector('#masterkey').addEventListener('input', indetifierUpdate);
-
 }());
