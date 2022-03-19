@@ -533,8 +533,7 @@ function indetifierUpdate() {
         a += 12;
         b += 12;
 	
-        let emojiText = emojiStr + a.toString() + "; " + emojiStr + b.toString() + ";";
-        identifier.innerHTML = emojiText;
+        identifier.textContent = String.fromCodePoint(emojiOffset + a, 32 , emojiOffset + b);
     }
 }
 
