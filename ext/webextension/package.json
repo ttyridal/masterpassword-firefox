@@ -16,6 +16,6 @@
         "jest-puppeteer": "^6.0.0",
         "jest-webextension-mock": "^3.7.19",
         "pngjs3": "^6.0.1",
-        "puppeteer": "^11.0.0"
+        "puppeteer": "^13.5.1"
     }
 }
