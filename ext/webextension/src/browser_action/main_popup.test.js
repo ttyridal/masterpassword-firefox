@@ -69,7 +69,9 @@ beforeAll(async ()=>{
 
     document.body.innerHTML =
     '<div>' +
-    '<div id="sessionsetup"><form></form></div>' +
+    '<div id="sessionsetup"><form>' +
+    '<input id="username"><input id="masterkey">' +
+    '</form></div>' +
     '<div id="main"><div id="thepassword"></div>' +
     '<input class="domain" id="domain">' +
     '<input id="sitename">' +
