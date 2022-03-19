@@ -516,16 +516,15 @@ function indetifierUpdate() {
     if (text == '' || text == null || text.length < 6)
         identifier.innerHTML = '';
     else if (text.length >=6) {
-        let emojiStr = "&#1285";
+        const emojiOffset = 0x1F600;
         let a = 0, b = 0;
-        let isA = true;
         for (let i = 0; i < text.length; i++) {
-            if (isA)
-                a += text.charCodeAt(i);
-            else 
+            if (i % 2)
                 b += text.charCodeAt(i);
-            isA = !isA;
+            else
+                a += text.charCodeAt(i);
         }
+
 
 	// emoji range between 12 - 90
         a = a % 78;

@@ -8,7 +8,7 @@
     </head>
     <body>
         <header class="banner valign_mid container">
-            <div class="valign_mid"><img src="/icons/icon48.png"><h1>MasterPassword Release 2.9.0-beta</h1></div>
+            <div class="valign_mid"><img src="/icons/icon48.png"><h1>MasterPassword Release 2.9.5</h1></div>
         </header>
         <main>
         <p>Thank you for using MasterPassword for browsers! The easiest way to handle site-unique password on the web.
@@ -23,22 +23,6 @@
         <h3>Users of OS' key-vault</h3>
         <p>If you're using GNOME Keyring, KWallet, OSX Keychain or Windows Password Vault to store your master key, you'll need to
         download a separate helper app. Please refer to <a href="https://github.com/ttyridal/masterpassword-firefox/wiki/Webextensions" target="_blank">the wiki</a> for further information.
-        <h3>Changes since v2.9b3</h3>
-        <ul>
-            <li>Fix bug basic password type was exported/imported as short and vice versa
-            <li>Fix bug failing to load config page correctly if using name[v] or phrase[v] type passwords
-            <li>Introduce improved second level domain (ie edu.nz) handling based on the public suffix list
-        </ul>
-        <h3>Changes since v2.9b2</h3>
-        <ul>
-            <li>Fix bug failing to convert datastore if more than one conflict
-            <li>Improve load time by storing (if configured) password generator state instead of master key
-            <li>Minor UI changes to improve experience on mobile (Firefox for Android)
-        </ul>
-        <h3>Changes since v2.9b1</h3>
-        <ul>
-            <li>Fix bug where extension fails to load if configured with os password store and helper not installed
-        </ul>
 
         <h3>Changes since v2.3.1 (firefox) / 2.1.5 (chrome)</h3>
         <ul>
@@ -50,6 +34,11 @@
         <li>Fix for many second level domains (edu.nz etc) not beeing recognized and giving wrong default sitename
         <li>Fix extension not working for sites opened as a webapp ("create application shortcut") (thanks to Jesse Morgan)
         <li>Fix for frameworks that did not detect password inserted (thanks to Andrew Armenia)
+        <li>Password recognition hint (emoji combo) (thanks to Deepak Patel)
+        <li>Improve load time by storing (if configured) password generator state instead of master key
+        <li>Minor UI changes to improve experience on mobile (Firefox for Android)
+        <li>Fix bug basic password type was exported/imported as short and vice versa
+        <li>Fix bug failing to load config page correctly if using name[v] or phrase[v] type passwords
         </ul>
 
         <h3 style="margin-top:2em">New data format</h3>
