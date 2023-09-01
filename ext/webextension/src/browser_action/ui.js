@@ -67,6 +67,7 @@ export const ui = {
     clear_warning: function() {
         let e = document.querySelector('#usermessage');
         e.classList.remove('warning_message');
+        e.textContent = '';
     },
 
     username: function(v) {

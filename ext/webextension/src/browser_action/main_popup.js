@@ -394,7 +394,7 @@ document.querySelector('#sessionsetup > form').addEventListener('submit', functi
     }
     else {
         ui.masterkey('');
-        ui.user_info("");
+        ui.clear_warning();
 
         config.set({username});
 
