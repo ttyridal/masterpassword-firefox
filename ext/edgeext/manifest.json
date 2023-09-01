@@ -20,8 +20,7 @@
   "incognito": "split",
   "options_page": "src/options/index.html",
   "options_ui":     {
-      "page": "src/options/options.html",
-      "chrome_style": true
+      "page": "src/options/options.html"
   },
   "browser_action": {
     "default_icon": "icons/icon19.png",
