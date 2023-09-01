@@ -21,7 +21,7 @@ chrome: $(LIBSCRYPT)
 firefox: $(LIBSCRYPT)
 	mkdir -p $(FFDST)
 	cp -r ext/webextension/icons $(FFDST)
-	cp ext/webextension/manifest.json $(FFDST)
+	cp ext/firefoxext/manifest.json $(FFDST)
 	cd ext/webextension && find src -type f -not -name '*test.js' | cpio -p -dumv ../../$(FFDST)
 	cd $(FFDST) && zip -r ../masterpassword-firefox.zip *
 

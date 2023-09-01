@@ -1,5 +1,6 @@
 /ext/data/*.png
 /ext/webextension/icons/*
+/ext/webextension/manifest.json
 /ext/chromeext/icons
 /ext/chromeext/src
 /ext/edgeext/icons
