@@ -1,7 +1,7 @@
 {
   "name": "MasterPassword for Firefox",
-  "version": "2.9.5",
-  "manifest_version": 2,
+  "version": "3.0.0",
+  "manifest_version": 3,
   "description": "Remember your MasterPassword, and this app will generate unique passwords for every other site you visit",
   "author": "Torbjorn Tyridal (ttyridal)",
   "homepage_url": "https://github.com/ttyridal/masterpassword-firefox",
@@ -11,19 +11,18 @@
     "128": "icons/icon128.png"
   },
   "background": {
-    "scripts": [
-      "src/bg/background.js"
-    ],
-    "persistent": true
+    "scripts": ["src/bg/background.js"],
+    "type": "module"
   },
   "incognito": "spanning",
   "options_ui":     {
       "page": "src/options/options.html",
       "browser_style": false
   },
-  "browser_action": {
+  "action": {
     "default_icon": {
         "16": "icons/icon16.png",
+        "24": "icons/icon19.png",
         "32": "icons/icon32.png"
       },
     "default_title": "MasterPassword",
@@ -37,10 +36,10 @@
       }
     }
   },
-  "applications": {
+  "browser_specific_settings": {
       "gecko": {
           "id": "jid1-pn4AFskf9WBAdA@jetpack",
-          "strict_min_version":"75.0"
+          "strict_min_version":"117.0"
       }
   },
   "permissions": [

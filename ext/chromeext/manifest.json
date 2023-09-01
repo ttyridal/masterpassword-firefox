@@ -1,8 +1,8 @@
 {
   "name": "MasterPassword for chrome",
-  "version": "2.9.5",
-  "version_name": "2.9.5",
-  "manifest_version": 2,
+  "version": "3.0.0",
+  "version_name": "3.0.0",
+  "manifest_version": 3,
   "description": "Remember your MasterPassword, and this app will generate unique passwords for every other site you visit",
   "author": "Torbjorn Tyridal (ttyridal)",
   "homepage_url": "https://github.com/ttyridal/masterpassword-firefox",
@@ -12,10 +12,8 @@
     "128": "icons/icon128.png"
   },
   "background": {
-    "scripts": [
-      "src/bg/background.js"
-    ],
-    "persistent": true
+    "service_worker": "src/bg/background.js",
+    "type": "module"
   },
   "incognito": "split",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxMIpiNkRMqAlsnyv4Px4hZTfdYpfj9kmMyI9eX0q4lFL+5nKYViYvwAxb9FY4EPmois11L4Of4BSEmSZ366AWwmcR+sBvOn0peTTpZvVbnd4Y/U8OKouc0G7ihN9t6qLZ6RdpTc7ZY0roLBu2G5Bob3GOhx0oE4rafZeaNCk9I8m/GwRd4Risiw3B5calzGgWbAnTkKiDrFFpNgB3ZWGzn0NqP6ulrUxe8cn4A2sjfDPHSbyIym/aAhKXY2RIasextqbo0UsbxX1duo6f85rGXepsrNnwUDRfhinf8rxiZZzWcFjlSSB2SBAUdoRCiAyswgFWS5zpyQGFm1yyESAmwIDAQAB",
@@ -23,13 +21,17 @@
   "options_ui":     {
       "page": "src/options/options.html"
   },
-  "browser_action": {
-    "default_icon": "icons/icon19.png",
+  "action": {
+    "default_icon": {
+        "16": "icons/icon16.png",
+        "24": "icons/icon19.png",
+        "32": "icons/icon32.png"
+    },
     "default_title": "MasterPassword",
     "default_popup": "src/browser_action/browser_action.html"
   },
   "commands": {
-    "_execute_browser_action": {
+    "_execute_action": {
       "suggested_key": {
          "default": "Alt+Shift+P",
          "mac": "MacCtrl+Shift+P"
