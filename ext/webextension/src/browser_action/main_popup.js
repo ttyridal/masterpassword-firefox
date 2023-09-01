@@ -1,4 +1,4 @@
-/* Copyright Torbjorn Tyridal 2015-2021
+/* Copyright Torbjorn Tyridal 2015-2023
 
     This file is part of Masterpassword for Firefox (herby known as "the software").
 
@@ -60,11 +60,16 @@ const runtimeSendMessage = (typeof browser !== 'undefined' ?
                        browser.runtime.sendMessage :
                        (msg) => new Promise(suc => chrome.runtime.sendMessage(msg, suc)));
 
+function masterkey_get(use_pass_store) {
+    return runtimeSendMessage({action: 'masterkey_get',
+                        use_pass_store})
+    .catch(err=>{ console.log("BUG!",err); });
+}
+
 function masterkey_set(masterkey, nosave) {
     return runtimeSendMessage({action: 'masterkey_set',
                         masterkey: masterkey,
-                        use_pass_store: config.pass_store && (!nosave),
-                        keep_time: config.passwdtimeout})
+                        use_pass_store: config.pass_store && (!nosave)})
     .catch(err=>{ console.log("BUG!",err); });
 }
 
@@ -75,8 +80,8 @@ function mpwstate_set(mpwstate) {
     .catch(err=>{ console.log("BUG!",err); });
 }
 
-function masterkey_clear() {
-    runtimeSendMessage({action: 'masterkey_set', masterkey: null, use_pass_store: false })
+function mpwstate_clear() {
+    runtimeSendMessage({action: 'mpwstate_set', mpwstate: null})
     .catch(err=>{ console.log("BUG!",err); });
 }
 
@@ -340,14 +345,14 @@ window.addEventListener('test_reset', () => {
     session_store = {};
 });
 
-window.addEventListener('load', function () {
+async function windowOnLoad() {
     if (window.running_under_test)
     {
         window.running_under_test = undefined;
         return;
     }
 
-    config.get([
+    const v = await config.get([
         'username',
         'key_id',
         'defaulttype',
@@ -355,29 +360,25 @@ window.addEventListener('load', function () {
         'pass_store',
         'passwdtimeout',
         'use_sync',
-    ])
-    .then(v=>{
-        return runtimeSendMessage({action: 'masterkey_get', use_pass_store: v.pass_store});
-    })
-    .then(data => {
-        if (data.pwgw_failure) {
-            let e = ui.user_warn("System password vault failed! ");
-            e = e.appendChild(document.createElement('a'));
-            e.href = "https://github.com/ttyridal/masterpassword-firefox/wiki/Key-vault-troubleshooting";
-            e.target = "_blank";
-            e.textContent = "Help?";
-            data.masterkey=undefined;
-        } else {
-            ui.user_info("");
-        }
-        popup(data);
-    })
-    .catch(err => {
-        console.error(err);
-        console.error("Failed loading state from background on popup");
-        ui.user_warn("BUG. please check log and report");
-    });
-},false);
+    ]);
+
+    let data = {};
+    if (v.passwdtimeout || v.pass_store) {
+        data = await runtimeSendMessage({action: 'masterkey_get', use_pass_store: v.pass_store});
+    }
+    if (data.pwgw_failure) {
+        let e = ui.user_warn("System password vault failed! ");
+        e = e.appendChild(document.createElement('a'));
+        e.href = "https://github.com/ttyridal/masterpassword-firefox/wiki/Key-vault-troubleshooting";
+        e.target = "_blank";
+        e.textContent = "Help?";
+        data.masterkey=undefined;
+    } else {
+        ui.user_info("");
+    }
+    popup(data);
+}
+window.addEventListener('load', windowOnLoad, {once:true});
 
 document.querySelector('#sessionsetup > form').addEventListener('submit', function(ev) {
     ev.preventDefault();
@@ -396,6 +397,7 @@ document.querySelector('#sessionsetup > form').addEventListener('submit', functi
     }
     else {
         ui.masterkey('');
+        ui.user_info("");
 
         config.set({username});
 
@@ -487,7 +489,7 @@ document.querySelector('body').addEventListener('click', function(ev) {
         window.close();
     }
     else if (ev.target.classList.contains('btnlogout')) {
-        masterkey_clear();
+        mpwstate_clear();
         mpw_promise = defer();
         ui.clear_warning();
         ui.user_info("Session destroyed");
@@ -526,7 +528,7 @@ function indetifierUpdate() {
         }
         a = a % 90;
         b = b % 90;
-        if (a < 12) 
+        if (a < 12)
             a += 12;
         if (b < 12)
             b += 12;

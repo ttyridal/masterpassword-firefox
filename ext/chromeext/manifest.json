@@ -2,6 +2,7 @@
   "name": "MasterPassword for chrome",
   "version": "3.0.0",
   "version_name": "3.0.0",
+  "minimum_chrome_version": "102",
   "manifest_version": 3,
   "description": "Remember your MasterPassword, and this app will generate unique passwords for every other site you visit",
   "author": "Torbjorn Tyridal (ttyridal)",

@@ -1,4 +1,4 @@
-/* Copyright Torbjorn Tyridal 2015-2021
+/* Copyright Torbjorn Tyridal 2015-2023
 
     This file is part of Masterpassword for Firefox (herby known as "the software").
 
@@ -104,34 +104,22 @@ function pwvault_gateway(msg) {
     });
 }
 
-var _masterkey, _mpwstate;
 const pw_retention_timer = 'pw_retention_timer';
 cbrowser.alarms.onAlarm.addListener(a => {
     if (a.name === pw_retention_timer) {
-        _masterkey = undefined;
-        _mpwstate = undefined;
+        chrome.storage.session.clear();
     }
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {
     if (area === 'local' && changes.passwdtimeout) {
         if (changes.passwdtimeout.newValue == 0) {
-            _masterkey = undefined;
-            _mpwstate = undefined;
+            chrome.storage.session.clear();
         }
         if (changes.passwdtimeout.newValue <= 0)
             cbrowser.alarms.clear(pw_retention_timer);
     }
 });
-
-function temp_store_masterkey(k, keep_time) {
-    if (!keep_time) return;
-    if (keep_time > 0) {
-        // create a new alarm with same name will automatically clear the old -> reset :)
-        cbrowser.alarms.create(pw_retention_timer, {delayInMinutes: keep_time});
-    }
-    _masterkey = k;
-}
 
 function temp_store_mpwstate(k, keep_time) {
     if (!keep_time) return;
@@ -139,7 +127,7 @@ function temp_store_mpwstate(k, keep_time) {
         // create a new alarm with same name will automatically clear the old -> reset :)
         cbrowser.alarms.create(pw_retention_timer, {delayInMinutes: keep_time});
     }
-    _mpwstate = k;
+    chrome.storage.session.set({ mpwstate: k })
 }
 
 function promised_storage_get(keys) {
@@ -264,6 +252,20 @@ async function update_page_password_impl(pass, username, allow_subframe, allow_s
     }
 }
 
+async function onMsg_masterkey_get(req) {
+    let data = await chrome.storage.session.get(["mpwstate"]);
+    if (!data.mpwstate && req.use_pass_store) {
+        try {
+            let mk = await pwvault_gateway({'type':'pwget', 'name':'default'});
+            data = {masterkey: mk.value};
+        } catch(err) {
+            console.error("pwvault_gateway failed ", err);
+            data = {pwgw_failure: err.message};
+        }
+    }
+    return data;
+}
+
 chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
     // not really necessary according to the docs, but rather safe than sorry.
     if (!sender || !sender.id || sender.id !== chrome.runtime.id) {
@@ -279,42 +281,18 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
         case 'IamActive':  // noisy bastard
             return;
         case 'masterkey_get':
-            if (_mpwstate) {
-                sendResponse({mpwstate: _mpwstate});
-                return;
-            }
-            if (_masterkey) {
-                sendResponse({masterkey: _masterkey});
-                return;
-            } else if (req.use_pass_store) {
-                pwvault_gateway({'type':'pwget', 'name':'default'})
-                .then(mk => {
-                    sendResponse({masterkey: mk.value});
-                })
-                .catch(err => {
-                    console.error("pwvault_gateway failed ", err);
-                    sendResponse({pwgw_failure: err.message});
-                });
-                return true;
-            }
-            sendResponse({});
-            return;
+            onMsg_masterkey_get(req).then(sendResponse);
+            return true;
         case 'masterkey_set':
-            if (!req.masterkey) {
-                _masterkey = undefined;
-                _mpwstate = undefined;
-            } else if (req.use_pass_store) {
+            if (req.masterkey && req.use_pass_store)
                 pwvault_gateway({'type':'pwset','name':'default', 'value': req.masterkey})
                 .catch(e => { console.error(e); });
-            } else if (!_mpwstate)
-                temp_store_masterkey(req.masterkey, req.keep_time);
             sendResponse({});
             return;
         case 'mpwstate_set':
-            _masterkey = undefined;  // no need to keep it around if we have the state
-            if (!req.mpwstate) {
-                _mpwstate = undefined;
-            } else
+            if (!req.mpwstate)
+                chrome.storage.session.clear();
+            else
                 temp_store_mpwstate(req.mpwstate, req.keep_time);
             sendResponse({});
             return;
@@ -328,7 +306,6 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
         default:
             console.log("unknown action", req);
     }
-
 });
 
 Promise.all([cbrowser.management.getSelf(), promised_storage_get(['releasenote_version'], true)])
