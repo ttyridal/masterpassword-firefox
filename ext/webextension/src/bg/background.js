@@ -17,6 +17,9 @@
 */
 /* global browser, chrome */
 
+import {defer} from "../lib/utils.js";
+
+
 (function(){
 "use strict";
 var cbrowser;
@@ -50,7 +53,6 @@ chrome.runtime.onInstalled.addListener(details=>{
         default:
     }
 });
-
 
 var port;
 function port_default_error() { port = undefined; }
@@ -149,58 +151,45 @@ function promised_storage_get(keys) {
     });
 }
 
-function current_tab() {
-    return new Promise(r => {
-        chrome.tabs.query({active:true, currentWindow:true}, function(tabs) {
-            r(tabs[0]);
-        });
-    });
+async function current_tab() {
+    let queryOptions = { active: true, /*currentWindow:true,*/ lastFocusedWindow: true };
+    let [tab] = await chrome.tabs.query(queryOptions);
+    return tab;
 }
 
-function find_active_input(tab) {
+async function find_active_input(tab) {
     const TIMEOUT = 100;
+    const done = defer();
+    let to = undefined;
 
-    return new Promise((r,f) => {
-        let to, good_response;
-        function msgrecv(msg, sender /*, sendResponse*/) {
-            if (!msg || msg.id !== chrome.runtime.id)
-                return;
-            if (msg.action === 'IamActive') {
-                good_response = true;
-                if (to)
-                    window.clearTimeout(to);
-                chrome.runtime.onMessage.removeListener(msgrecv);
-                r({tab:sender.tab, frameId:sender.frameId, tgt: msg.tgt});
-            }
+    if (!tab) return undefined;
+
+    function msgrecv(msg, sender /*, sendResponse*/) {
+        if (!msg || msg.id !== chrome.runtime.id)
+            return;
+        if (msg.action === 'IamActive') {
+            done.resolve({tab:sender.tab, frameId:sender.frameId, tgt: msg.tgt});
         }
-        chrome.runtime.onMessage.addListener(msgrecv);
+    }
 
-        chrome.tabs.executeScript(tab && tab.id, {
-            file: '/src/cs/findinput.js',
-            allFrames: true,
-            matchAboutBlank: true
-        }, ()=>{
-            if (good_response) return;
-            to = window.setTimeout(()=>{
-                chrome.runtime.onMessage.removeListener(msgrecv);
-                f({name: 'update_pass_failed', message:"No password field found (timeout)"});
-            }, TIMEOUT);
+    chrome.runtime.onMessage.addListener(msgrecv);
+    to = setTimeout(()=>{
+        done.resolve(undefined);
+    }, TIMEOUT);
+    await chrome.scripting.executeScript({
+            target: {
+                tabId: tab.id,
+                allFrames: true,
+            },
+            files: ['/src/cs/findinput.js'],
         });
-    });
-}
 
-function Update_pass_failed() {
-    let t = Error.apply(this, arguments);
-    t.name = this.name = 'Update_pass_failed';
-    this.message = t.message;
-    Object.defineProperty(this, 'stack', {
-        get: function() { return t.stack; }
-    });
-}
-var IntermediateInheritor = function () {};
-IntermediateInheritor.prototype = Error.prototype;
-Update_pass_failed.prototype = new IntermediateInheritor();
+    let resp = await done;
 
+    chrome.runtime.onMessage.removeListener(msgrecv);
+    clearTimeout(to);
+    return resp;
+}
 
 function _insert_password(args) {
     let inputf = document.activeElement &&
@@ -250,29 +239,29 @@ function _insert_password(args) {
 }
 
 
-function update_page_password_impl(pass, username, allow_subframe, allow_submit) {
-    return current_tab()
-           .then(find_active_input)
-           .then(r=>{
-               if (r.tgt.type.toLowerCase() === 'password') { /* empty */ }
-               else if ((r.tgt.type === '' || r.tgt.type.match(/(text|email|num|tel)/ig)) &&
-                    r.tgt.name.match(/.*(user|name|email|login).*/ig)) { /* empty */ }
-               else
-                   throw new Update_pass_failed("no password field selected");
-               if (!allow_subframe && r.frameId)
-                   throw new Update_pass_failed("Not pasting to subframe");
-               let args = { pass: pass, username: username, autosubmit: allow_submit };
-               return chrome.tabs.executeScript(r.tab.id, {
-                   code: ';('+_insert_password+'('+JSON.stringify(args)+'));',
-                   frameId: r.frameId,
-                   matchAboutBlank: true
-               });
-           })
-           .catch(err=>{
-               if (err instanceof Update_pass_failed || (err.name && err.name == 'update_pass_failed'))
-                   console.log(err.message);
-               else
-                   console.error("update_page_password", err);});
+function is_username_or_password_form_element(el) {
+    return (el.type.toLowerCase() === 'password')
+           || ((el.type === '' || el.type.match(/(text|email|num|tel)/ig))
+              && el.name.match(/.*(user|name|email|login).*/ig)
+           );
+}
+
+async function update_page_password_impl(pass, username, allow_subframe, allow_submit) {
+    let r = await find_active_input(await current_tab());
+
+    if (!r || !is_username_or_password_form_element(r.tgt) || (r.frameId && !allow_subframe))
+        return;
+
+    const args = { pass: pass, username: username, autosubmit: allow_submit };
+    try {
+        chrome.scripting.executeScript({
+            target: { tabId: r.tab.id, frameIds: [r.frameId] },
+            func: _insert_password,
+            args: [args]
+        });
+    } catch (err) {
+        console.error("update_page_password", err);
+    }
 }
 
 chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
