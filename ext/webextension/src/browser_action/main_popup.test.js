@@ -124,6 +124,26 @@ it('main_popup.js loads without error', async () => {
 //     await import('./main_popup.js');
 });
 
+it('main_popup.js login with in memory mpwstate', async () => {
+    chrome.runtime.sendMessage.mockImplementationOnce((lst,cb)=>{cb({mpwstate: 'test'})});
+    jest.spyOn(MockSiteStore.prototype, 'get').mockResolvedValueOnce([]);
+
+    jest.useFakeTimers();
+    jest.spyOn(global, 'setTimeout');
+
+    window.dispatchEvent(new window.Event('test_load'));
+    await flushPromises();
+
+    jest.runOnlyPendingTimers()
+
+    expect(chrome.runtime.sendMessage).toHaveBeenCalled();
+    expect(chrome.tabs.query).toHaveBeenCalled();
+    expect(sitename.addOption).toHaveBeenCalledWith("test.no");
+    expect(sitename.value).toEqual("test.no");
+    await flushPromises();
+    expect(calcpasswd).toHaveBeenCalledWith("test.no", 1, 'l');
+});
+
 it('main_popup.js login with in memory masterkey', async () => {
     chrome.runtime.sendMessage.mockImplementationOnce((lst,cb)=>{cb({masterkey: 'test'})});
     jest.spyOn(MockSiteStore.prototype, 'get').mockResolvedValueOnce([]);
@@ -131,7 +151,7 @@ it('main_popup.js login with in memory masterkey', async () => {
     jest.useFakeTimers();
     jest.spyOn(global, 'setTimeout');
 
-    window.dispatchEvent(new window.Event('load'));
+    window.dispatchEvent(new window.Event('test_load'));
     await flushPromises();
 
     jest.runOnlyPendingTimers()
@@ -149,7 +169,7 @@ it('main_popup.js requests login', async () => {
     jest.useFakeTimers();
     jest.spyOn(global, 'setTimeout');
 
-    window.dispatchEvent(new window.Event('load'));
+    window.dispatchEvent(new window.Event('test_load'));
     await flushPromises();
 
     jest.runOnlyPendingTimers()
@@ -165,8 +185,9 @@ it('main_popup.js requests login', async () => {
     ui.masterkey.mockReturnValueOnce('test');
 
     document.querySelector('#sessionsetup > form').dispatchEvent(new Event('submit', {bubbles: true, cancelable: true}));
-    await flushPromises();
     expect(ui.masterkey).toHaveBeenLastCalledWith('');
+    jest.runOnlyPendingTimers();
+    await flushPromises();
     expect(calcpasswd).toHaveBeenCalledWith("test.no", 1, 'l');
 });
 
@@ -179,7 +200,7 @@ it('selects the matching site instead of default', async () => {
     jest.useFakeTimers();
     jest.spyOn(global, 'setTimeout');
 
-    window.dispatchEvent(new window.Event('load'));
+    window.dispatchEvent(new window.Event('test_load'));
     await flushPromises();
 
     jest.runOnlyPendingTimers()
@@ -200,7 +221,7 @@ it('selects the best match', async () => {
     jest.useFakeTimers();
     jest.spyOn(global, 'setTimeout');
 
-    window.dispatchEvent(new window.Event('load'));
+    window.dispatchEvent(new window.Event('test_load'));
     await flushPromises();
 
     jest.runOnlyPendingTimers()
@@ -221,7 +242,7 @@ it('selects the best match2', async () => {
     jest.useFakeTimers();
     jest.spyOn(global, 'setTimeout');
 
-    window.dispatchEvent(new window.Event('load'));
+    window.dispatchEvent(new window.Event('test_load'));
     await flushPromises();
 
     jest.runOnlyPendingTimers()
@@ -235,11 +256,11 @@ it('selects the best match2', async () => {
 
 
 async function run_to_popup_loaded() {
-    chrome.runtime.sendMessage.mockImplementationOnce((lst,cb)=>{cb({masterkey: 'test'})});
+    chrome.runtime.sendMessage.mockImplementationOnce((lst,cb)=>{cb({mpwstate: 'test'})});
     jest.useFakeTimers();
     jest.spyOn(global, 'setTimeout');
 
-    window.dispatchEvent(new window.Event('load'));
+    window.dispatchEvent(new window.Event('test_load'));
     await flushPromises();
 
     jest.runOnlyPendingTimers()

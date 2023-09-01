@@ -60,7 +60,7 @@ const runtimeSendMessage = (typeof browser !== 'undefined' ?
                        browser.runtime.sendMessage :
                        (msg) => new Promise(suc => chrome.runtime.sendMessage(msg, suc)));
 
-function masterkey_get(use_pass_store) {
+function state_or_masterkey_get(use_pass_store) {
     return runtimeSendMessage({action: 'masterkey_get',
                         use_pass_store})
     .catch(err=>{ console.log("BUG!",err); });
@@ -360,8 +360,8 @@ async function windowOnLoad() {
     ]);
 
     let data = {};
-    if (v.passwdtimeout || v.pass_store) {
-        data = await runtimeSendMessage({action: 'masterkey_get', use_pass_store: v.pass_store});
+    if (v.passwdtimeout!=0 || v.pass_store) {
+        data = await state_or_masterkey_get(v.pass_store);
     }
     if (data.pwgw_failure) {
         let e = ui.user_warn("System password vault failed! ");
@@ -376,6 +376,7 @@ async function windowOnLoad() {
     popup(data);
 }
 window.addEventListener('load', windowOnLoad, {once:true});
+window.addEventListener('test_load', windowOnLoad);
 
 document.querySelector('#sessionsetup > form').addEventListener('submit', function(ev) {
     ev.preventDefault();
