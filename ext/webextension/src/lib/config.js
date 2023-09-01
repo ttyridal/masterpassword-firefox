@@ -95,13 +95,19 @@ class Config {
         const singlekey = typeof lst === "string";
         if (singlekey) lst = [lst];
 
-        return (typeof this._cache.use_sync === 'undefined'
-            ? promised_storage_get(chrome.storage.local, {'use_sync': this.browser_is_chrome})
-            : Promise.resolve(this._cache.use_sync))
-        .then((values)=>{
-            this._cache.use_sync = values.use_sync;
+        // For historical reasons. firefox did not have support for sync storage in the begining
+        // chrome version always had it (and default enabled). Preserve behaviour
+        const use_sync_default = this.browser_is_chrome;
 
-            let result = {use_sync: this._cache.use_sync};
+        // for obvious reasons, the use_sync flag must be in local storage. if not cached, we'll get that first
+        const use_sync = (typeof this._cache.use_sync === 'undefined'
+            ? promised_storage_get(chrome.storage.local, {'use_sync': use_sync_default})
+            : Promise.resolve({use_sync: this._cache.use_sync}));
+
+        return use_sync
+        .then((result)=>{
+            this._cache.use_sync = result.use_sync;
+
             let store_fetch = lst.filter(e => e !== 'use_sync');
 
             let localget = [];
