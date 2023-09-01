@@ -303,15 +303,12 @@ function showMain() {
 }
 
 function popup(masterkey_or_state) {
-    if (!masterkey_or_state) {
-        showSessionSetup();
-    }
-    else if (masterkey_or_state.mpwstate || (config.username && masterkey_or_state.masterkey)) {
+    if (masterkey_or_state.mpwstate || (masterkey_or_state.masterkey && config.username)) {
         showMain();
         setTimeout(()=>{ resolve_mpw(masterkey_or_state);}, 1); // do later so page paints as fast as possible
-    } else {
+    } else
         showSessionSetup();
-    }
+
 
     let urlpromise = get_active_tab_url()
     .catch(function(x) { //jshint ignore:line
@@ -401,9 +398,8 @@ document.querySelector('#sessionsetup > form').addEventListener('submit', functi
 
         config.set({username});
 
-        ui.hide('#sessionsetup');
-        ui.show('#main');
-        resolve_mpw({masterkey});
+        showMain();
+        setTimeout(()=>{ resolve_mpw({masterkey});}, 1); // do later so page paints as fast as possible
     }
 });
 
@@ -494,7 +490,7 @@ document.querySelector('body').addEventListener('click', function(ev) {
         ui.clear_warning();
         ui.user_info("Session destroyed");
         console.log("session destroyed");
-        popup();
+        popup({});
     }
 });
 
