@@ -27,8 +27,16 @@ jest.unstable_mockModule('../lib/mpw.js', () => {
                                               key_id: ()=>{return "yyyy"}}) };
 });
 
+let pslmock = {
+    waitTableReady: jest.fn().mockResolvedValue(null),
+    getPublicDomain: jest.fn(domain=>{
+        let domain_parts = domain.split(".");
+        let significant_parts = Math.min(2, domain_parts.length);
+        return domain_parts.slice(-significant_parts).join('.');
+    })
+}
 jest.unstable_mockModule('../lib/psllookup.js', () => {
-    return { PslLookup: jest.fn().mockReturnValue({waitTableReady:jest.fn().mockResolvedValue(null)}) };
+    return { PslLookup: jest.fn().mockReturnValue(pslmock) };
 });
 
 jest.unstable_mockModule('../lib/config.js', () => {
@@ -213,6 +221,10 @@ it('selects the matching site instead of default', async () => {
 });
 
 it('selects the best match', async () => {
+    //everything should still work if psl not available... fallback function and
+    //warning to log
+    pslmock.getPublicDomain.mockImplementationOnce(()=>{throw "not available";});
+
     jest.spyOn(MockSiteStore.prototype, 'get').mockResolvedValueOnce([
         new Site({sitename: "test.no", url:['test.no'], type:'x'}),
         new Site({sitename: "wwwtest.no", url:['www.test.no'], type:'x'})]);
