@@ -52,13 +52,6 @@ def pgmdump(s):
     print(" "*padding)
 
 
-table=dict()
-walk(build_tree_from_psl(sys.argv[1]), table)
-pgmdump(json.dumps(table).replace(' ',''))
-
-if len(sys.argv) < 3 or sys.argv[2] != "test":
-    sys.exit(0)
-
 def lookup(url, d):
     urlparts = url.split('.')[::-1]
 
@@ -80,24 +73,44 @@ def lookup(url, d):
 
     return ".".join(res[::-1])
 
-for test in [
-        'example.com',
-        'amazon.com',
-        'show.amazon.com',
-        'amazon.co.uk',
-        'shop.amazon.co.uk',
-        'tyridal.no',
-        'digi.gitapp.si',
-        'www.tyridal.no',
-        'torbjorn.tyridal.no',
-        'wilson.no.eu.org',
-        'xxx.wilson.no.eu.org',
-        'weare.org.om',
-        'rave.weare.org.om',
-        'rave.blogspot.co.nz',
-        'rave.blogspot.com',
-        'xx.rave.blogspot.co.nz',
-        'xx.rave.blogspot.com',
-        'blogspot.com',
-        ]:
-    print(test, "->", lookup(test, table))
+def test():
+    for test in [
+            'example.com',
+            'amazon.com',
+            'show.amazon.com',
+            'amazon.co.uk',
+            'shop.amazon.co.uk',
+            'tyridal.no',
+            'digi.gitapp.si',
+            'www.tyridal.no',
+            'torbjorn.tyridal.no',
+            'wilson.no.eu.org',
+            'xxx.wilson.no.eu.org',
+            'weare.org.om',
+            'rave.weare.org.om',
+            'rave.blogspot.co.nz',
+            'rave.blogspot.com',
+            'xx.rave.blogspot.co.nz',
+            'xx.rave.blogspot.com',
+            'blogspot.com',
+            ]:
+        print(test, "->", lookup(test, table))
+
+
+
+if len(sys.argv) < 3 or sys.argv[1] not in ['pgm','json','test']:
+    print("usage {} {{pgm,json,test}} <psl.dat>".format(sys.argv[0]), file=sys.stderr)
+    sys.exit(-1)
+
+table=dict()
+walk(build_tree_from_psl(sys.argv[2]), table)
+
+if sys.argv[1] == 'json':
+    print(json.dumps(table).replace(' ',''))
+elif sys.argv[1] == 'pgm':
+    pgmdump(json.dumps(table).replace(' ',''))
+elif sys.argv[1] == 'test':
+    test()
+else:
+    print("unknown command")
+
