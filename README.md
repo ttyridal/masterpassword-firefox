@@ -3,7 +3,7 @@ Master Password algorithm implemented as a browser extension, with the intent to
 browsers (Chrome, Edge, Firefox)
 
 This is a browser extension implementing the masterpassword algorithm invented by Maarten Billemont.
-You can visit his website at [masterpasswordapp.com](http://masterpasswordapp.com).
+You can visit his website at [spectre.app](https://spectre.app).
 
 **Please note that this plugin is not affiliated with Mr Billemont**
 
@@ -30,6 +30,7 @@ Spectre has no consequence for the algorithm, the masterpassword ecosystem or th
 Visit your browser's store and click the install button:
 [Chrome](https://chrome.google.com/webstore/detail/masterpassword-for-chrome/hifbblnjfcimjnlhibannjoclibgedmd?hl=en-US&gl=US)
 [Firefox](https://addons.mozilla.org/en-US/firefox/addon/masterpassword-firefox/)
+[Edge](https://microsoftedge.microsoft.com/addons/detail/masterpassword-for-edge/hhlpgmeeiabedlfldelibppckcfdkilp)
 
 
 # Documentation
