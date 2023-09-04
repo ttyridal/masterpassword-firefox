@@ -26,7 +26,7 @@ import config from "../lib/config.js";
 import mpw from "../lib/mpw.js";
 import {ui} from "./ui.js";
 
-const psl = new PslLookup({tableurl: "/src/lib/psllookup.json.png"});
+const psl = new PslLookup({tableurl: "/src/lib/psllookup.json.gz"});
 
 const zip = (a, b) => Array.from(Array(Math.max(b.length, a.length)), (_, i) => [a[i], b[i]]);
 function arrayEqualElements(a,b) {

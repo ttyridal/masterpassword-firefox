@@ -1,40 +1,14 @@
-function loadImage(url) {
-    let img = new Image();
-    return new Promise((res,fail)=>{
-        img.onerror = () =>{
-            fail(new Error("failed to load image "+url));
-        }
-        img.onload = ()=>{
-            res(img);
-        }
-        img.src = url;
-    });
-}
-
-async function getPixels(url) {
-    let img = await loadImage(url);
-    let canvas = document.createElement('canvas');
-    canvas.height = img.height;
-    canvas.width = img.width;
-    let context = canvas.getContext('2d');
-    context.drawImage(img, 0, 0);
-    return context.getImageData(0, 0, img.width, img.height).data;
-}
-
-
-function pixeldata_to_json(pixeldata) {
-    pixeldata = pixeldata.filter((_,i)=> i%4 ==0);
-    const blob = new Blob([pixeldata], {type: 'text/plain; charset=utf-8'});
-    return blob.text();
-}
-
 export class PslLookup {
     constructor(args) {
         args = args || {};
-        args = Object.assign({tableLoader: getPixels, tableurl: "./psllookup.json.png"}, args);
-        this.psltable = args.tableLoader(args.tableurl)
-        .then(pixeldata_to_json)
-        .then(JSON.parse)
+        args = Object.assign({tableurl: "./psllookup.json.gz"}, args);
+
+        this.psltable = fetch(args.tableurl).then(r=>r.body)
+        .then(stream=>{
+            const ds = new DecompressionStream('gzip');
+            const decompressedStream = stream.pipeThrough(ds);
+            return new Response(decompressedStream, {headers: { "Content-Type": "application/json"}}).json()
+        })
         .catch(e=>{console.error("psllookup load failed",e); return undefined;});
     }
 

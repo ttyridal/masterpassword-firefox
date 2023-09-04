@@ -1,35 +1,37 @@
-/* globals global */
+/* globals global, Buffer */
 "use strict";
 import {it, expect} from '@jest/globals'
 import {PslLookup} from './psllookup.js'
 import fs from 'fs';
-import {PNG} from 'pngjs3'
-// import { sync as PNGSync } from 'pngjs3';
+import {Readable} from 'node:stream';
 import { URL } from 'url';
 
-function pngPixels(url) {
+async function MockFetch(url) {
     const url_abspath = new URL(url, import.meta.url).pathname;
-    const data = fs.readFileSync(url_abspath);
-
-    return new Promise(resolve=>{
-        new PNG().parse(data, function (error, data) {
-            resolve(data.data);
-        });
-    });
+    let bdy = Readable.toWeb(fs.createReadStream(url_abspath));
+    return {body:bdy};
 }
 
-class MockBlob {
-    constructor(data/*, params*/) {
-        let txt = data.toString("utf8");
-        this.text = ()=>{return Promise.resolve(txt)};
+function MockResponse(stream, options) { // eslint-disable-line no-unused-vars
+    async function respJson() {
+        const chunks = [];
+        for await (const chunk of stream) {
+            chunks.push(Buffer.from(chunk));
+        }
+        return JSON.parse(Buffer.concat(chunks).toString("utf-8"));
     }
+
+    return {json: respJson};
+
 }
-global.Blob = MockBlob;
+
+global.fetch = MockFetch;
+global.Response = MockResponse;
 
 it('gets the correct domain from url', async () => {
 
 
-    const psl = new PslLookup({tableLoader: pngPixels});
+    const psl = new PslLookup();
     await psl.waitTableReady()
     const getDomain = psl.getPublicDomain.bind(psl);
 

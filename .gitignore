@@ -1,6 +1,7 @@
 /ext/data/*.png
 /ext/webextension/icons/*
 /ext/webextension/manifest.json
+/ext/webextension/src/lib/psllookup.json.gz
 /ext/chromeext/icons
 /ext/chromeext/src
 /ext/edgeext/icons

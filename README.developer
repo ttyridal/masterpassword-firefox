@@ -9,6 +9,12 @@ Test coverage is not the greatest at the moment.
 Also some (most) code is rather unaccessible to testing (thanks to being hidden in iife's)
 but we'll get there with time.. And some is better than nothing :)
 
+### other useful node commands
+all run in the ext/webextension folder
+```
+npx ncu --upgrade   ; check for package upgrades
+npx eslint .        ; run linter
+```
 
 ## Building the libscrypt dependency
 build docker container in libscrypt/docker:
@@ -28,8 +34,12 @@ run `makeicons.sh` in the gfx folder.  The script needs imagemagik and will copy
 
 (again you could just extract the files from a release)
 
+## Building Public Suffix List
+`make ../ext/webextension/src/lib/psllookup.json.gz`  in the publicsuffixlist folder.
+
 ## Browsers
-The source supports both Chrome and Firefox, with separate manifest.json.
-It's suggested to symlink `src` into the chromeext folder for easy parallell testing.  Another solution is to copy the one you want into ext/webextension.
+The source supports both Chromium (Chrome, Edge, Vivaldi(apparently)) and Firefox, with separate manifest.json.
+It's suggested to symlink `src` into the chromeext folder for easy parallell testing.
+Another solution is to copy the one you want into ext/webextension.
 
 
