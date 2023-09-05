@@ -303,45 +303,70 @@ no-op {
 
 .configgroup {
     width: 100%;
+    max-width: 44em;
     display: flex;
     justify-content: flex-start;
+    position:relative;
+    flex-flow: row wrap;
+    padding-left: 1em;
 }
 
-@media only screen and (max-width:640px) and (orientation : portrait) {
-.configgroup {
-    flex-direction:column;
-}
-.configsubgroup.left {
-    margin-bottom: 2em;
-}
+.configsubgroup {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    max-width: 25em;
+    min-width: 15.5em;
+    padding-right: 2em;
 }
 
-.configsubgroup.left {
-    padding-right:5em;
+.configitem {
+    width: 14em;
+    height:2em;
+    display:flex;
+    flex-flow: row wrap;
+
+    padding: 0.2em 0;
+    position: relative;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.configitem.terse {
+    padding: 0;
+    height: 1.2em;
+    justify-content: space-around;
+}
+.configitem.terse ~ .configitem {
+    padding-right: 2.5em;
+}
+
+.configitem:hover {
+    background-color: rgba(0,0,0,0.09);
+}
+
+.configitem > * {
+    display:block;
+    height: 100%;
 }
 
 .configitem > label {
-    margin-left: 1em;
+    break-inside: avoid;
+    text-wrap: nowrap;
     font-size: 0.8em;
-    min-width: 14em;
-    float:left;
+    flex:1;
 }
 
 .configitem > input,
 .configitem > select,
 .configitem > option,
 no-op {
-    margin-top:1.5em;
-    margin-left:-8em;
     font-size: 1em;
-    font-weight: normal;
     width: 8em;
-    height: 1.8em;
     border: 0;
 }
 .configitem > input[type=checkbox] {
-    margin-left: -2em;
-    margin-top:0.2em;
+    width: 2em;
 }
 
 #stored_sites {
