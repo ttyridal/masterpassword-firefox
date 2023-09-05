@@ -10,6 +10,8 @@ body {
     -webkit-user-select: none;
     -ms-user-select: none;
     user-select: none;
+    background-color: Canvas;
+    color: CanvasText;
 }
 
 div.item {
@@ -50,6 +52,23 @@ input[type=checkbox] {
     height:2em;
     width:2em;
 }
+
+@media (prefers-color-scheme: dark) {
+    body {
+        color: #eee;
+        background: #222222;
+    }
+    select {
+        background-color: #111;
+        color:#eee;
+        border:0;
+    }
+
+    div.item:hover {
+        background-color: rgba(255,255,255,0.03);
+    }
+}
+
 
 </style>
 </head>
