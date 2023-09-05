@@ -172,22 +172,23 @@ window.addEventListener('load', function() {
     });
 });
 
-    let comcheck = document.querySelector('#comcheck')?.addEventListener('click', async function(){
-        function cb(msg) {
-            let txt = document.querySelector('#comcheckstatus');
-            if (chrome.runtime.lastError)
-                txt.textContent = "fail: " + JSON.stringify(chrome.runtime.lastError) + chrome.runtime.lastError;
-            else if (!msg)
-                txt.textContent = "fail: unknown, no reply from bridge";
-            else if (msg.error)
-                txt.textContent = "coms working, bridge returned error: " + msg.error;
-            else if (msg.success)
-                txt.textContent = `OK: nativebridge ${msg.os} ${msg.version}`;
-            else {
-                txt.textContent = "coms working: unknown response, check log";
-                console.warn("fail comcheck", msg);
-            }
+document.querySelector('#comcheck')?.addEventListener('click', async function(){
+    function cb(msg) {
+        let txt = document.querySelector('#comcheckstatus');
+        if (chrome.runtime.lastError)
+            txt.textContent = "fail: " + JSON.stringify(chrome.runtime.lastError) + chrome.runtime.lastError;
+        else if (!msg)
+            txt.textContent = "fail: unknown, no reply from bridge";
+        else if (msg.error)
+            txt.textContent = "coms working, bridge returned error: " + msg.error;
+        else if (msg.success)
+            txt.textContent = `OK: nativebridge ${msg.os} ${msg.version}`;
+        else {
+            txt.textContent = "coms working: unknown response, check log";
+            console.warn("fail comcheck", msg);
         }
-        chrome.runtime.sendNativeMessage("no.ttyridal.pwvault_gateway", {type: "comcheck"}, cb);
-    });
+    }
+    chrome.runtime.sendNativeMessage("no.ttyridal.pwvault_gateway", {type: "comcheck"}, cb);
+});
+
 }());
