@@ -6,6 +6,8 @@
 /ext/chromeext/src
 /ext/edgeext/icons
 /ext/edgeext/src
+/ext/firefoxext/icons
+/ext/firefoxext/src
 /builds
 node_modules/
 scrypt.js
