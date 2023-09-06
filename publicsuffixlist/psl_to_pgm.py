@@ -105,10 +105,12 @@ if len(sys.argv) < 3 or sys.argv[1] not in ['pgm','json','test']:
 table=dict()
 walk(build_tree_from_psl(sys.argv[2]), table)
 
+, separators=(',', ':')
+
 if sys.argv[1] == 'json':
-    print(json.dumps(table).replace(' ',''))
+    print(json.dumps(table, separators=(',', ':')))
 elif sys.argv[1] == 'pgm':
-    pgmdump(json.dumps(table).replace(' ',''))
+    pgmdump(json.dumps(table, separators=(',', ':')))
 elif sys.argv[1] == 'test':
     test()
 else:
