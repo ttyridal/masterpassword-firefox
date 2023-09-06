@@ -359,7 +359,10 @@ void install_chrome(bool installAllUsers, wstring & binpath) {
 		<< L"  \"description\" : \"Exposes the OS password vault to masterpassword extension\",\n"
 		<< L"  \"path\" : \"" << ReplaceAll(binpath, L"\\", L"\\\\").c_str() << L"\",\n"
 		<< L"  \"type\" : \"stdio\",\n"
-		<< L"  \"allowed_origins\": [\"chrome-extension://hifbblnjfcimjnlhibannjoclibgedmd/\"]\n"
+		<< L"  \"allowed_origins\": [\n"
+        << L"            \"chrome-extension://hifbblnjfcimjnlhibannjoclibgedmd/\",\n", // chrome extension id
+        << L"            \"chrome-extension://hhlpgmeeiabedlfldelibppckcfdkilp/\"\n",  // edge extension id
+        << L"  ]\n"
 		<< L"}";
 	f.close();
 
