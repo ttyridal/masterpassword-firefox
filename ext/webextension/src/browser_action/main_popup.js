@@ -326,38 +326,39 @@ function getUserNameAndPassFromUser() {
     });
 }
 
-function showMain(masterkey_or_state) {
+async function showMain(masterkey_or_state) {
     ui.hide('#sessionsetup');
     ui.show('#main');
 
     setTimeout(()=>{ resolve_mpw(masterkey_or_state);}, 1); // do later so page paints as fast as possible
 
-
-    let urlpromise = get_active_tab_url()
-    .catch(function(x) { //jshint ignore:line
-        console.error('get_active_tab_url failed',x);
+    let activeurl;
+    try {
+        activeurl = await get_active_tab_url();
+    } catch (error) {
+        console.error('get_active_tab_url failed', error);
         ui.user_warn("failed to get tab url");
         setTimeout(()=>{ui.clear_warning()}, 2000);
-        return '';
-    });
+        activeurl = '';
 
+    }
 
     sitestore = new SiteStore(config.use_sync ? chrome.storage.sync : chrome.storage.local);
-    let sites = sitestore.get()
-    .catch(x=>{
+    let sites;
+    try {
+        sites = await sitestore.get();
+    } catch(error) {
         console.error('sitestore.get failed',x);
         ui.user_warn("failed to get sites");
         setTimeout(()=>{ui.clear_warning()}, 2000);
-        return [];
-    });
+        sites = [];
+    }
 
-    let dataloaded = Promise.all([urlpromise,  sites, psl.waitTableReady()])
-    .then((x)=>onDataLoadedUpdateUI(x[0], x[1]))
-    .catch(err => console.error(err));
+    await psl.waitTableReady();
 
-    Promise.all([mpw_promise, dataloaded])
-    .then(recalculate)
-    .catch(err => console.error(err));
+    onDataLoadedUpdateUI(activeurl, sites);
+
+    recalculate();
 }
 
 window.addEventListener('test_reset', () => {
