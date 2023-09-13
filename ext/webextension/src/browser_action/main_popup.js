@@ -285,7 +285,7 @@ function getBaseDomain(domain) {
     }
 }
 
-function showSessionSetup() {
+function getUserNameAndPassFromUser() {
     ui.hide('#main');
     ui.show('#sessionsetup');
 
@@ -295,19 +295,42 @@ function showSessionSetup() {
         ui.username(config.username);
         ui.focus('#masterkey');
     }
+
+    const p = defer();
+    document.querySelector('#sessionsetup > form').addEventListener('submit', onsubmit);
+
+    function onsubmit(ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const username = ui.username(),
+              masterkey= ui.masterkey();
+        if (username.length < 2) {
+            ui.user_warn('Please enter a name (>2 chars)');
+            ui.focus('#username');
+        }
+        else if (masterkey.length < 2) {
+            ui.user_warn('Please enter a master key (>2 chars)');
+            ui.focus('#masterkey');
+        } else {
+            ui.masterkey('');
+            ui.clear_warning();
+            config.set({username});
+            document.querySelector('#sessionsetup > form').removeEventListener('submit', onsubmit);
+            p.resolve({masterkey});
+        }
+    }
+
+    return p.then(r=>{
+        document.querySelector('#sessionsetup > form').removeEventListener('submit', onsubmit);
+        return r;
+    });
 }
 
-function showMain() {
+function showMain(masterkey_or_state) {
     ui.hide('#sessionsetup');
     ui.show('#main');
-}
 
-function popup(masterkey_or_state) {
-    if (masterkey_or_state.mpwstate || (masterkey_or_state.masterkey && config.username)) {
-        showMain();
-        setTimeout(()=>{ resolve_mpw(masterkey_or_state);}, 1); // do later so page paints as fast as possible
-    } else
-        showSessionSetup();
+    setTimeout(()=>{ resolve_mpw(masterkey_or_state);}, 1); // do later so page paints as fast as possible
 
 
     let urlpromise = get_active_tab_url()
@@ -373,36 +396,13 @@ async function windowOnLoad() {
     } else {
         ui.user_info("");
     }
-    popup(data);
+
+    if (!data.mpwstate && !(data.masterkey && config.username))
+        data = await getUserNameAndPassFromUser();
+    showMain(data);
 }
 window.addEventListener('load', windowOnLoad, {once:true});
 window.addEventListener('test_load', windowOnLoad);
-
-document.querySelector('#sessionsetup > form').addEventListener('submit', function(ev) {
-    ev.preventDefault();
-    ev.stopPropagation();
-
-    let username = ui.username(),
-        masterkey= ui.masterkey();
-
-    if (username.length < 2) {
-        ui.user_warn('Please enter a name (>2 chars)');
-        ui.focus('#username');
-    }
-    else if (masterkey.length < 2) {
-        ui.user_warn('Please enter a master key (>2 chars)');
-        ui.focus('#masterkey');
-    }
-    else {
-        ui.masterkey('');
-        ui.clear_warning();
-
-        config.set({username});
-
-        showMain();
-        setTimeout(()=>{ resolve_mpw({masterkey});}, 1); // do later so page paints as fast as possible
-    }
-});
 
 function warn_keyid_not_matching(ok_cb)
 {
@@ -491,7 +491,8 @@ document.querySelector('body').addEventListener('click', function(ev) {
         ui.clear_warning();
         ui.user_info("Session destroyed");
         console.log("session destroyed");
-        popup({});
+        let p = getUserNameAndPassFromUser();
+        p.then(showMain);
     }
 });
 

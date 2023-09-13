@@ -181,10 +181,10 @@ it('main_popup.js requests login', async () => {
     await flushPromises();
 
     jest.runOnlyPendingTimers()
+    await flushPromises();
 
     expect(chrome.runtime.sendMessage).toHaveBeenCalled();
     expect(libmpw.default).toHaveBeenCalledTimes(0);
-    expect(sitename.value).toEqual("test.no");
 
     expect(ui.focus).toHaveBeenCalledWith('#masterkey');
     expect(calcpasswd).toHaveBeenCalledTimes(0);
@@ -193,7 +193,10 @@ it('main_popup.js requests login', async () => {
     ui.masterkey.mockReturnValueOnce('test');
 
     document.querySelector('#sessionsetup > form').dispatchEvent(new Event('submit', {bubbles: true, cancelable: true}));
-    expect(ui.masterkey).toHaveBeenLastCalledWith('');
+    expect(ui.masterkey).toHaveBeenLastCalledWith('');  // password field in ui is cleared after beeing read
+    await flushPromises();
+    expect(chrome.tabs.query).toHaveBeenCalled();
+    expect(sitename.value).toEqual("test.no");
     jest.runOnlyPendingTimers();
     await flushPromises();
     expect(calcpasswd).toHaveBeenCalledWith("test.no", 1, 'l');
