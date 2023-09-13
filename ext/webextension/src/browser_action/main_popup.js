@@ -343,7 +343,6 @@ async function showMain(masterkey_or_state) {
 
     }
 
-    sitestore = new SiteStore(config.use_sync ? chrome.storage.sync : chrome.storage.local);
     let sites;
     try {
         sites = await sitestore.get();
@@ -353,8 +352,6 @@ async function showMain(masterkey_or_state) {
         setTimeout(()=>{ui.clear_warning()}, 2000);
         sites = [];
     }
-
-    await psl.waitTableReady();
 
     onDataLoadedUpdateUI(activeurl, sites);
 
@@ -382,6 +379,9 @@ async function windowOnLoad() {
         'passwdtimeout',
         'use_sync',
     ]);
+
+    sitestore = new SiteStore(config.use_sync ? chrome.storage.sync : chrome.storage.local);
+    await psl.waitTableReady();
 
     let data = {};
     if (v.passwdtimeout!=0 || v.pass_store) {
