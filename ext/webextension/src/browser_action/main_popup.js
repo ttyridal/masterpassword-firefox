@@ -85,18 +85,15 @@ function mpwstate_clear() {
     .catch(err=>{ console.log("BUG!",err); });
 }
 
-function get_active_tab_url() {
-    var ret = new Promise(resolve => {
-        chrome.tabs.query({active:true,currentWindow:true}, function(tabres){
-        if (tabres.length !== 1) {
-            ui.user_warn("Error: bug in tab selector");
-            console.log(tabres);
-            throw new Error("plugin bug");
-        } else
-            resolve(tabres[0].url);
-        });
-    });
-    return ret;
+async function get_active_tab_url() {
+    const p  = new Promise(resolve=>chrome.tabs.query({active:true,currentWindow:true},resolve));
+    const tabres = await p;
+    if (tabres.length !== 1) {
+        ui.user_warn("Error: bug in get_active_tab_url");
+        console.log("get_active_tab_url failed, tabres!=1",tabres);
+        throw new Error("plugin bug");
+    }
+    return tabres[0].url;
 }
 
 function update_page_password_input(pass, username) {
@@ -205,8 +202,8 @@ function recalculate() {
     .catch(console.error);
 }
 
-function prepareSitelist(sites, domain, basedomain)
-{
+function prepareSitelist(sites, domainname) {
+    const [domain, basedomain] = [domainname.full, domainname.base];
     const domainSplitReversed = domain.split('.').reverse();
     const minScoreForRelated = basedomain.split('.').length;
 
@@ -240,28 +237,29 @@ function prepareSitelist(sites, domain, basedomain)
     return [scoredSites.map(s=>s[1]), num_related];
 }
 
-function onDataLoadedUpdateUI(activeurl, sites)
-{
-    const urlParsed = parseUri(activeurl);
-    const protocolsIgnored = ["", "about", "resource", "moz-extension", "chrome-extension", "chrome", "edge", "brave"];
-    const domain = protocolsIgnored.includes(urlParsed.protocol) ? '' : urlParsed.domain;
-    const basedomain = getBaseDomain(domain);
+async function domainname_get_softfail() {
+    try {
+        let [activeurl,] = await Promise.all([get_active_tab_url(), psl.waitTableReady()]);
+        const urlParsed = parseUri(activeurl);
+        const protocolsIgnored = ["", "about", "resource", "moz-extension", "chrome-extension", "chrome", "edge", "brave"];
+        const domain = protocolsIgnored.includes(urlParsed.protocol) ? '' : urlParsed.domain;
+        const basedomain = getBaseDomain(domain);
 
-    let [stored_sites, num_related] = prepareSitelist(sites, domain, basedomain);
-    session_store.stored_sites = stored_sites;
+        return {full:domain, base:basedomain};
+    } catch (error) {
+        console.error("BUG!",error,error.stack);
+        return {full:'', base:''};
+    }
+}
 
-    for (let d of document.querySelectorAll('.domain'))
-        d.value = basedomain;
-
-    ui.setStoredIds(stored_sites);
-    session_store.num_related_sites = num_related;
-
-    if (basedomain) { // expects there to be atleast one related site.. saved or default
-        let first = stored_sites[0];
-        ui.sitename(first.sitename);
-        ui.siteconfig(first.type, first.generation, first.username || '');
-    } else
-         ui.siteconfig(config.defaulttype, 1, '');
+async function sitestore_get_softfail() {
+    try {
+        return await sitestore.get();
+    } catch(error) {
+        console.error('sitestore.get failed', error);
+        ui.user_warn("BUG! failed to get sites");
+        return [];
+    }
 }
 
 // The baseDomain is also known as "eTLD+1", eg www.example.com -> example.com
@@ -326,34 +324,23 @@ function getUserNameAndPassFromUser() {
     });
 }
 
-async function showMain(masterkey_or_state) {
+async function showMain() {
     ui.hide('#sessionsetup');
     ui.show('#main');
 
-    setTimeout(()=>{ resolve_mpw(masterkey_or_state);}, 1); // do later so page paints as fast as possible
+    const [domainname, sites] = await Promise.all([domainname_get_softfail(), sitestore_get_softfail()]);
+    [session_store.stored_sites, session_store.num_related_sites] = prepareSitelist(sites, domainname);
 
-    let activeurl;
-    try {
-        activeurl = await get_active_tab_url();
-    } catch (error) {
-        console.error('get_active_tab_url failed', error);
-        ui.user_warn("failed to get tab url");
-        setTimeout(()=>{ui.clear_warning()}, 2000);
-        activeurl = '';
+    ui.setStoredIds(session_store.stored_sites);
 
-    }
-
-    let sites;
-    try {
-        sites = await sitestore.get();
-    } catch(error) {
-        console.error('sitestore.get failed',x);
-        ui.user_warn("failed to get sites");
-        setTimeout(()=>{ui.clear_warning()}, 2000);
-        sites = [];
-    }
-
-    onDataLoadedUpdateUI(activeurl, sites);
+    for (let d of document.querySelectorAll('.domain'))
+        d.value = domainname.base;
+    if (domainname.base) { // expects there to be atleast one related site.. saved or default
+        let first = session_store.stored_sites[0];
+        ui.sitename(first.sitename);
+        ui.siteconfig(first.type, first.generation, first.username || '');
+    } else
+         ui.siteconfig(config.defaulttype, 1, '');
 
     recalculate();
 }
@@ -388,25 +375,27 @@ async function windowOnLoad() {
         data = await state_or_masterkey_get(v.pass_store);
     }
     if (data.pwgw_failure) {
-        let e = ui.user_warn("System password vault failed! ");
+        let e = ui.user_warn("System password vault failed!", 2000);
         e = e.appendChild(document.createElement('a'));
         e.href = "https://github.com/ttyridal/masterpassword-firefox/wiki/Key-vault-troubleshooting";
         e.target = "_blank";
         e.textContent = "Help?";
         data.masterkey=undefined;
     } else {
-        ui.user_info("");
+        ui.clear_warning();
     }
 
     if (!data.mpwstate && !(data.masterkey && config.username))
         data = await getUserNameAndPassFromUser();
-    showMain(data);
+
+    setTimeout(()=>{ resolve_mpw(data);}, 1); // do later so page paints as fast as possible
+
+    showMain();
 }
 window.addEventListener('load', windowOnLoad, {once:true});
 window.addEventListener('test_load', windowOnLoad);
 
-function warn_keyid_not_matching(ok_cb)
-{
+function warn_keyid_not_matching(ok_cb) {
     console.debug("keyids did not match!");
     let e = ui.user_warn("Master password possible mismatch! ");
     e = e.appendChild(document.createElement('button'));
@@ -447,7 +436,7 @@ document.querySelector('#main').addEventListener('change', function(ev){
         sitestore.addOrReplace(site)
         .catch(e => {
             console.error(e);
-            ui.user_warn("save failed: "+e.message);
+            ui.user_warn("save failed: "+e.message, 2000);
         });
     }
 
@@ -493,7 +482,10 @@ document.querySelector('body').addEventListener('click', function(ev) {
         ui.user_info("Session destroyed");
         console.log("session destroyed");
         let p = getUserNameAndPassFromUser();
-        p.then(showMain);
+        p.then(data=>{
+            setTimeout(()=>{ resolve_mpw(data);}, 1); // do later so page paints as fast as possible
+            showMain();
+        });
     }
 });
 

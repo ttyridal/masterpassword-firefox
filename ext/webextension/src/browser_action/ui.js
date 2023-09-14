@@ -49,10 +49,12 @@ export const ui = {
         return el.display === '';
     },
 
-    user_warn: function(s) {
+    user_warn: function(s, to) {
         let e = document.querySelector('#usermessage');
         e.className = 'warning_message';
         e.textContent = s;
+        if (to !== undefined && to != 0)
+            setTimeout(()=>{ui.clear_warning()}, to);
         return e;
     },
 
