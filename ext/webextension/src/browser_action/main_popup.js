@@ -60,10 +60,14 @@ const runtimeSendMessage = (typeof browser !== 'undefined' ?
                        browser.runtime.sendMessage :
                        (msg) => new Promise(suc => chrome.runtime.sendMessage(msg, suc)));
 
-function state_or_masterkey_get(use_pass_store) {
-    return runtimeSendMessage({action: 'masterkey_get',
-                        use_pass_store})
-    .catch(err=>{ console.log("BUG!",err); });
+async function state_or_masterkey_get(use_pass_store) {
+    let res = await runtimeSendMessage({action: 'masterkey_get', use_pass_store});
+    if (res === undefined || chrome.runtime.lastError) {
+        console.error("runtimeSendMessage failed", chrome.runtime.lastError.message);
+        ui.user_warn("BUG! Failed backend communication");
+        return {};
+    }
+    return res;
 }
 
 function masterkey_set(masterkey, nosave) {
@@ -370,6 +374,7 @@ async function windowOnLoad() {
     sitestore = new SiteStore(config.use_sync ? chrome.storage.sync : chrome.storage.local);
     await psl.waitTableReady();
 
+    ui.clear_warning();
     let data = {};
     if (v.passwdtimeout!=0 || v.pass_store) {
         data = await state_or_masterkey_get(v.pass_store);
@@ -381,12 +386,11 @@ async function windowOnLoad() {
         e.target = "_blank";
         e.textContent = "Help?";
         data.masterkey=undefined;
-    } else {
-        ui.clear_warning();
     }
 
     if (!data.mpwstate && !(data.masterkey && config.username))
         data = await getUserNameAndPassFromUser();
+    ui.clear_warning();
 
     setTimeout(()=>{ resolve_mpw(data);}, 1); // do later so page paints as fast as possible
 
